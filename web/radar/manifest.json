@@ -1,0 +1,74 @@
+{
+  "demo": true,
+  "note": "Synthetic placeholder imagery for UI development. Not from BMKG or any live radar feed.",
+  "unit": "dBZ",
+  "generated": "2026-11-12T08:59:39+00:00",
+  "stations": [
+    {
+      "id": "demo-medan",
+      "name": "Medan (demo)",
+      "image": "demo-medan.png",
+      "bounds": {
+        "south": 1.3452,
+        "north": 5.8452,
+        "west": 96.4222,
+        "east": 100.9222
+      }
+    },
+    {
+      "id": "demo-palembang",
+      "name": "Palembang (demo)",
+      "image": "demo-palembang.png",
+      "bounds": {
+        "south": -5.2409,
+        "north": -0.7409,
+        "west": 102.5066,
+        "east": 107.0066
+      }
+    },
+    {
+      "id": "demo-surabaya",
+      "name": "Surabaya (demo)",
+      "image": "demo-surabaya.png",
+      "bounds": {
+        "south": -9.4958,
+        "north": -4.9958,
+        "west": 110.4878,
+        "east": 114.9878
+      }
+    },
+    {
+      "id": "demo-makassar",
+      "name": "Makassar (demo)",
+      "image": "demo-makassar.png",
+      "bounds": {
+        "south": -7.3977,
+        "north": -2.8977,
+        "west": 117.1827,
+        "east": 121.6827
+      }
+    },
+    {
+      "id": "demo-balikpapan",
+      "name": "Balikpapan (demo)",
+      "image": "demo-balikpapan.png",
+      "bounds": {
+        "south": -3.5154,
+        "north": 0.9846,
+        "west": 114.5812,
+        "east": 119.0812
+      }
+    },
+    {
+      "id": "demo-jayapura",
+      "name": "Jayapura (demo)",
+      "image": "demo-jayapura.png",
+      "bounds": {
+        "south": -4.7837,
+        "north": -0.2837,
+        "west": 138.4681,
+        "east": 142.9681
+      }
+    }
+  ]
+}

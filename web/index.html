@@ -173,6 +173,16 @@ const RAMPS = {
       [1045, [212, 72, 47, 255]]] },
 };
 
+// Radar legend only: dBZ reflectivity colours for the key under "Radar ·
+// demo". These paint nothing themselves — the colours already live baked
+// into the placeholder station PNGs in web/radar/. Must match STOPS in
+// pipeline/radar_demo_gen.py, the script that generates those PNGs; if one
+// changes, change the other.
+const RADAR_RAMP = { unitLabel: "dBZ", ticks: [5, 10, 20, 30, 40, 50, 60], stops: [
+  [5,  [0, 0, 0, 0]],      [10, [100, 180, 230, 90]], [20, [60, 190, 90, 190]],
+  [30, [235, 220, 70, 220]], [40, [240, 150, 40, 235]], [50, [220, 50, 50, 245]],
+  [60, [190, 60, 190, 255]]] };
+
 // Wind particle speed, in pixels per frame for a 10 m/s wind. Lower is slower.
 // Override while tuning with ?windspeed=0.5 (a multiplier on this value).
 const WIND_PX_PER_FRAME = 0.25;
@@ -513,6 +523,11 @@ class WeatherLayer {
       app.boundariesPending = false;
       setTimeout(() => app.addBoundaries(), 0);
     }
+    // ?radar=1 in the URL turns radar on before the map exists to add layers
+    // to; this is the first point after load where it is safe to do so.
+    if (app.radarOn && !app.radarLoaded && !app.radarLoading) {
+      setTimeout(() => app.loadRadarLayers(), 0);
+    }
     const { spec, now, next, blend, name } = frame;
 
     // --- colour field -----------------------------------------------------
@@ -638,6 +653,14 @@ class App {
     this.stepIndex = 0;
     this.playing = false;
     this.gridOn = true;
+    // Radar overlay: synthetic placeholder imagery (see
+    // pipeline/radar_demo_gen.py). Nothing here ever requests a BMKG
+    // address; everything it fetches is same-origin, under ./radar/.
+    this.radarOn = false;
+    this.radarLoaded = false;
+    this.radarLoading = false;
+    this.radarLayerIds = [];
+    this.radarManifest = null;
   }
 
   async boot() {
@@ -746,6 +769,18 @@ class App {
     };
     box.appendChild(grid);
 
+    const radarSep = document.createElement("span");
+    radarSep.className = "sep";
+    box.appendChild(radarSep);
+    const radar = document.createElement("button");
+    radar.className = "toggle";
+    radar.textContent = "Radar · demo";
+    radar.title = "Synthetic placeholder imagery for a few cities — not a live BMKG feed";
+    radar.setAttribute("aria-pressed", String(this.radarOn));
+    radar.onclick = () => this.setRadar(!this.radarOn);
+    box.appendChild(radar);
+    this.radarBtn = radar;
+
     const slider = document.getElementById("slider");
     slider.max = String(this.steps.length - 1);
     slider.value = String(this.stepIndex);
@@ -781,13 +816,36 @@ class App {
       ? r.stops.map(([v], i) => ({ v, p: at(i) }))
       : r.ticks.map((v) => ({ v, p: (v - lo) / (hi - lo) }));
     const last = ticks.length - 1;
-    document.getElementById("legend").innerHTML =
+    let html =
       `<div class="title"><span>${escapeHTML(spec ? spec.label : this.layer)}</span>` +
       `<span>${escapeHTML(r.unitLabel)}</span></div>` +
       `<div class="bar" style="background-image:linear-gradient(to right, ${gradient})"></div>` +
       `<div class="ticks">` + ticks.map((t, i) =>
         `<span class="${i === 0 ? "first" : i === last ? "last" : ""}" ` +
         `style="left:${(t.p * 100).toFixed(1)}%">${t.v}</span>`).join("") + `</div>`;
+    if (this.radarOn) html += this.radarLegendHTML();
+    document.getElementById("legend").innerHTML = html;
+  }
+
+  // A second, smaller key appended under the main one while the radar
+  // overlay is on. Separate block, not a sixth RAMPS entry: radar is a
+  // toggle over whatever parameter is selected, not one of the five fields.
+  radarLegendHTML() {
+    const rr = RADAR_RAMP;
+    const lo = rr.ticks[0], hi = rr.ticks[rr.ticks.length - 1];
+    const at = (v) => (v - lo) / (hi - lo);
+    const gradient = rr.stops.map(([v, c]) =>
+      `rgba(${c[0]},${c[1]},${c[2]},${(c[3] / 255).toFixed(3)}) ${(at(v) * 100).toFixed(1)}%`
+    ).join(", ");
+    const last = rr.ticks.length - 1;
+    return `<div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12)">` +
+      `<div class="title"><span>Radar · demo</span><span>${escapeHTML(rr.unitLabel)}</span></div>` +
+      `<div class="bar" style="background-image:linear-gradient(to right, ${gradient})"></div>` +
+      `<div class="ticks">` + rr.ticks.map((v, i) =>
+        `<span class="${i === 0 ? "first" : i === last ? "last" : ""}" ` +
+        `style="left:${(at(v) * 100).toFixed(1)}%">${v}</span>`).join("") + `</div>` +
+      `<div style="margin-top:4px;font-size:10.5px;color:#9fb0d4">` +
+      `Synthetic placeholder for a few cities — not from BMKG.</div></div>`;
   }
 
   // Latitude/longitude grid on a canvas laid over the map. Spacing is chosen
@@ -881,6 +939,7 @@ class App {
     if (h.get("step")) this.stepIndex = Math.max(0, Math.min(this.steps.length - 1, +h.get("step")));
     this.view = h.get("at") ? h.get("at").split(",").map(Number) : null;
     if (h.get("grid") !== null) this.gridOn = h.get("grid") !== "0";
+    if (h.get("radar") === "1") this.radarOn = true;
   }
 
   writeURL() {
@@ -888,7 +947,8 @@ class App {
     const c = this.map.getCenter();
     const at = `${c.lng.toFixed(2)},${c.lat.toFixed(2)},${this.map.getZoom().toFixed(1)}`;
     const h = new URLSearchParams({
-      layer: this.layer, step: String(Math.round(this.stepIndex)), at, grid: this.gridOn ? "1" : "0",
+      layer: this.layer, step: String(Math.round(this.stepIndex)), at,
+      grid: this.gridOn ? "1" : "0", radar: this.radarOn ? "1" : "0",
     });
     history.replaceState(null, "", `#${h}`);
   }
@@ -968,6 +1028,66 @@ class App {
       line("admin1-casing", "admin1", "rgba(8,12,24,0.35)", w(0.8, 1.6), { minzoom: 2, opacity: fade });
       line("admin1", "admin1", "rgba(255,255,255,0.35)", w(0.4, 0.9), { minzoom: 2, opacity: fade });
     });
+  }
+
+  // --- radar overlay (demo placeholder) -----------------------------------
+  // Toggled by the "Radar · demo" button, or by ?radar=1 / #radar=1 in the
+  // URL (handled from WeatherLayer.render, the same way boundariesPending is,
+  // since sources can only be added once the map's style has loaded).
+  // Everything this fetches is same-origin, under ./radar/: it never calls
+  // BMKG or any other third party. See pipeline/radar_demo_gen.py.
+  setRadar(on) {
+    this.radarOn = on;
+    if (this.radarBtn) this.radarBtn.setAttribute("aria-pressed", String(on));
+    if (on) {
+      if (this.radarLoaded) this.showRadar(true);
+      else if (!this.radarLoading) this.loadRadarLayers();
+    } else if (this.radarLoaded) {
+      this.showRadar(false);
+    }
+    this.writeURL();
+    this.paintLegend();
+  }
+
+  showRadar(visible) {
+    const v = visible ? "visible" : "none";
+    for (const id of this.radarLayerIds) this.map.setLayoutProperty(id, "visibility", v);
+  }
+
+  async loadRadarLayers() {
+    this.radarLoading = true;
+    try {
+      const manifest = await this.fetchJSON(new URL("radar/manifest.json", location.href).href);
+      this.radarManifest = manifest;
+      // Above the colour field, below the coastline, same reasoning as the
+      // boundary layers: addBoundaries() usually runs first, but if the user
+      // toggles radar before it has, there is nothing to insert before yet,
+      // and the layers just land on top for a moment until it catches up.
+      const before = this.map.getLayer("coast-casing") ? "coast-casing" : undefined;
+      for (const st of manifest.stations) {
+        const { south, north, west, east } = st.bounds;
+        const srcId = `radar-${st.id}`, layerId = `radar-layer-${st.id}`;
+        this.map.addSource(srcId, {
+          type: "image",
+          url: new URL(`radar/${st.image}`, location.href).href,
+          coordinates: [[west, north], [east, north], [east, south], [west, south]],
+        });
+        this.map.addLayer({
+          id: layerId, type: "raster", source: srcId,
+          paint: { "raster-opacity": 0.75, "raster-fade-duration": 0 },
+          layout: { visibility: this.radarOn ? "visible" : "none" },
+        }, before);
+        this.radarLayerIds.push(layerId);
+      }
+      this.radarLoaded = true;
+    } catch (err) {
+      console.warn("radar demo layer failed to load", err);
+      this.radarOn = false;
+      if (this.radarBtn) this.radarBtn.setAttribute("aria-pressed", "false");
+    } finally {
+      this.radarLoading = false;
+      this.paintLegend();
+    }
   }
 
   // Read the value under the cursor from the PNG itself, on a 2D canvas.
