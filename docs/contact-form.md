@@ -19,7 +19,7 @@ It does nothing until these are set. Never paste secret keys into chat or commit
    - `CONTACT_FROM` = `Klimatikal contact <contact@klimatikal.com>`
    Add the same under Preview if you want to try a branch preview.
 4. Put the Turnstile **site key** in `web/contact-us/index.html`, replacing
-   `__TURNSTILE_SITE_KEY__`, then push.
+   `0x4AAAAAAF-coinZ1rm_GLXcACgBhTUwg-Y`, then push.
 
 Test: send yourself a message from the live page; it should arrive within a minute,
 and Reply should go to the address typed in the form.
