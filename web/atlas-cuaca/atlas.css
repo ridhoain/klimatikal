@@ -1,4 +1,4 @@
-/* Atlas cuaca. Builds on /about-us/about.css (palette, header, footer). */
+/* Atlas cuaca. Builds on /about-us/about.css (palette, header, footer, h1/h2). */
 
 /* Language: both texts are in the page; the reader's choice hides the other.
    Scoped under body so the <html lang> attribute itself is never hidden. */
@@ -8,6 +8,8 @@ html[data-lang="en"] body [lang="id"] { display: none; }
 .atlas-page .site-header,
 .atlas-page .site-footer { padding-inline: max(16px, calc((100% - 1180px) / 2)); }
 main.atlas { max-width: 1180px; }
+/* "Atlas Cuaca" is lit on the index, and also on the pages inside it. */
+.site-header nav a[aria-current="true"] { color: var(--kl-lime); }
 
 /* header: language switch */
 .lang { display: inline-flex; margin-left: 4px; border: 1px solid rgba(139, 190, 178, .35); border-radius: 8px; overflow: hidden; }
@@ -19,7 +21,7 @@ main.atlas { max-width: 1180px; }
 .lang button:focus-visible { outline: 2px solid var(--kl-lime); outline-offset: 2px; }
 @media (max-width: 600px) { .site-header nav { gap: 12px; flex-wrap: wrap; justify-content: flex-end; } }
 
-/* locator maps (inline SVG, one shared land shape) */
+/* ---- locator maps (inline SVG, one shared land shape) -------------------- */
 .locator { display: block; width: 100%; height: auto; border-radius: 10px;
   background: rgba(13, 6, 48, .55); border: 1px solid rgba(139, 190, 178, .2); }
 /* No ".locator" ancestor in these two on purpose: the shape is defined once in a
@@ -35,7 +37,37 @@ main.atlas { max-width: 1180px; }
 .overview { margin: 6px 0 26px; }
 .locator.wide { max-height: 360px; }
 
-/* controls */
+/* ---- shared by cards and entry pages ------------------------------------ */
+.badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.badge { font-size: 11.5px; letter-spacing: .04em; padding: 2px 10px; border-radius: 999px; border: 1px solid rgba(139, 190, 178, .5); color: var(--kl-teal); }
+.badge.doc.well { background: rgba(230, 249, 175, .14); border-color: rgba(230, 249, 175, .55); color: var(--kl-lime); }
+.badge.doc.poor { border-style: dashed; }
+.badge.draft { border: 1px dashed var(--kl-lime); color: var(--kl-lime); }
+.alt { margin: 4px 0 0; color: var(--text); }
+.alt small { color: var(--kl-teal); text-transform: uppercase; letter-spacing: .1em; font-size: 10.5px; margin-right: 6px; }
+.photo { margin: 0; }
+.photo img { display: block; width: 100%; aspect-ratio: 16 / 10; max-height: 340px; object-fit: cover; }
+.photo figcaption { padding: 6px 14px; font-size: 12px; color: var(--kl-teal); background: rgba(13, 6, 48, .5); }
+.photo.placeholder {
+  aspect-ratio: 16 / 10; max-height: 340px; display: grid; place-items: center; color: var(--kl-teal); font-size: 14px;
+  background: repeating-linear-gradient(45deg, rgba(13, 6, 48, .35) 0 12px, rgba(13, 6, 48, .5) 12px 24px);
+  border-bottom: 1px dashed rgba(139, 190, 178, .4);
+}
+.empty { color: var(--kl-teal); font-style: italic; }
+.place .coords { color: var(--kl-teal); font-size: 13px; white-space: nowrap; }
+.maplink { font-size: 14px; }
+.caveat {
+  margin: 14px 0 0; padding: 8px 12px; font-size: 14px; line-height: 1.55; color: var(--text);
+  border-left: 3px solid var(--kl-teal); background: rgba(13, 6, 48, .35); border-radius: 0 8px 8px 0;
+}
+.caveat b { color: var(--kl-teal); text-transform: uppercase; letter-spacing: .1em; font-size: 11px; margin-right: 6px; }
+.sources { margin: 0; padding-left: 18px; font-size: 14px; }
+.curator { margin-top: 22px; font-size: 13px; border: 1px dashed rgba(230, 249, 175, .5); border-radius: 10px; padding: 8px 12px; color: var(--kl-lime); }
+.curator summary { cursor: pointer; }
+.curator ul { margin: 8px 0 2px; padding-left: 18px; color: var(--text); }
+.curator li { margin-bottom: 6px; }
+
+/* ---- the index: controls and compact cards ------------------------------- */
 .controls { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: center; margin: 4px 0 10px; }
 .controls .group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .glabel { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--kl-teal); margin-right: 4px; }
@@ -55,44 +87,44 @@ main.atlas { max-width: 1180px; }
 .count b { color: var(--kl-lime); font-variant-numeric: tabular-nums; }
 .none { color: var(--kl-teal); padding: 30px 0; }
 
-/* cards */
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 22px; align-items: start; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 20px; align-items: stretch; }
 .card {
-  display: flex; flex-direction: column; overflow: hidden; scroll-margin-top: 20px;
+  position: relative; display: flex; flex-direction: column; overflow: hidden;
   background: var(--kl-deep); border: 1px solid rgba(139, 190, 178, .25); border-radius: 16px;
 }
-.card:target { border-color: var(--kl-lime); box-shadow: 0 0 0 2px rgba(230, 249, 175, .35); }
+.card:hover { border-color: var(--kl-teal); }
+.card:focus-within { border-color: var(--kl-lime); box-shadow: 0 0 0 2px rgba(230, 249, 175, .3); }
 .card[hidden] { display: none; }
-.photo { margin: 0; }
-.photo img { display: block; width: 100%; aspect-ratio: 16 / 10; max-height: 340px; object-fit: cover; }
-.photo figcaption { padding: 6px 14px; font-size: 12px; color: var(--kl-teal); background: rgba(13, 6, 48, .5); }
-.photo.placeholder {
-  aspect-ratio: 16 / 10; max-height: 340px; display: grid; place-items: center; color: var(--kl-teal); font-size: 14px;
-  background: repeating-linear-gradient(45deg, rgba(13, 6, 48, .35) 0 12px, rgba(13, 6, 48, .5) 12px 24px);
-  border-bottom: 1px dashed rgba(139, 190, 178, .4);
+.card .photo img { aspect-ratio: 16 / 9; max-height: 190px; }
+.card .body { display: flex; flex-direction: column; flex: 1; padding: 16px 18px 18px; }
+.card h3 { margin: 0; font-size: 21px; line-height: 1.2; color: var(--kl-lime); font-weight: 600; }
+/* The whole card is the link: the title's anchor stretches over it. */
+.card-link { color: inherit; text-decoration: none; }
+.card-link::after { content: ""; position: absolute; inset: 0; }
+.card-link:focus-visible { outline: none; }
+.card .summary {
+  margin: 12px 0 8px; font-size: 14.5px; line-height: 1.6;
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
 }
-.body { padding: 16px 18px 20px; }
-.badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-.badge { font-size: 11.5px; letter-spacing: .04em; padding: 2px 10px; border-radius: 999px; border: 1px solid rgba(139, 190, 178, .5); color: var(--kl-teal); }
-.badge.doc.well { background: rgba(230, 249, 175, .14); border-color: rgba(230, 249, 175, .55); color: var(--kl-lime); }
-.badge.doc.poor { border-style: dashed; }
-.badge.draft { border: 1px dashed var(--kl-lime); color: var(--kl-lime); }
-.card h3 { font-size: 22px; line-height: 1.2; color: var(--kl-lime); }
-.card h4 { margin: 18px 0 6px; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--kl-teal); font-weight: 600; }
-.card p { margin: 0 0 8px; font-size: 15px; line-height: 1.6; }
-.card .alt { margin: 4px 0 0; color: var(--text); }
-.card .alt small { color: var(--kl-teal); text-transform: uppercase; letter-spacing: .1em; font-size: 10.5px; margin-right: 6px; }
-.card .empty { color: var(--kl-teal); font-style: italic; }
-.card .caveat {
-  margin: 12px 0 0; padding: 8px 12px; font-size: 14px; line-height: 1.55; color: var(--text);
-  border-left: 3px solid var(--kl-teal); background: rgba(13, 6, 48, .35); border-radius: 0 8px 8px 0;
+.card .place { margin: 0 0 12px; font-size: 13px; color: var(--kl-teal); }
+.card .more { margin: auto 0 0; font-size: 14px; color: var(--kl-lime); }
+.card:hover .more { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---- an entry page ------------------------------------------------------- */
+.crumbs { margin: 0 0 20px; font-size: 14px; color: var(--kl-teal); }
+.crumbs a { color: var(--kl-teal); text-decoration: none; }
+.crumbs a:hover { color: var(--kl-lime); }
+.crumbs span[aria-hidden] { margin: 0 8px; }
+.entry-head h1 { margin: 4px 0 6px; }
+.entry-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 40px; align-items: start; margin-top: 26px; }
+.entry-main > h2:first-child, .entry-side > h2:first-child { margin-top: 0; }
+.entry p { max-width: 68ch; font-size: 16px; line-height: 1.7; margin: 0 0 10px; }
+.entry .photo { margin: 0 0 8px; border-radius: 14px; overflow: hidden; border: 1px solid rgba(139, 190, 178, .3); background: var(--kl-deep); }
+.entry-side { position: sticky; top: 20px; }
+.entry-side .locator { margin: 12px 0; }
+.entry-side .place { font-size: 15px; }
+.backlink { margin-top: 44px; }
+@media (max-width: 880px) {
+  .entry-grid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .entry-side { position: static; }
 }
-.card .caveat b { color: var(--kl-teal); text-transform: uppercase; letter-spacing: .1em; font-size: 11px; margin-right: 6px; }
-.place .coords { color: var(--kl-teal); font-size: 13px; white-space: nowrap; }
-.card .locator { margin: 8px 0 10px; }
-.maplink { font-size: 14px; }
-.sources { margin: 0; padding-left: 18px; font-size: 14px; }
-.curator { margin-top: 18px; font-size: 13px; border: 1px dashed rgba(230, 249, 175, .5); border-radius: 10px; padding: 8px 12px; color: var(--kl-lime); }
-.curator summary { cursor: pointer; }
-.curator ul { margin: 8px 0 2px; padding-left: 18px; color: var(--text); }
-.curator li { margin-bottom: 6px; }

@@ -2,9 +2,15 @@
    The cards are plain HTML and read fine without this; the script only adds
    interaction. The initial language is set by a tiny inline script in <head>. */
 (function () {
+  // Old links to /atlas-cuaca/#some-id (from when every phenomenon was a full
+  // card on this page) now go to that phenomenon's own page.
+  if (document.body.getAttribute("data-page") === "index" && location.hash.length > 1) {
+    var hit = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if (hit && hit.classList.contains("card")) { location.replace("/atlas-cuaca/" + hit.id + "/"); return; }
+  }
+
   var root = document.documentElement;
   var cards = Array.prototype.slice.call(document.querySelectorAll(".card"));
-  var pins = Array.prototype.slice.call(document.querySelectorAll(".pin-link"));
   var state = { scale: "all", doc: "all", q: "" };
 
   // ---- language ----------------------------------------------------------
@@ -53,19 +59,4 @@
   });
   var q = document.getElementById("q");
   if (q) q.addEventListener("input", function () { state.q = q.value.trim().toLowerCase(); apply(); });
-
-  // A pin click jumps to its card; a filtered-out card must not swallow it.
-  pins.forEach(function (p) {
-    p.addEventListener("click", function () {
-      var card = document.getElementById(p.getAttribute("data-id"));
-      if (card && card.hidden) {
-        state = { scale: "all", doc: "all", q: "" };
-        if (q) q.value = "";
-        Array.prototype.forEach.call(document.querySelectorAll(".controls button[data-group]"), function (x) {
-          x.setAttribute("aria-pressed", String(x.getAttribute("data-value") === "all"));
-        });
-        apply();
-      }
-    });
-  });
 })();
