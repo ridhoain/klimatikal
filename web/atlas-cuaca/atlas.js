@@ -88,6 +88,7 @@
     }
     function tick(now) {
       if (!playing) return;
+      if (fig.hidden) { playing = false; btn.setAttribute("aria-pressed", "false"); return; }
       p += (now - last) / DUR; last = now;
       if (p >= 1) p = 0;
       render(); requestAnimationFrame(tick);
@@ -100,7 +101,68 @@
     scrub.addEventListener("input", function () { play(false); p = scrub.value / 1000; render(); });
     ctl.hidden = false; fig.classList.add("animated");
     var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) { p = 0.9; render(); } else { render(); play(true); }
+    fig.addEventListener("dshow", function () {
+      p = 0; if (reduce) { p = 0.9; render(); } else { render(); play(true); }
+    });
+    if (reduce) { p = 0.9; render(); } else { render(); if (!fig.hidden) play(true); }
+  });
+
+  // ---- Musim Bediding: tabs, and the night-cooling scene --------------------
+  Array.prototype.forEach.call(document.querySelectorAll(".dscenes"), function (box) {
+    var tabs = box.querySelector(".dtabs"), figs = box.querySelectorAll(".dscene");
+    if (!tabs) return;
+    tabs.hidden = false; box.classList.add("tabbed");
+    function show(i) {
+      Array.prototype.forEach.call(figs, function (f) {
+        var on = f.getAttribute("data-scene") === i;
+        if (on && f.hidden) { f.hidden = false; f.dispatchEvent(new Event("dshow")); }
+        else if (!on) f.hidden = true;
+      });
+      Array.prototype.forEach.call(tabs.querySelectorAll("button"), function (b) {
+        b.setAttribute("aria-selected", String(b.getAttribute("data-scene") === i));
+      });
+    }
+    Array.prototype.forEach.call(figs, function (f, k) { f.hidden = k !== 0; });
+    Array.prototype.forEach.call(tabs.querySelectorAll("button"), function (b) {
+      b.addEventListener("click", function () { show(b.getAttribute("data-scene")); });
+    });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('figure.diagram[data-kind="night"]'), function (fig) {
+    var ctl = fig.querySelector(".dctl"), btn = ctl.querySelector(".dplay"), scrub = ctl.querySelector(".dscrub");
+    var sky = fig.querySelector(".d-sky"), heat = fig.querySelectorAll(".d-heat"), chill = fig.querySelectorAll(".d-chill");
+    var phases = ctl.querySelectorAll(".dphase span");
+    var DAY = [240, 160, 122], NIGHT = [29, 95, 209], TOP = {clear: 1, cloud: 0.3};
+    var p = 0, playing = false, last = 0, DUR = 18000, CYC = 4;
+    function mix(f) { return "rgb(" + DAY.map(function (v, i) { return Math.round(v + (NIGHT[i] - v) * f); }).join(",") + ")"; }
+    function render() {
+      var night = Math.max(0, Math.min(1, (p - 0.15) / 0.35)); // 0 by day, 1 once night has settled
+      sky.style.opacity = String(night * 0.55);
+      Array.prototype.forEach.call(chill, function (c) {
+        c.style.fill = mix(night * TOP[c.getAttribute("data-side")]); c.style.opacity = String(0.5 + night * 0.15);
+      });
+      Array.prototype.forEach.call(heat, function (h) {
+        var f = (p * CYC + +h.getAttribute("data-ph")) % 1, y0 = +h.getAttribute("data-y0"), y1 = +h.getAttribute("data-y1");
+        var clear = h.getAttribute("data-side") === "clear", y, o;
+        if (clear) { y = y0 + (y1 - y0) * f; o = 1 - f * f; } else { var g = f < 0.5 ? f * 2 : 2 - f * 2; y = y0 + (y1 - y0) * g; o = 1 - 0.45 * g; }
+        h.setAttribute("cy", y); h.style.opacity = String(o * night);
+      });
+      var k = p < 0.15 ? 0 : p < 0.5 ? 1 : 2;
+      Array.prototype.forEach.call(phases, function (s) { s.classList.toggle("on", +s.getAttribute("data-ph") === k); });
+      scrub.value = String(Math.round(p * 1000));
+    }
+    function tick(now) {
+      if (!playing) return;
+      if (fig.hidden) { playing = false; btn.setAttribute("aria-pressed", "false"); return; }
+      p += (now - last) / DUR; last = now; if (p >= 1) p = 0.15;
+      render(); requestAnimationFrame(tick);
+    }
+    function play(on) { playing = on; btn.setAttribute("aria-pressed", String(on)); if (on) { last = performance.now(); requestAnimationFrame(tick); } }
+    btn.addEventListener("click", function () { play(!playing); });
+    scrub.addEventListener("input", function () { play(false); p = scrub.value / 1000; render(); });
+    var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    ctl.hidden = false; fig.classList.add("animated");
+    fig.addEventListener("dshow", function () { p = 0; if (reduce) { p = 0.8; render(); } else { render(); play(true); } });
+    if (reduce) { p = 0.8; render(); } else { render(); if (!fig.hidden) play(true); }
   });
   var cards = Array.prototype.slice.call(document.querySelectorAll(".card"));
   var state = { scale: "all", doc: "all", q: "" };

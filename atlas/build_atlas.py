@@ -192,6 +192,32 @@ UI = {
     "d_key_down": ("Udara turun: lebih hangat & kering", "Sinking air: warmer & drier"),
     "d_key_cloud": ("Awan", "Cloud"),
     "d_key_rain": ("Hujan", "Rain"),
+    "c_tab1": ("1 · Udara dari ketinggian", "1 · Air from height"),
+    "c_tab2": ("2 · Udara menyusuri permukaan", "2 · Air along the surface"),
+    "c_tab3": ("3 · Pendinginan malam", "3 · Night cooling"),
+    "c_tabs": ("Pilih ilustrasi", "Choose an illustration"),
+    "c_start_hi": ("Udara dari ketinggian", "Air from height"),
+    "c_start_hi_sub": ("di wilayah tropis atau lintang tinggi", "in the tropics or at high latitudes"),
+    "c_cold_arr": ("Tiba di permukaan: dingin", "Arrives at the surface: cold"),
+    "c_start_lo": ("Udara menyusuri permukaan hangat", "Air travelling over the warm surface"),
+    "c_start_lo_sub": ("lama, di wilayah tropis", "for a long time, in the tropics"),
+    "c_warm_arr": ("Tiba di permukaan: hangat", "Arrives at the surface: warm"),
+    "c_clear": ("Malam cerah", "Clear night"),
+    "c_clear_sub": ("panas lolos ke atas", "heat escapes upward"),
+    "c_cloudy": ("Malam berawan", "Cloudy night"),
+    "c_cloudy_sub": ("awan menahan panas", "clouds hold heat in"),
+    "c_key_cold": ("Udara dingin", "Cold air"),
+    "c_key_warm": ("Udara hangat", "Warm air"),
+    "c_key_heat": ("Panas dari tanah", "Heat from the ground"),
+    "c_a_ph0": ("Udara berada tinggi di atmosfer.", "The air starts high in the atmosphere."),
+    "c_a_ph1": ("Udara turun menuju permukaan Jawa tanpa banyak menghangat.", "The air sinks towards Java's surface without warming much."),
+    "c_a_ph2": ("Udara tiba dekat permukaan dalam keadaan dingin.", "The air arrives near the surface still cold."),
+    "c_b_ph0": ("Udara bergerak dekat permukaan hangat di wilayah tropis.", "The air moves close to the warm tropical surface."),
+    "c_b_ph1": ("Selama perjalanan panjang, udara ikut menghangat.", "Over a long journey the air warms up."),
+    "c_b_ph2": ("Udara tiba di Jawa dalam keadaan hangat.", "The air arrives in Java warm."),
+    "c_c_ph0": ("Siang: tanah menyerap panas dan udara dekat tanah hangat.", "Day: the ground absorbs heat and the air next to it is warm."),
+    "c_c_ph1": ("Malam: tanah melepas panas ke atas.", "Night: the ground gives its heat back upward."),
+    "c_c_ph2": ("Langit cerah: panas lolos dan udara dekat tanah mendingin. Berawan: sebagian panas tertahan.", "Clear sky: heat escapes and the air near the ground cools. Cloudy: some heat is held in."),
     "d_play": ("Putar", "Play"),
     "d_pause": ("Jeda", "Pause"),
     "d_slider": ("Posisi animasi", "Animation position"),
@@ -263,15 +289,16 @@ def load_entries():
 
         diag = e.get("diagram")
         if diag is not None:
-            need(diag.get("type") == "foehn", "'diagram.type' must be 'foehn'")
+            need(diag.get("type") in ("foehn", "coldair"), "'diagram.type' must be 'foehn' or 'coldair'")
             tfile = DIAGRAMS / f"{diag.get('transect', '')}.json"
             need(tfile.exists(), f"diagram transect file atlas/diagrams/{diag.get('transect')}.json does not exist")
             vk = diag.get("view_km")
             need(isinstance(vk, list) and len(vk) == 2 and vk[0] < vk[1], "'diagram.view_km' must be [from_km, to_km]")
-            for key in ("sea_left", "sea_right", "range", "plain", "site"):
+            for key in (("sea_left", "sea_right", "range") if diag.get("type") == "coldair"
+                        else ("sea_left", "sea_right", "range", "plain", "site")):
                 lab = (diag.get("labels") or {}).get(key) or {}
                 need(lab.get("id") and lab.get("en"), f"'diagram.labels.{key}' needs both 'id' and 'en'")
-            need(isinstance((diag.get("labels") or {}).get("site", {}).get("km"), (int, float)),
+            need(diag.get("type") == "coldair" or isinstance((diag.get("labels") or {}).get("site", {}).get("km"), (int, float)),
                  "'diagram.labels.site.km' must be a number (where the entry's place lies on the line)")
 
         photo = e.get("photo")
@@ -553,6 +580,38 @@ def _fmt_coord(lat, lon, lang):
     return f"{f(lat)}°{ns} {f(lon)}°{ew}"
 
 
+def _land_paths(xs, el, X, Y, VH):
+    """Land polygons and the ridge line from an elevation profile; the sea stays open."""
+    # terrain: one polygon per stretch of land, so the sea stays open water
+    segs, cur = [], []
+    for x, m in zip(xs, el):
+        if m > 1.0:
+            cur.append((x, m))
+        elif cur:
+            segs.append(cur)
+            cur = []
+    if cur:
+        segs.append(cur)
+    # A flat coastal plain dips to 0-1 m between wet patches, which would split it
+    # into pieces with gaps; bridge gaps of 4 km or less so it draws as one coast.
+    merged = []
+    for sg in segs:
+        if merged and sg[0][0] - merged[-1][-1][0] <= 4:
+            gap = [(x, m) for x, m in zip(xs, el) if merged[-1][-1][0] < x < sg[0][0]]
+            merged[-1] = merged[-1] + gap + sg
+        else:
+            merged.append(sg)
+    # SRTM also leaves 1-3 m of noise over open water: a stretch under 6 km that
+    # never rises above 10 m is that noise, not a coast.
+    segs = [sg for sg in merged if (sg[-1][0] - sg[0][0]) >= 6 or max(m for _, m in sg) > 10]
+    land = ridge = ""
+    for seg in segs:
+        top = " L".join(f"{X(x):.1f} {Y(m):.1f}" for x, m in seg)
+        land += f'<path class="d-land" d="M{X(seg[0][0]):.1f} {VH:.0f} L{top} L{X(seg[-1][0]):.1f} {VH:.0f} Z"/>'
+        ridge += f'<path class="d-ridge" d="M{top}"/>'
+    return land, ridge
+
+
 def foehn_figure(e):
     """A cross-section built from a real elevation profile (atlas/diagrams/),
     with the airflow, cloud and rain drawn over it as an illustration of the
@@ -593,33 +652,7 @@ def foehn_figure(e):
     gid = f"air-{e['id']}"
     grad = "".join(f'<stop offset="{(k - v0) / (v1 - v0) * 100:.1f}%" stop-color="{_hex(c)}"/>' for k, c in stops)
 
-    # terrain: one polygon per stretch of land, so the sea stays open water
-    segs, cur = [], []
-    for x, m in zip(xs, el):
-        if m > 1.0:
-            cur.append((x, m))
-        elif cur:
-            segs.append(cur)
-            cur = []
-    if cur:
-        segs.append(cur)
-    # A flat coastal plain dips to 0-1 m between wet patches, which would split it
-    # into pieces with gaps; bridge gaps of 4 km or less so it draws as one coast.
-    merged = []
-    for sg in segs:
-        if merged and sg[0][0] - merged[-1][-1][0] <= 4:
-            gap = [(x, m) for x, m in zip(xs, el) if merged[-1][-1][0] < x < sg[0][0]]
-            merged[-1] = merged[-1] + gap + sg
-        else:
-            merged.append(sg)
-    # SRTM also leaves 1-3 m of noise over open water: a stretch under 6 km that
-    # never rises above 10 m is that noise, not a coast.
-    segs = [sg for sg in merged if (sg[-1][0] - sg[0][0]) >= 6 or max(m for _, m in sg) > 10]
-    land = ridge = ""
-    for seg in segs:
-        top = " L".join(f"{X(x):.1f} {Y(m):.1f}" for x, m in seg)
-        land += f'<path class="d-land" d="M{X(seg[0][0]):.1f} {VH:.0f} L{top} L{X(seg[-1][0]):.1f} {VH:.0f} Z"/>'
-        ridge += f'<path class="d-ridge" d="M{top}"/>'
+    land, ridge = _land_paths(xs, el, X, Y, VH)
 
     grid = "".join(f'<line class="d-grid" x1="0" x2="{VW:.0f}" y1="{Y(m):.1f}" y2="{Y(m):.1f}"/>' for m in (1000, 2000))
 
@@ -739,6 +772,199 @@ def foehn_figure(e):
 </figure>"""
 
 
+def coldair_figure(e):
+    """Three illustrations of why surface air in Java can be cold, on one real
+    terrain profile: (1) air that came down from height, (2) air that travelled
+    along the warm surface, (3) heat lost on a clear night. Each is its own
+    figure so the page is complete without JavaScript; with it, tabs show one at
+    a time. All of it is a schematic of a mechanism, never a measurement."""
+    cfg = e["diagram"]
+    labels = cfg["labels"]
+    tr = json.loads((DIAGRAMS / f"{cfg['transect']}.json").read_text())
+    v0, v1 = cfg["view_km"]
+    step = tr["step_km"]
+    pairs = [(d, (m if m is not None else 0.0)) for d, m in zip(tr["distance_km"], tr["elevation_m"]) if v0 <= d <= v1]
+    xs, el = [p[0] for p in pairs], [p[1] for p in pairs]
+    n = len(xs)
+    VW, VH, Y0, YMAX = 1000.0, 330.0, 300.0, 2800.0
+    sc = (Y0 - 14) / YMAX
+    ve = sc / (VW / ((v1 - v0) * 1000.0))
+    X = lambda km: (km - v0) / (v1 - v0) * VW
+    Y = lambda m: Y0 - m * sc
+    idx = lambda km: min(range(n), key=lambda i: abs(xs[i] - km))
+    el_at = lambda km: el[idx(km)]
+    crest_i = max(range(n), key=lambda i: el[i])
+    crest_km, crest_m = xs[crest_i], el[crest_i]
+    sm = _smooth(el, max(1, int(round(7 / step))))
+    sm_at = lambda km: sm[idx(km)]
+    land, ridge = _land_paths(xs, el, X, Y, VH)
+    first_land = next((x for x, m in zip(xs, el) if m > 60), v0 + 30)
+    grid = "".join(f'<line class="d-grid" x1="0" x2="{VW:.0f}" y1="{Y(m):.1f}" y2="{Y(m):.1f}"/>' for m in (1000, 2000))
+    scale_lab = ("".join(f'<div class="dlabel scale al-left pill" style="left:0.6%;top:{Y(m) / VH * 100:.2f}%">'
+                         f'{bi(f"{m:,}".replace(",", ".") + " m", f"{m:,} m")}</div>' for m in (1000, 2000)))
+
+    def dl(km, m, text, cls="", sub=None, xpct=None):
+        sub_html = f'<span class="sub">{bi(*sub)}</span>' if sub else ""
+        left = X(km) / VW * 100 if xpct is None else xpct
+        return (f'<div class="dlabel {cls}" style="left:{left:.2f}%;top:{Y(m) / VH * 100:.2f}%">'
+                f'{bi(*text)}{sub_html}</div>')
+
+    pair = lambda key: (labels[key]["id"], labels[key]["en"])
+    crest_sub = (f'{_fmt_m(crest_m, "id")} m', f'{_fmt_m(crest_m, "en")} m')
+    base = -150
+    common = "".join([dl(v0 + 1, base, pair("sea_left"), "al-left"), dl(v1 - 1, base, pair("sea_right"), "al-right"),
+                      dl(crest_km, crest_m + 330, pair("range"), "b pill", crest_sub), scale_lab])
+
+    def stops_attr(stops):
+        return ";".join(f"{X(k):.0f}:{c[0]},{c[1]},{c[2]}" for k, c in stops)
+
+    def lane(h):
+        pts = [(X(x), Y(h(x))) for x in xs]
+        return "M" + " L".join(f"{px:.1f} {py:.1f}" for px, py in pts)
+
+    xd = first_land - 6          # where descending air reaches the surface
+    smooth = lambda u: u * u * (3 - 2 * u)
+
+    def descent(start_abs, clr):
+        def h(x):
+            u = max(0.0, min(1.0, (x - v0) / (xd - v0)))
+            end = sm_at(xd) + clr
+            top = start_abs + (end - start_abs) * smooth(u)
+            return top if x < xd else max(sm_at(x) + clr, el_at(x) + 90)
+        return h
+
+    def along(clr):
+        return lambda x: max(sm_at(x) + clr, el_at(x) + 90)
+
+    gid_c, gid_w = f"cair-{e['id']}", f"wair-{e['id']}"
+    stops_c = [(v0, COOL), (v1, COOL)]
+    stops_w = [(v0, START), (xd, WARM), (v1, WARM)]
+    grad = lambda gid, st: (f'<linearGradient id="{gid}" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="{VW:.0f}" y2="0">'
+                            + "".join(f'<stop offset="{(k - v0) / (v1 - v0) * 100:.1f}%" stop-color="{_hex(c)}"/>' for k, c in st)
+                            + "</linearGradient>")
+    water = f'<rect class="d-water" x="0" y="{Y0:.0f}" width="{VW:.0f}" height="{VH - Y0:.0f}"/>'
+
+    def chev(h, st):
+        out = ""
+        for km in [v0 + 16 + 34 * k for k in range(int((v1 - v0 - 20) / 34))]:
+            i = idx(km)
+            a_, b_ = max(0, i - 2), min(n - 1, i + 2)
+            ax, ay, bx, by = X(xs[a_]), Y(h(xs[a_])), X(xs[b_]), Y(h(xs[b_]))
+            L = ((bx - ax) ** 2 + (by - ay) ** 2) ** 0.5 or 1.0
+            ux, uy = (bx - ax) / L, (by - ay) / L
+            nx, ny = -uy, ux
+            px, py = X(xs[i]), Y(h(xs[i]))
+            tri = [(px + 11 * ux, py + 11 * uy), (px - 8 * ux + 7 * nx, py - 8 * uy + 7 * ny),
+                   (px - 8 * ux - 7 * nx, py - 8 * uy - 7 * ny)]
+            col = st[0][1] if len(st) == 2 else (st[0][1] if km < st[1][0] else st[-1][1])
+            out += f'<polygon points="{" ".join(f"{a:.1f},{b:.1f}" for a, b in tri)}" fill="{_hex(col)}"/>'
+        return out
+
+    def scene_svg(inner, gid=None, gdef=""):
+        return (f'<svg class="dsvg" viewBox="0 0 {VW:.0f} {VH:.0f}" preserveAspectRatio="none" aria-hidden="true" focusable="false">'
+                f'<defs>{gdef}</defs>{water}{inner}<g class="d-parcels"></g></svg>')
+
+    def air_scene(hs, gid, st, stops_list, gdef):
+        flows = "".join(f'<path class="d-air" data-lane="1" stroke="url(#{gid})" d="{lane(h)}"/>' for h in hs)
+        return scene_svg(f'{grid}{land}{flows}{chev(hs[1], st)}{ridge}', gid, gdef)
+
+    hs_c = [descent(2650, 70), descent(2400, 170), descent(2150, 270)]
+    hs_w = [along(90), along(200), along(310)]
+    svg_a = air_scene(hs_c, gid_c, stops_c, stops_c, grad(gid_c, stops_c))
+    svg_b = air_scene(hs_w, gid_w, stops_w, stops_w, grad(gid_w, stops_w))
+    lab_a = common + dl(v0 + 24, 2480, UI["c_start_hi"], "b pill", UI["c_start_hi_sub"]) + dl(v1 - 34, 1250, UI["c_cold_arr"], "b pill")
+    lab_b = common + dl(v0 + 26, 1040, UI["c_start_lo"], "b pill", UI["c_start_lo_sub"]) + dl(v1 - 34, 1250, UI["c_warm_arr"], "b pill")
+
+    # scene 3: night cooling, clear half on the left, cloudy half on the right
+    mid = (v0 + v1) / 2
+    top_y, cloud_m = Y(2650), 1850
+    chill = ""
+    for side, (ka, kb) in (("clear", (v0, mid)), ("cloud", (mid, v1))):
+        ptsx = [x for x in xs if ka <= x <= kb]
+        up = " L".join(f"{X(x):.1f} {Y(el_at(x)) - 5:.1f}" for x in ptsx)
+        dn = " L".join(f"{X(x):.1f} {Y(el_at(x)) - 44:.1f}" for x in reversed(ptsx))
+        chill += f'<path class="d-chill" data-side="{side}" d="M{up} L{dn} Z"/>'
+    heat = ""
+    for i, km in enumerate([v0 + 4 + 5.2 * j for j in range(int((v1 - v0 - 8) / 5.2))]):
+        if el_at(km) < 5:
+            continue
+        side = "clear" if km < mid else "cloud"
+        y0 = Y(el_at(km)) - 6
+        y1 = top_y if side == "clear" else Y(cloud_m) + 16
+        heat += (f'<circle class="d-heat" data-side="{side}" data-x="{X(km):.1f}" data-y0="{y0:.1f}" data-y1="{y1:.1f}" '
+                 f'data-ph="{(i * 0.37) % 1:.2f}" r="3.6" cx="{X(km):.1f}" cy="{y0:.1f}"/>')
+    rnd = lambda i: ((i * 7919) % 101) / 100.0
+    cl_e = cl_f = ""
+    for j in range(15):
+        cx = X(mid) + 40 + j * ((VW - X(mid) - 70) / 14)
+        cy = Y(cloud_m) + (rnd(j * 3) - 0.5) * 16
+        r_ = 20 + 12 * rnd(j + 5)
+        cl_e += f'<circle class="d-cloud-edge" cx="{cx:.1f}" cy="{cy:.1f}" r="{r_ + 1.8:.1f}"/>'
+        cl_f += f'<circle class="d-cloud" cx="{cx:.1f}" cy="{cy:.1f}" r="{r_:.1f}"/>'
+    divider = f'<line class="d-site" x1="{X(mid):.1f}" y1="14" x2="{X(mid):.1f}" y2="{Y0:.0f}"/>'
+    svg_c = scene_svg(f'<rect class="d-sky" x="0" y="0" width="{VW:.0f}" height="{Y0:.0f}"/>{grid}{land}{chill}{cl_e}{cl_f}{heat}{divider}{ridge}')
+    lab_c = (dl(v0 + 1, base, pair("sea_left"), "al-left") + dl(v1 - 1, base, pair("sea_right"), "al-right") + scale_lab
+             + dl((v0 + mid) / 2, 2620, UI["c_clear"], "b pill", UI["c_clear_sub"])
+             + dl((mid + v1) / 2, 2620, UI["c_cloudy"], "b pill", UI["c_cloudy_sub"])
+             + dl(crest_km + 6, base, pair("range"), "b"))
+
+    s_, en_ = tr["start"], tr["end"]
+    terr_id = (f"Medan: profil ketinggian SRTM 30 m (NASA, domain publik) lewat OpenTopoData, sepanjang garis dari "
+               f"{_fmt_coord(s_['lat'], s_['lon'], 'id')} ke {_fmt_coord(en_['lat'], en_['lon'], 'id')} (diakses {tr['accessed']}); "
+               f"eksagerasi vertikal sekitar ×{ve:.0f}. Titik tertinggi pada garis ini {_fmt_m(crest_m, 'id')} m. Kiri-kanan pada "
+               f"gambar bukan arah mata angin. Perjalanan udara yang sebenarnya berlangsung berhari-hari dan ribuan kilometer; "
+               f"di sini dipadatkan ke satu penampang. Warna hanya kualitatif, bukan suhu terukur.")
+    terr_en = (f"Terrain: SRTM 30 m elevation profile (NASA, public domain) via OpenTopoData, along a line from "
+               f"{_fmt_coord(s_['lat'], s_['lon'], 'en')} to {_fmt_coord(en_['lat'], en_['lon'], 'en')} (accessed {tr['accessed']}); "
+               f"vertical exaggeration about ×{ve:.0f}. The highest point on this line is {_fmt_m(crest_m, 'en')} m. Left and "
+               f"right in the picture are not compass directions. Real air journeys take days and thousands of kilometres; "
+               f"here they are squeezed into one cross-section. Colours are qualitative, not measured temperatures.")
+    caps = {
+        1: (("Gambaran dari studi Suaydhi (2022), yang meneliti bulan Juni: suhu permukaan Jawa lebih dingin ketika udara yang "
+             "tiba dekat permukaan berasal dari ketinggian di wilayah tropis atau dari lintang tinggi.",
+             "After Suaydhi (2022), a study of June: surface temperature over Java is colder when the air arriving near the "
+             "surface comes from high altitude in the tropics or from high latitudes.")),
+        2: (("Gambaran dari studi yang sama: suhu tetap hangat ketika udara sudah lama bergerak dekat permukaan di wilayah "
+             "tropis yang hangat sebelum tiba.",
+             "From the same study: temperature stays warm when the air has long been travelling near the surface through the "
+             "warm tropics before it arrives.")),
+        3: (("Penjelasan pendinginan malam ini berasal dari artikel Wikipedia (bahasa Indonesia) yang mengutip petugas BMKG, "
+             "bukan dari Suaydhi (2022). Skema ini hanya menggambarkan gagasannya.",
+             "This night-cooling explanation comes from the Indonesian Wikipedia article relaying BMKG staff, not from "
+             "Suaydhi (2022). The schematic only illustrates the idea.")),
+    }
+    keys = {
+        1: f'<span><i class="sw" style="background:{_hex(COOL)}"></i>{t("c_key_cold")}</span>',
+        2: f'<span><i class="sw" style="background:{_hex(WARM)}"></i>{t("c_key_warm")}</span>',
+        3: (f'<span><i class="sw" style="background:{_hex(WARM)}"></i>{t("c_key_heat")}</span>'
+            f'<span><i class="sw cloud"></i>{t("d_key_cloud")}</span>'),
+    }
+    phases = {k: "".join(f'<span data-ph="{i}"{" class=on" if i == 0 else ""}>{t(f"c_{k_}_ph{i}")}</span>' for i in range(3))
+              for k, k_ in ((1, "a"), (2, "b"), (3, "c"))}
+    svgs, labs = {1: svg_a, 2: svg_b, 3: svg_c}, {1: lab_a, 2: lab_b, 3: lab_c}
+    tabs = "".join(f'<button type="button" role="tab" data-scene="{i}" aria-selected="{"true" if i == 1 else "false"}">{t(f"c_tab{i}")}</button>'
+                   for i in (1, 2, 3))
+    figs = ""
+    for i in (1, 2, 3):
+        kind = ' data-kind="night"' if i == 3 else f' data-stops="{stops_attr(stops_c if i == 1 else stops_w)}" data-phases="{X(xd):.0f},{X(crest_km):.0f},{X(v1 - 20):.0f}"'
+        figs += f"""<figure class="diagram dscene" data-scene="{i}"{kind}>
+  <p class="dhint">{t("d_hint")}</p>
+  <div class="dscroll" tabindex="0" role="region" aria-label="{esc(UI['d_region'][0])}" data-focus="{X(crest_km) / VW * 100:.1f}">
+  <div class="dstage">{svgs[i]}{labs[i]}</div>
+  </div>
+  <div class="dctl" hidden>
+    <button type="button" class="dplay" aria-pressed="false"><span class="lp">{t("d_play")}</span><span class="lq">{t("d_pause")}</span></button>
+    <input type="range" class="dscrub" min="0" max="1000" value="0" aria-label="{esc(UI['d_slider'][1])}">
+    <p class="dphase">{phases[i]}</p>
+  </div>
+  <div class="dkey">{keys[i]}</div>
+  <figcaption><p>{bi(*caps[i])}</p></figcaption>
+</figure>
+"""
+    return (f'<div class="dscenes"><div class="dtabs" role="tablist" aria-label="{esc(UI["c_tabs"][1])}" hidden>{tabs}</div>{figs}'
+            f'<p class="dsrc">{bi(terr_id, terr_en)}</p></div>')
+
+
 def entry_page(e):
     draft = e["status"] == "draft"
     sci, kl, place, cav = e["scientific"], e.get("local_knowledge"), e["place"], e.get("caveat")
@@ -794,7 +1020,7 @@ def entry_page(e):
       {photo_block(e)}
       <h2>{t("scientific")}</h2>
       <p>{bi(sci["id"], sci["en"])}</p>
-      {foehn_figure(e) if e.get("diagram") else ""}
+      {(coldair_figure(e) if e["diagram"]["type"] == "coldair" else foehn_figure(e)) if e.get("diagram") else ""}
       {caveat}
       <h2>{t("local_knowledge")}</h2>
       {local}

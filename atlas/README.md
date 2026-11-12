@@ -101,6 +101,14 @@ shows the mechanism only. It names no wind direction or monsoon: it labels the
 windward and lee sides by role, which is what a foehn on that side implies.
 On narrow screens the figure scrolls sideways inside its own box.
 
+### Cold-air diagram (`"type": "coldair"`)
+
+Musim Bediding uses a three-scene variant on one terrain line (air from height,
+air along the warm surface, clear-versus-cloudy night cooling). Config needs
+`transect`, `view_km` and `labels` `sea_left`, `sea_right`, `range` only. Scenes 1
+and 2 come from Suaydhi (2022); scene 3 is from Wikipedia/BMKG staff and says so
+in its caption. With JavaScript the scenes are tabs; without it they are stacked.
+
 ## Publishing
 
 **Rebuild after editing `atlas.css`, `atlas.js` or `about.css`.** The generated

@@ -209,3 +209,19 @@ main.atlas { max-width: 1180px; }
 html[data-lang="id"] .dphase span.on [lang="id"], html[data-lang="en"] .dphase span.on [lang="en"] { display: inline; }
 .diagram.animated .dsvg polygon { opacity: .25; }
 .d-parcel { stroke: #fff; stroke-width: 1.5; }
+
+/* ---- Musim Bediding: three scenes on one terrain line ---- */
+.dscenes .dscene { margin-bottom: 26px; }
+.dscenes.tabbed .dscene { margin-bottom: 0; }
+.dtabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 -10px; }
+.dtabs button {
+  font: inherit; font-size: 13.5px; cursor: pointer; padding: 6px 14px; border-radius: 999px;
+  border: 1px solid rgba(139, 190, 178, .45); background: transparent; color: var(--text);
+}
+.dtabs button[aria-selected="true"] { background: var(--kl-teal); color: #0D0630; border-color: var(--kl-teal); font-weight: 600; }
+.dtabs button:focus-visible { outline: 2px solid var(--kl-lime); outline-offset: 2px; }
+.dsrc { max-width: 72ch; margin: 4px 0 8px; font-size: 12.5px; line-height: 1.6; color: var(--kl-teal); }
+.d-sky { fill: #aebdd6; opacity: 0; }
+.d-chill { fill: rgb(240, 160, 122); opacity: .5; }
+.d-heat { fill: #d62d20; stroke: #fff; stroke-width: 1; }
+.dscene[hidden] { display: none; }

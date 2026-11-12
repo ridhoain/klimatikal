@@ -32,5 +32,27 @@
       "url": "https://doi.org/10.1007/978-981-19-0308-3_16"
     }
   ],
-  "curator_notes": "DRAFT. (1) Definition and months now come from Indonesian Wikipedia (read via a fetch whose output was a model summary: please skim the page to confirm the paraphrase). It says June-August, 3-4 months, no single peak month, so I dropped 'peak in August' from the card; your 'particularly August' is unsourced. (2) Wikipedia is a tertiary source and its own references are mostly news and blogs (several dead links); the BMKG-staff explanations (clear night skies, Australian winter winds) are second-hand. Better: a BMKG page or a journal paper, sent as text if the site blocks fetching. (3) I left out its sun-position explanation (its wording is loose) and its temperature records (Dieng, Tengger, Malang etc., all from news items), and the pranata mangsa and fish-farming parts. They could become local_knowledge (pranata mangsa, Mareng-Terang) only with a proper named source. (4) 'Documentation: poor' and the mid-Java pin (-7.5, 110.0) are my choices. (5) No photo or local knowledge yet."
+  "curator_notes": "DRAFT. (1) Definition and months now come from Indonesian Wikipedia (read via a fetch whose output was a model summary: please skim the page to confirm the paraphrase). It says June-August, 3-4 months, no single peak month, so I dropped 'peak in August' from the card; your 'particularly August' is unsourced. (2) Wikipedia is a tertiary source and its own references are mostly news and blogs (several dead links); the BMKG-staff explanations (clear night skies, Australian winter winds) are second-hand. Better: a BMKG page or a journal paper, sent as text if the site blocks fetching. (3) I left out its sun-position explanation (its wording is loose) and its temperature records (Dieng, Tengger, Malang etc., all from news items), and the pranata mangsa and fish-farming parts. They could become local_knowledge (pranata mangsa, Mareng-Terang) only with a proper named source. (4) 'Documentation: poor' and the mid-Java pin (-7.5, 110.0) are my choices. (5) No photo or local knowledge yet.",
+  "diagram": {
+    "type": "coldair",
+    "transect": "java-dieng-transect",
+    "view_km": [
+      -60,
+      80
+    ],
+    "labels": {
+      "sea_left": {
+        "id": "Laut Jawa",
+        "en": "Java Sea"
+      },
+      "sea_right": {
+        "id": "Samudra Hindia",
+        "en": "Indian Ocean"
+      },
+      "range": {
+        "id": "Dataran tinggi Jawa Tengah",
+        "en": "Central Java highlands"
+      }
+    }
+  }
 }
