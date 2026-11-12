@@ -10,8 +10,16 @@ name: build forecast run
 
 on:
   schedule:
-    # ECMWF open data lands one to two hours after the nominal run time.
-    - cron: "37 2,8,14,20 * * *"
+    # ECMWF open data is not ready one to two hours after the nominal time; it
+    # lands much later, and the lag differs by cycle. Measured from the
+    # Last-Modified header on the GRIB files, 11-12 Nov 2026 (all UTC):
+    #   00z -> 07:34    12z -> 19:34    (about 7h34 after the nominal time)
+    #   06z -> 12:27    18z -> 00:27    (about 6h27 after the nominal time)
+    # Each run is scheduled about 15-20 minutes after its files appear, with
+    # odd minutes because GitHub delays scheduled runs, worst on the hour.
+    # Re-measure if builds start picking up the previous cycle.
+    - cron: "52 7,19 * * *"     # 00z and 12z
+    - cron: "47 0,12 * * *"     # 18z and 06z
   workflow_dispatch:        # always pair this with a schedule: it is how you test
 
 concurrency:
