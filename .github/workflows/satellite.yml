@@ -1,0 +1,48 @@
+# Newest Himawari-9 infrared image -> R2, every 10 minutes.
+#
+# Timing, measured on the NOAA bucket (12 Nov 2026): a slot nominally at
+# HH:M0 is fully uploaded about 14 minutes later. Runs at :07, :17, ... are
+# therefore about 3 minutes behind the slot that has just landed, and the job
+# walks back from "now" to the newest COMPLETE slot anyway, so a late GitHub
+# schedule only costs freshness. Odd minutes because GitHub delays scheduled
+# runs, worst on the hour. The weekly heartbeat in pipeline.yml keeps all
+# scheduled workflows in this repository enabled.
+name: build satellite frame
+
+on:
+  schedule:
+    - cron: "7,17,27,37,47,57 * * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Rebuild even if the newest slot is already published"
+        type: boolean
+        default: false
+
+concurrency:
+  group: satellite
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pipeline/requirements-himawari.txt
+
+      - run: pip install -r pipeline/requirements-himawari.txt
+
+      - name: Build and publish the newest frame
+        working-directory: pipeline
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: python himawari.py ${{ inputs.force && '--force' || '' }}

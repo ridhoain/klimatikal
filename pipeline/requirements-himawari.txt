@@ -1,0 +1,7 @@
+# Separate from requirements.txt on purpose: the forecast job must not pay for
+# (or break on) the satellite stack, and the other way round.
+satpy>=0.51
+pyresample>=1.28
+numpy>=1.26
+pillow>=10.0
+boto3>=1.34

@@ -62,3 +62,17 @@ shows another is the failure this prevents.
 Forecast data is ECMWF open data under CC BY 4.0. The required attribution
 travels in each run's `manifest.json` and the page renders it from there, so
 it cannot drift out of sync with the data.
+
+## Satellite layer (Himawari-9 infrared)
+
+`pipeline/himawari.py` builds the newest complete 10-minute full-disk scan of
+band 13 (10.4 µm) from the public NOAA copy of JMA's Himawari-9 data
+(`s3://noaa-himawari9`, anonymous), reprojects it to Web Mercator over
+80–165°E, 25°S–25°N, and publishes `sat/ir/<time>.webp` plus `sat/manifest.json`
+(manifest last) to the same R2 bucket as the forecast. `.github/workflows/satellite.yml`
+runs it every 10 minutes. Its dependencies (satpy) are in
+`requirements-himawari.txt`, separate from the forecast job's. The colour table
+travels in the manifest, so the legend is drawn from the numbers that coloured
+the image. Credit: Himawari-9 (JMA), via NOAA Open Data.
+
+    python3 himawari.py --dry-run --dest ../web/data    # local test, no R2
