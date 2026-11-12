@@ -26,6 +26,19 @@
     "en": "Sources differ on the monsoon behind it. The AMS entry names the “east monsoon” crossing the Barisan Mountains, while EUMeTrain's list of foehn winds ties it to the south-west monsoon. The airflow direction has not yet been confirmed for this atlas."
   },
 
+  "diagram": {
+    "type": "foehn",
+    "transect": "bahorok-transect",
+    "view_km": [-120, 90],
+    "labels": {
+      "sea_left": { "id": "Samudra Hindia", "en": "Indian Ocean" },
+      "sea_right": { "id": "Selat Malaka", "en": "Strait of Malacca" },
+      "range": { "id": "Bukit Barisan", "en": "Bukit Barisan" },
+      "plain": { "id": "Dataran Deli", "en": "Deli plains" },
+      "site": { "id": "Kec. Bahorok", "en": "Bahorok District", "km": 0 }
+    }
+  },
+
   "local_knowledge": null,
 
   "photo": null,

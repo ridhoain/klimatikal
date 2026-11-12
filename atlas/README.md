@@ -34,6 +34,7 @@ becomes `/atlas-cuaca/angin-bahorok/`. Use lowercase letters, digits and hyphens
 | `scientific` | `{ "id": "...", "en": "..." }`, the main text |
 | `summary` | optional `{ "id": "...", "en": "..." }` for the index card; if left out, the first sentence of `scientific` is used |
 | `caveat` | optional `{ "id": "...", "en": "..." }`: a public note under the science text, for where sources disagree or something is unsettled |
+| `diagram` | optional; see "Terrain diagrams" below |
 | `local_knowledge` | `{ "id": "...", "en": "..." }` or `null` |
 | `photo` | `null`, or `{ "file", "alt", "credit", "licence" }` |
 | `sources` | list of `{ "text", "url" }` (`url` optional) |
@@ -52,6 +53,53 @@ becomes `/atlas-cuaca/angin-bahorok/`. Use lowercase letters, digits and hyphens
   sources and photo have been checked, and it is listed and indexable. One
   draft never hides the rest of the atlas.
 - **Removing an entry removes its page** on the next build.
+
+## Terrain diagrams
+
+A foehn entry can carry a cross-section drawn from **real elevation data**, with
+the airflow, cloud and rain laid over it as an illustration of the mechanism
+(never as a measurement). Bahorok has one.
+
+1. Sample a terrain line, once. It is saved in `atlas/diagrams/` and committed,
+   so the site build never touches the network:
+
+   ```bash
+   python3 atlas/diagrams/fetch_transect.py --name bahorok-transect \
+       --lat 3.60 --lon 98.10 --azimuth 45 --from-km -200 --to-km 120
+   ```
+
+   The line passes through (lat, lon) at 0 km and runs along `azimuth` (degrees
+   clockwise from north). Elevations are NASA's SRTM 30 m model (public domain)
+   via the OpenTopoData public API: gentle use only, about 4 requests. Choose
+   the azimuth across the range, and check the printed profile before using it.
+
+2. Add to the entry's JSON:
+
+   ```json
+   "diagram": {
+     "type": "foehn",
+     "transect": "bahorok-transect",
+     "view_km": [-120, 90],
+     "labels": {
+       "sea_left":  { "id": "...", "en": "..." },
+       "sea_right": { "id": "...", "en": "..." },
+       "range":     { "id": "...", "en": "..." },
+       "plain":     { "id": "...", "en": "..." },
+       "site":      { "id": "...", "en": "...", "km": 0 }
+     }
+   }
+   ```
+
+   `view_km` is the stretch of the line to draw; `site.km` is where the entry's
+   place lies on it. Check the labels against the profile (is the left end
+   really sea?). The crest is the highest point in view. The caption, the
+   vertical exaggeration and the highest elevation are worked out for you.
+
+Things to remember: it is one line through a complex range, not the whole range;
+the vertical scale is exaggerated (stated in the caption); and the diagram
+shows the mechanism only. It names no wind direction or monsoon: it labels the
+windward and lee sides by role, which is what a foehn on that side implies.
+On narrow screens the figure scrolls sideways inside its own box.
 
 ## Publishing
 

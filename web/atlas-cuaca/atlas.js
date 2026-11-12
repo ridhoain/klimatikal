@@ -10,6 +10,12 @@
   }
 
   var root = document.documentElement;
+
+  // A sideways-scrolling diagram opens with its crest in view, not its left edge.
+  Array.prototype.forEach.call(document.querySelectorAll(".dscroll[data-focus]"), function (box) {
+    var pct = parseFloat(box.getAttribute("data-focus")) / 100;
+    box.scrollLeft = Math.max(0, box.scrollWidth * pct - box.clientWidth / 2);
+  });
   var cards = Array.prototype.slice.call(document.querySelectorAll(".card"));
   var state = { scale: "all", doc: "all", q: "" };
 

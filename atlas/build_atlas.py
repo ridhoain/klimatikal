@@ -39,6 +39,7 @@ PHENOMENA = ROOT / "atlas" / "phenomena"
 WEB = ROOT / "web"
 OUT = WEB / "atlas-cuaca"
 GEO = WEB / "geo"
+DIAGRAMS = ROOT / "atlas" / "diagrams"
 
 SITE = "https://klimatikal.com"
 BASE = "/atlas-cuaca/"
@@ -181,6 +182,17 @@ UI = {
     "no_local": ("Belum ada pengetahuan lokal yang terdokumentasi.", "No local knowledge documented yet."),
     "curator": ("Catatan kurator", "Curator notes"),
     "back": ("← Kembali ke peta cuaca", "← Back to the weather map"),
+    # the foehn diagram: wording that is the same for every foehn entry
+    "d_windward": ("Sisi hadap angin", "Windward side"),
+    "d_windward_sub": ("udara naik & mendingin; awan, hujan", "air rises & cools; cloud, rain"),
+    "d_lee": ("Sisi lee", "Lee side"),
+    "d_lee_sub": ("udara turun, hangat & kering", "air sinks, warms & dries"),
+    "d_key_up": ("Udara naik: lebih sejuk & lembap", "Rising air: cooler & moister"),
+    "d_key_down": ("Udara turun: lebih hangat & kering", "Sinking air: warmer & drier"),
+    "d_key_cloud": ("Awan", "Cloud"),
+    "d_key_rain": ("Hujan", "Rain"),
+    "d_hint": ("Geser ke samping untuk melihat seluruh penampang →", "Swipe sideways to see the whole cross-section →"),
+    "d_region": ("Penampang medan", "Terrain cross-section"),
 }
 
 
@@ -239,6 +251,19 @@ def load_entries():
             val = e.get(field)
             if val is not None:
                 need(val.get("id") and val.get("en"), f"'{field}' needs both 'id' and 'en', or leave it out")
+
+        diag = e.get("diagram")
+        if diag is not None:
+            need(diag.get("type") == "foehn", "'diagram.type' must be 'foehn'")
+            tfile = DIAGRAMS / f"{diag.get('transect', '')}.json"
+            need(tfile.exists(), f"diagram transect file atlas/diagrams/{diag.get('transect')}.json does not exist")
+            vk = diag.get("view_km")
+            need(isinstance(vk, list) and len(vk) == 2 and vk[0] < vk[1], "'diagram.view_km' must be [from_km, to_km]")
+            for key in ("sea_left", "sea_right", "range", "plain", "site"):
+                lab = (diag.get("labels") or {}).get(key) or {}
+                need(lab.get("id") and lab.get("en"), f"'diagram.labels.{key}' needs both 'id' and 'en'")
+            need(isinstance((diag.get("labels") or {}).get("site", {}).get("km"), (int, float)),
+                 "'diagram.labels.site.km' must be a number (where the entry's place lies on the line)")
 
         photo = e.get("photo")
         if photo is not None:
@@ -467,6 +492,217 @@ def index_page(listed, with_drafts):
 # one page per phenomenon
 # --------------------------------------------------------------------------
 
+# --------------------------------------------------------------------------
+# the foehn diagram: real terrain, illustrative airflow
+# --------------------------------------------------------------------------
+
+TEAL, LIME, MID = (139, 190, 178), (230, 249, 175), (184, 220, 176)  # brand teal / lime / a blend
+
+
+def _lerp(a, b, t):
+    return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3))
+
+
+def _hex(c):
+    return "#%02x%02x%02x" % tuple(c)
+
+
+def _smooth(values, half):
+    out = []
+    for i in range(len(values)):
+        seg = values[max(0, i - half): i + half + 1]
+        out.append(sum(seg) / len(seg))
+    return out
+
+
+def _fmt_m(m, lang):
+    s = f"{int(round(m)):,}"
+    return s.replace(",", ".") if lang == "id" else s
+
+
+def _fmt_coord(lat, lon, lang):
+    ns, ew = ("LU" if lat >= 0 else "LS", "BT" if lon >= 0 else "BB") if lang == "id" else \
+             ("N" if lat >= 0 else "S", "E" if lon >= 0 else "W")
+    f = (lambda v: f"{abs(v):.2f}".replace(".", ",")) if lang == "id" else (lambda v: f"{abs(v):.2f}")
+    return f"{f(lat)}°{ns} {f(lon)}°{ew}"
+
+
+def foehn_figure(e):
+    """A cross-section built from a real elevation profile (atlas/diagrams/),
+    with the airflow, cloud and rain drawn over it as an illustration of the
+    mechanism, never as a measurement. Labels are HTML laid over the SVG so
+    they stay readable at phone widths, where scaled SVG text would not."""
+    cfg = e["diagram"]
+    labels = cfg["labels"]
+    tr = json.loads((DIAGRAMS / f"{cfg['transect']}.json").read_text())
+    v0, v1 = cfg["view_km"]
+    step = tr["step_km"]
+    pairs = [(d, (m if m is not None else 0.0)) for d, m in zip(tr["distance_km"], tr["elevation_m"]) if v0 <= d <= v1]
+    xs, el = [p[0] for p in pairs], [p[1] for p in pairs]
+    n = len(xs)
+
+    VW, VH, Y0, YMAX = 1000.0, 330.0, 300.0, 2800.0
+    sc = (Y0 - 14) / YMAX                                   # SVG units per metre of height
+    ve = sc / (VW / ((v1 - v0) * 1000.0))                   # vertical exaggeration
+    X = lambda km: (km - v0) / (v1 - v0) * VW
+    Y = lambda m: Y0 - m * sc
+    el_at = lambda km: el[min(range(n), key=lambda i: abs(xs[i] - km))]
+
+    crest_i = max(range(n), key=lambda i: el[i])
+    crest_km, crest_m = xs[crest_i], el[crest_i]
+    lee_end = next((xs[i] for i in range(crest_i, n) if el[i] <= 150), crest_km + 40)
+    sm = _smooth(el, max(1, int(round(7 / step))))
+    sm_at = lambda km: sm[min(range(n), key=lambda i: abs(xs[i] - km))]
+
+    # colour of the air along the line: starts mild, is coolest at the crest,
+    # and ends warmer than it began on the lee side
+    stops = [(v0, MID), (crest_km, TEAL), (lee_end, LIME), (v1, LIME)]
+
+    def air(km):
+        for (ka, ca), (kb, cb) in zip(stops, stops[1:]):
+            if ka <= km <= kb:
+                return _lerp(ca, cb, 0 if kb == ka else (km - ka) / (kb - ka))
+        return stops[-1][1] if km > stops[-1][0] else stops[0][1]
+
+    gid = f"air-{e['id']}"
+    grad = "".join(f'<stop offset="{(k - v0) / (v1 - v0) * 100:.1f}%" stop-color="{_hex(c)}"/>' for k, c in stops)
+
+    # terrain: one polygon per stretch of land, so the sea stays open water
+    segs, cur = [], []
+    for x, m in zip(xs, el):
+        if m > 1.0:
+            cur.append((x, m))
+        elif cur:
+            segs.append(cur)
+            cur = []
+    if cur:
+        segs.append(cur)
+    # A flat coastal plain dips to 0-1 m between wet patches, which would split it
+    # into pieces with gaps; bridge gaps of 4 km or less so it draws as one coast.
+    merged = []
+    for sg in segs:
+        if merged and sg[0][0] - merged[-1][-1][0] <= 4:
+            gap = [(x, m) for x, m in zip(xs, el) if merged[-1][-1][0] < x < sg[0][0]]
+            merged[-1] = merged[-1] + gap + sg
+        else:
+            merged.append(sg)
+    # SRTM also leaves 1-3 m of noise over open water: a stretch under 6 km that
+    # never rises above 10 m is that noise, not a coast.
+    segs = [sg for sg in merged if (sg[-1][0] - sg[0][0]) >= 6 or max(m for _, m in sg) > 10]
+    land = ridge = ""
+    for seg in segs:
+        top = " L".join(f"{X(x):.1f} {Y(m):.1f}" for x, m in seg)
+        land += f'<path class="d-land" d="M{X(seg[0][0]):.1f} {VH:.0f} L{top} L{X(seg[-1][0]):.1f} {VH:.0f} Z"/>'
+        ridge += f'<path class="d-ridge" d="M{top}"/>'
+
+    grid = "".join(f'<line class="d-grid" x1="0" x2="{VW:.0f}" y1="{Y(m):.1f}" y2="{Y(m):.1f}"/>' for m in (1000, 2000))
+
+    # airflow: smoothed terrain plus clearance, so each line rides over the range
+    flows, chevrons = "", ""
+    for clr in (260, 640, 1020):
+        hs = [max(s + clr, m + 140) for s, m in zip(sm, el)]
+        pts = [(X(x), Y(h)) for x, h in zip(xs, hs)]
+        flows += f'<path class="d-air" stroke="url(#{gid})" d="M{" L".join(f"{px:.1f} {py:.1f}" for px, py in pts)}"/>'
+        for km in [v0 + 16 + 30 * k for k in range(int((v1 - v0 - 20) / 30))]:
+            i = min(range(n), key=lambda j: abs(xs[j] - km))
+            (ax, ay), (bx, by) = pts[max(0, i - 2)], pts[min(n - 1, i + 2)]
+            L = ((bx - ax) ** 2 + (by - ay) ** 2) ** 0.5 or 1.0
+            ux, uy = (bx - ax) / L, (by - ay) / L
+            nx, ny = -uy, ux
+            px, py = pts[i]
+            tri = [(px + 11 * ux, py + 11 * uy), (px - 8 * ux + 7 * nx, py - 8 * uy + 7 * ny),
+                   (px - 8 * ux - 7 * nx, py - 8 * uy - 7 * ny)]
+            chevrons += (f'<polygon points="{" ".join(f"{a:.1f},{b:.1f}" for a, b in tri)}" '
+                         f'fill="{_hex(air(km))}"/>')
+
+    # cloud and rain over the windward slope, up to the crest
+    rnd = lambda i: ((i * 7919) % 101) / 100.0
+    first_high = next((x for x, m in zip(xs, el) if m >= 300), crest_km - 40)
+    cloud, rain, k = "", "", 0
+    km = first_high
+    while km < crest_km - 1:
+        base = sm_at(km) + 360
+        for j in range(2):
+            cx = X(km) + (rnd(k * 3 + j) - 0.5) * 18
+            cy = Y(base + 110 + 230 * rnd(k * 5 + j + 2))
+            cloud += f'<circle class="d-cloud" cx="{cx:.1f}" cy="{cy:.1f}" r="{11 + 10 * rnd(k + j * 7):.1f}"/>'
+        top_y, bot_y = Y(base + 40), Y(el_at(km))
+        # no rain into a deep interior valley: it falls on the ridges and slopes
+        in_valley = el_at(km) < 0.5 * sm_at(km)
+        if bot_y - top_y > 10 and not in_valley:
+            rain += (f'<line class="d-rain" x1="{X(km):.1f}" y1="{top_y:.1f}" x2="{X(km) - 4:.1f}" '
+                     f'y2="{min(bot_y, top_y + 62):.1f}"/>')
+        km += 3
+        k += 1
+
+    site_km = labels["site"]["km"]
+    sx, sy = X(site_km), Y(el_at(site_km))
+    site = (f'<line class="d-site" x1="{sx:.1f}" y1="{sy:.1f}" x2="{sx:.1f}" y2="{Y(el_at(site_km) + 520):.1f}"/>'
+            f'<circle class="pin" cx="{sx:.1f}" cy="{sy:.1f}" r="7"/>')
+
+    def dl(km, m, text, cls="", sub=None):
+        sub_html = f'<span class="sub">{bi(*sub)}</span>' if sub else ""
+        return (f'<div class="dlabel {cls}" style="left:{X(km) / VW * 100:.2f}%;top:{Y(m) / VH * 100:.2f}%">'
+                f'{bi(*text)}{sub_html}</div>')
+
+    pair = lambda key: (labels[key]["id"], labels[key]["en"])
+    crest_sub = (f'{_fmt_m(crest_m, "id")} m', f'{_fmt_m(crest_m, "en")} m')
+    # Place names that sit at sea level go in the strip below the shoreline, where
+    # nothing else is drawn; the rest get a dark pill so lines cannot run through.
+    base_y = -150
+    overlay = "".join([
+        dl(v0 + 1, base_y, pair("sea_left"), "al-left"),
+        dl(v1 - 1, base_y, pair("sea_right"), "al-right"),
+        dl(lee_end + 14, base_y, pair("plain")),
+        dl(crest_km - 40, 2560, UI["d_windward"], "b pill", UI["d_windward_sub"]),
+        dl(crest_km, crest_m + 380, pair("range"), "b pill", crest_sub),
+        dl(site_km, el_at(site_km) + 620, pair("site"), "pill"),
+        dl(lee_end + 24, 1500, UI["d_lee"], "b pill", UI["d_lee_sub"]),
+        dl(v0 + 1, 1000, ("1.000 m", "1,000 m"), "scale al-left pill"),
+        dl(v0 + 1, 2000, ("2.000 m", "2,000 m"), "scale al-left pill"),
+    ])
+
+    s, en_ = tr["start"], tr["end"]
+    site_lab = pair("site")
+    cap_id = (f"Skema ilustratif mekanisme foehn. Udara lembap naik di sisi hadap angin, mendingin, membentuk awan dan "
+              f"menurunkan hujan; setelah melewati punggungan, udara turun di sisi lee, memanas dan mengering, lalu tiba di "
+              f"{labels['plain']['id']} sebagai udara hangat dan kering.")
+    cap_en = (f"Illustrative schematic of the foehn mechanism. Moist air rises on the windward side, cools, forms cloud and "
+              f"sheds rain; after the crest it sinks on the lee side, warms and dries, and reaches the "
+              f"{labels['plain']['en']} as warm, dry air.")
+    src_id = (f"Medan: profil ketinggian SRTM 30 m (NASA, domain publik) lewat OpenTopoData, sepanjang garis dari "
+              f"{_fmt_coord(s['lat'], s['lon'], 'id')} ke {_fmt_coord(en_['lat'], en_['lon'], 'id')} yang melintasi "
+              f"{site_lab[0]} (diakses {tr['accessed']}); eksagerasi vertikal sekitar ×{ve:.0f}. Titik tertinggi pada "
+              f"garis ini {_fmt_m(crest_m, 'id')} m. Panah, awan, dan hujan hanya menggambarkan mekanisme, bukan "
+              f"pengukuran.")
+    src_en = (f"Terrain: SRTM 30 m elevation profile (NASA, public domain) via OpenTopoData, along a line from "
+              f"{_fmt_coord(s['lat'], s['lon'], 'en')} to {_fmt_coord(en_['lat'], en_['lon'], 'en')} passing through "
+              f"{site_lab[1]} (accessed {tr['accessed']}); vertical exaggeration about ×{ve:.0f}. The highest point on "
+              f"this line is {_fmt_m(crest_m, 'en')} m. The arrows, cloud and rain only illustrate the mechanism; they "
+              f"are not measurements.")
+
+    return f"""<figure class="diagram">
+  <p class="dhint">{t("d_hint")}</p>
+  <div class="dscroll" tabindex="0" role="region" aria-label="{esc(UI['d_region'][0])}" data-focus="{X(crest_km) / VW * 100:.1f}">
+  <div class="dstage">
+    <svg class="dsvg" viewBox="0 0 {VW:.0f} {VH:.0f}" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <defs><linearGradient id="{gid}" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="{VW:.0f}" y2="0">{grad}</linearGradient></defs>
+      <rect class="d-water" x="0" y="{Y0:.0f}" width="{VW:.0f}" height="{VH - Y0:.0f}"/>
+      {grid}{land}{rain}{cloud}{flows}{chevrons}{ridge}{site}
+    </svg>
+    {overlay}
+  </div>
+  </div>
+  <div class="dkey">
+    <span><i class="sw" style="background:{_hex(TEAL)}"></i>{t("d_key_up")}</span>
+    <span><i class="sw" style="background:{_hex(LIME)}"></i>{t("d_key_down")}</span>
+    <span><i class="sw cloud"></i>{t("d_key_cloud")}</span>
+    <span><i class="sw rain"></i>{t("d_key_rain")}</span>
+  </div>
+  <figcaption><p>{bi(cap_id, cap_en)}</p><p class="src">{bi(src_id, src_en)}</p></figcaption>
+</figure>"""
+
+
 def entry_page(e):
     draft = e["status"] == "draft"
     sci, kl, place, cav = e["scientific"], e.get("local_knowledge"), e["place"], e.get("caveat")
@@ -522,6 +758,7 @@ def entry_page(e):
       {photo_block(e)}
       <h2>{t("scientific")}</h2>
       <p>{bi(sci["id"], sci["en"])}</p>
+      {foehn_figure(e) if e.get("diagram") else ""}
       {caveat}
       <h2>{t("local_knowledge")}</h2>
       {local}
