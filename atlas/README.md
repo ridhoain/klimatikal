@@ -120,7 +120,7 @@ caption says so. A date must be backed by a source before it is called a vortex 
 
 ### Frost slices (`"type": "frost"`)
 
-Bun Upas uses a self-contained schematic: four slices of grass and air (dusk,
+Embun Upas uses a self-contained schematic: four slices of grass and air (dusk,
 clear night, before dawn, cloudy night for comparison). Config is just
 `"diagram": {"type": "frost"}`; no terrain or data file. Arrows drift by CSS only
 (stopped under `prefers-reduced-motion`), it needs no JavaScript, and the caption
