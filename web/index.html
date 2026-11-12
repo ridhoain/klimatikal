@@ -42,6 +42,11 @@
     font-size: 12.5px; color: #cfd8ee; border: 1px solid transparent; white-space: nowrap; }
   #layers button[aria-pressed="true"] { background: #2d6cf6; color: #fff; }
   #layers button:focus-visible { border-color: #8ab4ff; }
+  /* Plain link in the toolbar, sized to sit with the buttons. */
+  #layers a.nav { padding: 6px 8px; border-radius: 7px; font-size: 12.5px; color: #cfd8ee;
+    text-decoration: none; white-space: nowrap; border: 1px solid transparent; }
+  #layers a.nav:hover { color: #fff; background: #243156; }
+  #layers a.nav:focus-visible { border-color: #8ab4ff; outline: none; }
   #time { bottom: 12px; left: 12px; right: 12px; display: flex; align-items: center; gap: 12px; }
   #time input { flex: 1; accent-color: #2d6cf6; min-width: 80px; }
   #stamp { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 13px; }
@@ -780,6 +785,16 @@ class App {
     radar.onclick = () => this.setRadar(!this.radarOn);
     box.appendChild(radar);
     this.radarBtn = radar;
+
+    // Not a map control: a way out to the About pages.
+    const aboutSep = document.createElement("span");
+    aboutSep.className = "sep";
+    box.appendChild(aboutSep);
+    const about = document.createElement("a");
+    about.className = "nav";
+    about.href = "/about-us/";
+    about.textContent = "About us";
+    box.appendChild(about);
 
     const slider = document.getElementById("slider");
     slider.max = String(this.steps.length - 1);
