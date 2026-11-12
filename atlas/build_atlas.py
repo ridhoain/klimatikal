@@ -1263,13 +1263,13 @@ FROST_UI = {
         "bukan suhu. Urutan langit cerah dan kering, panas lolos, lalu udara dekat permukaan mendingin mengikuti artikel BMKG (2021), "
         "yang juga menyebut bahwa awan menahan panas. Lapisan terdingin tepat di atas tanah (inversi permukaan), selisih antara "
         "termometer standar dan permukaan tanah, serta pembentukan es melalui deposisi uap atau pembekuan embun berasal dari FAO "
-        "dan materi pelatihan NWS tentang embun beku radiasi pada umumnya, bukan dari penelitian di Dieng.",
+        "dan materi pelatihan NWS tentang embun beku radiasi pada umumnya. Studi Dieng (Kurniawan dan Kristianto, 2026) sesuai dengan gambaran ini tetapi tidak memiliki data awan atau suhu permukaan untuk membuktikannya.",
         "A one-night schematic, not a measurement and not to scale: the air layer near the ground is drawn far thicker than in "
         "reality (according to FAO, the top of the inversion on a radiation night is typically about 9–60 m), and colours are "
         "qualitative, not temperatures. The sequence of clear dry sky, heat escaping, then the air near the surface cooling follows "
         "the BMKG article (2021), which also says clouds hold heat in. The coldest layer right above the ground (surface inversion), "
         "the gap between a standard thermometer and the ground surface, and ice forming by vapour deposition or by dew freezing come "
-        "from FAO and an NWS training page on radiation frost in general, not from research at Dieng."),
+        "from FAO and an NWS training page on radiation frost in general. The Dieng study (Kurniawan and Kristianto, 2026) is consistent with this picture but has no cloud or surface-temperature data to prove it."),
 }
 
 
