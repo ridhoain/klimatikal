@@ -1,0 +1,32 @@
+{
+  "id": "musim-bediding",
+  "status": "draft",
+  "name_id": "Musim Bediding",
+  "name_local": "Bediding",
+  "name_en": "Bediding (cold season in Java)",
+  "scale": "regional",
+  "documentation": "poor",
+  "place": {
+    "id": "Pulau Jawa",
+    "en": "Java Island"
+  },
+  "lat": -7.5,
+  "lon": 110.0,
+  "scientific": {
+    "id": "Musim bediding adalah sebutan untuk masa ketika udara di Pulau Jawa terasa lebih dingin, terutama pada malam dan pagi hari, pada musim kemarau di belahan bumi utara bagian musim panas (boreal), dengan puncak yang biasa dikaitkan dengan Agustus. Penelitian terbitan BRIN tentang Juni di Jawa memberi latar yang relevan: Juni sudah berada di awal musim kemarau, curah hujan bulanannya biasanya di bawah rata-rata tahunan, dan suhu permukaannya lebih sejuk daripada musim hujan. Suhu permukaan Jawa pada bulan itu masih dapat bergeser beberapa derajat dari tahun ke tahun, dan di daerah pegunungan lebih besar daripada di pesisir rendah. Analisis lintasan massa udara dalam studi itu menunjukkan bahwa suhu permukaan menjadi lebih dingin ketika sebagian besar udara yang tiba dekat permukaan berasal dari ketinggian di wilayah tropis atau dari lintang tinggi; sebaliknya, suhu tetap hangat bila udara sudah lama bergerak dekat permukaan di wilayah tropis yang hangat.",
+    "en": "Musim bediding is the name given to the spell when the air in Java feels colder, mostly at night and in the early morning, during the dry season of the northern-hemisphere (boreal) summer, with a peak usually associated with August. A BRIN study of June in Java gives relevant background: June is already the start of the dry season, its monthly rainfall is usually below the annual average, and its surface temperature is cooler than in the rainy season. Surface temperature over Java in that month can still shift by a few degrees from year to year, and more in mountain areas than on the low coast. The air-mass trajectory analysis in that study found that surface temperature is colder when much of the air arriving near the surface comes from high altitude in the tropics or from high latitudes; it stays warm when the air has spent a long time travelling near the surface through the warm tropics."
+  },
+  "caveat": {
+    "id": "Sumber ilmiah yang dikutip meneliti cuaca basah dan dingin pada bulan Juni di Jawa; ia tidak memakai istilah \"bediding\" dan tidak membahas Agustus. Hubungan keduanya di sini adalah latar, bukan penjelasan yang sudah terbukti untuk bediding.",
+    "en": "The scientific source cited studies wet and cold weather in June over Java; it does not use the word \"bediding\" and does not cover August. Its link to bediding here is background, not an established explanation of bediding."
+  },
+  "local_knowledge": null,
+  "photo": null,
+  "sources": [
+    {
+      "text": "Suaydhi (2022), “On the Mechanism of Anomalously Wet and Cold Weather Over Java in June”, ch. 16 in Yulihastin, E. et al. (eds.), Proceedings of the International Conference on Radioscience, Equatorial Atmospheric Science and Environment and Humanosphere Science, 2021, Springer Proceedings in Physics 275, pp. 199–208",
+      "url": "https://doi.org/10.1007/978-981-19-0308-3_16"
+    }
+  ],
+  "curator_notes": "DRAFT. (1) The definition (cold season in Java during boreal summer, peak in August) comes from you, not from a source: it needs a citable one (BMKG explainer, a journal paper on 'bediding'). The PDF never mentions bediding and covers June only; the card says so in a public Note. (2) Everything about June temperature and trajectories paraphrases Suaydhi 2022 and stays within it; I did NOT add the usual popular explanations (clear skies, dry Australian air, radiative cooling) because the PDF does not support them. (3) 'Documentation: poor' is my guess (little literature found so far); change it if you disagree. (4) Pin is the middle of Java (-7.5, 110.0), not a specific site: choose one if you prefer, e.g. Dieng. (5) No photo, local knowledge or Javanese-language source yet. (6) The pdf was a book chapter under licence: nothing was copied, only paraphrased and cited."
+}
