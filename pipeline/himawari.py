@@ -28,6 +28,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import gc
+import hashlib
 import io
 import json
 import os
@@ -305,20 +306,27 @@ def main() -> None:
         f"{np.nanmin(kelvin) - 273.15:.0f} to {np.nanmax(kelvin) - 273.15:.0f} C")
 
     body = webp_bytes(colourise(kelvin))
-    key = f"sat/ir/{stamp}.webp"
+    # The file name carries a hash of the content. Images are cached for a year
+    # ("immutable"), so one name must never mean two different pictures: when it
+    # did (a changed crop rebuilt under the same slot name), browsers kept the old
+    # picture and drew it with the new corners, squeezed.
+    name = f"ir/{stamp}-{hashlib.sha1(body).hexdigest()[:8]}.webp"
+    key = f"sat/{name}"
     sink.put(key, body, "image/webp", CACHE_IMAGE)
     log(f"uploaded {key} ({len(body) / 1e6:.1f} MB)")
 
     frames = [f for f in frames if f["t"] != f"{slot:%Y-%m-%dT%H:%MZ}"]
-    frames.append({"t": f"{slot:%Y-%m-%dT%H:%MZ}", "image": f"ir/{stamp}.webp", "bounds": frame_bounds()})
+    frames.append({"t": f"{slot:%Y-%m-%dT%H:%MZ}", "image": name, "bounds": frame_bounds()})
     frames.sort(key=lambda f: f["t"])
     dropped, frames = frames[:-args.keep] + stale, frames[-args.keep:]
 
     # Manifest last: until this write the site keeps showing the previous frame.
     sink.put("sat/manifest.json", json.dumps(manifest_for(frames)).encode(),
              "application/json", CACHE_MANIFEST)
+    keep_images = {f["image"] for f in frames}
     for f in dropped:
-        sink.delete(f"sat/{f['image']}")
+        if f["image"] not in keep_images:      # never delete a file a kept frame still uses
+            sink.delete(f"sat/{f['image']}")
     log(f"done in {time.time() - t0:.0f}s, {len(frames)} frames kept, {len(dropped)} pruned")
 
 
