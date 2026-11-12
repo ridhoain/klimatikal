@@ -32,7 +32,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from encoding import FORMAT_VERSION, LAYERS, NLAT, NLON, encode, layer_manifest, reproject
+from encoding import FORMAT_VERSION, LAYERS, NLAT, NLON, REVISION, encode, layer_manifest, reproject
 
 # 0 to 144 by 3 is published by all four daily cycles. 00z and 12z go on to
 # 360 by 6; ignoring that keeps every cycle identical, which keeps the client
@@ -185,6 +185,26 @@ class Sink:
             CacheControl=cache_control,
         )
 
+    def read_json(self, key: str) -> dict | None:
+        """The JSON object at key, or None if it does not exist.
+
+        Only "does not exist" is None. Bad credentials or a network failure
+        raise, so the guard cannot mistake an outage for "nothing published"
+        and quietly rebuild (or skip) on the strength of it.
+        """
+        if self.dry_run:
+            path = Path(self.dest) / key
+            return json.loads(path.read_text()) if path.exists() else None
+        from botocore.exceptions import ClientError
+
+        try:
+            body = self.client.get_object(Bucket=self.bucket, Key=key)["Body"].read()
+        except ClientError as err:
+            if err.response.get("Error", {}).get("Code") in ("NoSuchKey", "404", "NotFound"):
+                return None
+            raise
+        return json.loads(body)
+
     def list_run_prefixes(self) -> list[str]:
         if self.dry_run:
             root = Path(self.dest) / "runs"
@@ -247,6 +267,28 @@ def synthetic_fields(step: int) -> dict[str, np.ndarray]:
     }
 
 
+def already_published(sink: Sink, run_id: str, steps: list[int]) -> bool:
+    """True if this exact run is already live, built by this pipeline.
+
+    Matters because a scheduled build can start before ECMWF has finished
+    uploading the next cycle; client.latest() then returns the cycle that is
+    already published, and without this check the job would spend sixteen
+    minutes re-uploading 143 MB of identical files. It is only a skip if the
+    run, the format, the pipeline revision and the step list all match, so a
+    fix to the pipeline, or a different --steps, still rebuilds.
+    """
+    live = sink.read_json("latest.json")
+    if not live or live.get("run") != run_id:
+        return False
+    manifest = sink.read_json(live.get("manifest", ""))
+    return bool(
+        manifest
+        and manifest.get("format_version") == FORMAT_VERSION
+        and manifest.get("revision") == REVISION
+        and manifest.get("steps") == steps
+    )
+
+
 def build(args) -> None:
     sink = Sink(args.dest, args.dry_run)
     client = None if args.offline else open_client()
@@ -254,6 +296,10 @@ def build(args) -> None:
     run = resolve_run(client, args.run) if client else dt.datetime.now(dt.timezone.utc)
     run_id = run.strftime("%Y-%m-%dT%HZ")
     steps = args.steps or STEPS
+    if not getattr(args, "force", False) and already_published(sink, run_id, steps):
+        log(f"run {run_id} is already published with this pipeline revision; "
+            "nothing to do (use --force to rebuild)")
+        return
     log(f"building run {run_id}, {len(steps)} steps, {len(LAYERS)} layers")
 
     workdir = Path(tempfile.mkdtemp(prefix="klimatikal-"))
@@ -303,6 +349,7 @@ def build(args) -> None:
 
         manifest = {
             "format_version": FORMAT_VERSION,
+            "revision": REVISION,
             "run": run_id,
             "model": "ECMWF IFS open data 0.25 degree",
             "generated": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
@@ -360,6 +407,8 @@ def main() -> None:
     parser.add_argument("--offline", action="store_true", help="skip ECMWF; for wiring tests only")
     parser.add_argument("--dest", default="./out", help="output directory for --dry-run")
     parser.add_argument("--keep", type=int, default=2, help="how many runs to retain")
+    parser.add_argument("--force", action="store_true",
+                        help="rebuild even if this run is already published")
     args = parser.parse_args()
 
     if args.offline and not args.dry_run:

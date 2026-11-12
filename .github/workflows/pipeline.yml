@@ -21,6 +21,11 @@ on:
     - cron: "52 7,19 * * *"     # 00z and 12z
     - cron: "47 0,12 * * *"     # 18z and 06z
   workflow_dispatch:        # always pair this with a schedule: it is how you test
+    inputs:
+      force:
+        description: "Rebuild even if the newest run is already published"
+        type: boolean
+        default: false
 
 concurrency:
   group: forecast
@@ -48,7 +53,10 @@ jobs:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
-        run: python build_run.py
+        # A scheduled build that starts before ECMWF has uploaded the next cycle
+        # finds the current one already published and exits in seconds. Tick
+        # "force" on a manual run to rebuild anyway.
+        run: python build_run.py ${{ inputs.force && '--force' || '' }}
 
   heartbeat:
     # Keeps the schedule alive. Without it the pipeline stops after 60 quiet

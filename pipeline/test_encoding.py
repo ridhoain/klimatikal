@@ -85,6 +85,48 @@ def test_reproject_rejects_a_grid_that_is_not_global():
     raise AssertionError("expected ValueError")
 
 
+def test_guard_skips_a_run_that_is_already_published():
+    import argparse
+    import contextlib
+    import tempfile
+    from pathlib import Path
+
+    import build_run
+
+    def go(dest, **over):
+        args = argparse.Namespace(dest=dest, dry_run=True, offline=True, run=None,
+                                  steps=[0], keep=2, force=False)
+        for k, v in over.items():
+            setattr(args, k, v)
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            build_run.build(args)
+        return out.getvalue()
+
+    with tempfile.TemporaryDirectory() as dest:
+        first = go(dest)
+        assert "building run" in first
+        marker = next(Path(dest).glob("runs/*/manifest.json"))
+        before = marker.stat().st_mtime_ns
+
+        second = go(dest)
+        assert "already published" in second, second
+        assert marker.stat().st_mtime_ns == before, "a skipped run must not write anything"
+
+        forced = go(dest, force=True)
+        assert "building run" in forced and marker.stat().st_mtime_ns != before
+
+        # A different step list is a different build, not a duplicate.
+        assert "building run" in go(dest, steps=[0, 3])
+
+        # A pipeline fix bumps REVISION; the same run must then be rebuilt.
+        old = encoding.REVISION
+        try:
+            build_run.REVISION = old + 1
+            assert "building run" in go(dest, steps=[0, 3])
+        finally:
+            build_run.REVISION = old
+
+
 def test_alpha_is_always_opaque():
     for layer, spec in LAYERS.items():
         lo, hi = spec["range"]

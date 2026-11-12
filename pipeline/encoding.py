@@ -24,6 +24,15 @@ import numpy as np
 
 FORMAT_VERSION = 1
 
+# FORMAT_VERSION says how a browser must decode the files; change it only when
+# the decode changes. REVISION says the pipeline's output changed for the same
+# input (a bug fix to the data, not to the format). Bump it so a run that is
+# already published gets rebuilt once instead of being skipped by the
+# "already published" guard in build_run.py.
+#   1  initial
+#   2  longitudes taken from the GRIB's own coordinates (half-world shift fix)
+REVISION = 2
+
 # Grid of the ECMWF open data 0.25 degree product.
 NLAT, NLON = 721, 1440
 
