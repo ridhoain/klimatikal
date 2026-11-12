@@ -46,21 +46,27 @@ PRODUCT = "AHI-L1b-FLDK"
 BAND = "B13"
 SEGMENTS = 10          # a full disk is ten north-south strips; all ten or nothing
 
-# Indonesia and its neighbourhood. The whole disk (80E to 200E, 60S to 60N) is
-# far too large to ship every ten minutes.
-WEST, EAST, SOUTH, NORTH = 80.0, 165.0, -25.0, 25.0
-RES_M = 2000.0         # B13 is 2 km at nadir
+# The whole Himawari disk: the satellite sees roughly 59E to 222E at the equator
+# (measured on real data). Latitude is cut at 60 because Web Mercator stretches
+# without limit towards the poles. At 4 km this is ~4500 x 4200 pixels, about the
+# size of the earlier 2 km Indonesia-only crop; the full area at 2 km would be
+# four times that, too much to ship every ten minutes or to hold as one texture
+# on a phone. The cost is blockier detail up close (B13 itself is 2 km).
+WEST, EAST, SOUTH, NORTH = 59.0, 222.0, -60.0, 60.0
+RES_M = 4000.0
 
-# Brightness temperature in degrees C -> colour. Warm (surface) is dark grey,
-# so land and sea stay quiet and the cold tops stand out; very cold tops
-# (deep convection) run through blue, green, yellow to magenta.
+# Brightness temperature in degrees C -> colour. Only cloud-top temperatures
+# are drawn: everything at or above 0 C (surface, warm low cloud) is fully
+# transparent so the forecast shows through, and the last 6 degrees fade in so
+# there is no hard edge. Cold tops (deep convection) run through blue, green,
+# yellow to magenta.
 COLORMAP = [
     (-90, (255, 255, 255)), (-80, (255, 0, 255)), (-70, (80, 0, 160)),
     (-60, (0, 0, 255)), (-50, (0, 160, 255)), (-40, (0, 220, 0)),
-    (-30, (255, 255, 0)), (-20, (215, 215, 215)), (0, (110, 110, 110)),
-    (30, (10, 10, 10)),
+    (-30, (255, 255, 0)), (-20, (215, 215, 215)), (0, (150, 150, 150)),
 ]
-LEGEND_TICKS = [-80, -60, -40, -20, 0, 20]
+FADE_C = 6.0           # alpha runs from 0 at 0 C to full at -6 C
+LEGEND_TICKS = [-80, -60, -40, -20, 0]
 
 ATTRIBUTION = "Satellite: Himawari-9 (JMA), via NOAA Open Data"
 CACHE_IMAGE = "public, max-age=31536000, immutable"
@@ -147,7 +153,8 @@ def colourise(kelvin: np.ndarray) -> np.ndarray:
     c = kelvin - 273.15
     xs = [s[0] for s in COLORMAP]
     rgb = np.stack([np.interp(c, xs, [s[1][i] for s in COLORMAP]) for i in range(3)], -1)
-    alpha = np.where(np.isfinite(c), 255, 0)
+    # NaN (outside the disk) and anything warmer than 0 C end up at alpha 0.
+    alpha = np.nan_to_num(np.clip(-c / FADE_C, 0.0, 1.0) * 255.0, nan=0.0)
     return np.dstack([rgb, alpha]).astype("uint8")
 
 
@@ -223,12 +230,16 @@ def require_env(name: str) -> str:
 # the run
 # --------------------------------------------------------------------------
 
+def frame_bounds() -> dict:
+    return {"west": WEST, "south": SOUTH, "east": EAST, "north": NORTH}
+
+
 def manifest_for(frames: list[dict]) -> dict:
     return {
         "product": "himawari9-b13-ir",
         "label": "Satellite IR",
         "unit": "°C",
-        "bounds": {"west": WEST, "south": SOUTH, "east": EAST, "north": NORTH},
+        "bounds": frame_bounds(),       # of the newest frame; each frame also carries its own
         "projection": "web-mercator",   # image rows are Mercator, corners are lon/lat
         "colormap": [[v, list(c)] for v, c in COLORMAP],
         "legend_ticks": LEGEND_TICKS,
@@ -265,6 +276,11 @@ def main() -> None:
     sink = Sink(args.dest, args.dry_run)
     old = sink.read_json("sat/manifest.json") or {"frames": []}
     frames = old["frames"]
+    # Frames from before bounds were stored per frame came from an older, smaller
+    # crop. Drop them (and their images) so they can never be drawn with the
+    # wrong corners.
+    stale = [f for f in frames if "bounds" not in f]
+    frames = [f for f in frames if "bounds" in f]
     if any(f["t"] == f"{slot:%Y-%m-%dT%H:%MZ}" for f in frames) and not args.force:
         log("already published, nothing to do")
         return
@@ -294,9 +310,9 @@ def main() -> None:
     log(f"uploaded {key} ({len(body) / 1e6:.1f} MB)")
 
     frames = [f for f in frames if f["t"] != f"{slot:%Y-%m-%dT%H:%MZ}"]
-    frames.append({"t": f"{slot:%Y-%m-%dT%H:%MZ}", "image": f"ir/{stamp}.webp"})
+    frames.append({"t": f"{slot:%Y-%m-%dT%H:%MZ}", "image": f"ir/{stamp}.webp", "bounds": frame_bounds()})
     frames.sort(key=lambda f: f["t"])
-    dropped, frames = frames[:-args.keep], frames[-args.keep:]
+    dropped, frames = frames[:-args.keep] + stale, frames[-args.keep:]
 
     # Manifest last: until this write the site keeps showing the previous frame.
     sink.put("sat/manifest.json", json.dumps(manifest_for(frames)).encode(),
