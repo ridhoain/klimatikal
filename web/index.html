@@ -33,20 +33,24 @@
   #chrome { position: absolute; top: 12px; left: 12px; z-index: 2; display: flex;
     flex-direction: column; align-items: flex-start; gap: 8px; max-width: calc(100vw - 62px); }
   #chrome .panel { position: static; }
-  #brand { display: block; padding: 8px 14px; }
+  #brand { display: flex; align-items: center; gap: 22px; padding: 8px 14px; }
+  /* Site pages sit beside the logo, apart from the map controls below. */
+  .site-nav { display: flex; gap: 16px; font-size: 13px; }
+  .site-nav a { color: #8BBEB2; text-decoration: none; white-space: nowrap; }
+  .site-nav a:hover { color: #E6F9AF; }
+  .site-nav a:focus-visible { outline: 2px solid #E6F9AF; outline-offset: 3px; border-radius: 3px; }
   /* Sized by height, as the brand guide asks: the SVG has a fixed width. */
   .logo-img { height: 40px; width: auto; display: block; }
-  @media (max-width: 600px) { .logo-img { height: 32px; } #brand { padding: 8px 10px; } }
+  @media (max-width: 600px) {
+    .logo-img { height: 32px; }
+    #brand { padding: 8px 10px; gap: 14px; }
+    .site-nav { gap: 12px; font-size: 12.5px; }
+  }
   #layers { display: flex; gap: 4px; flex-wrap: wrap; max-width: 100%; padding: 7px 8px; }
   #layers button { all: unset; cursor: pointer; padding: 6px 8px; border-radius: 7px;
     font-size: 12.5px; color: #cfd8ee; border: 1px solid transparent; white-space: nowrap; }
   #layers button[aria-pressed="true"] { background: #2d6cf6; color: #fff; }
   #layers button:focus-visible { border-color: #8ab4ff; }
-  /* Plain link in the toolbar, sized to sit with the buttons. */
-  #layers a.nav { padding: 6px 8px; border-radius: 7px; font-size: 12.5px; color: #cfd8ee;
-    text-decoration: none; white-space: nowrap; border: 1px solid transparent; }
-  #layers a.nav:hover { color: #fff; background: #243156; }
-  #layers a.nav:focus-visible { border-color: #8ab4ff; outline: none; }
   #time { bottom: 12px; left: 12px; right: 12px; display: flex; align-items: center; gap: 12px; }
   #time input { flex: 1; accent-color: #2d6cf6; min-width: 80px; }
   #stamp { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 13px; }
@@ -92,12 +96,18 @@
 <canvas id="grid" aria-hidden="true"></canvas>
 
 <div id="chrome">
-  <a id="brand" class="panel" href="/" aria-label="Klimatikal home">
-    <picture>
-      <source media="(max-width: 600px)" srcset="brand/klimatikal-mark-on-dark.svg">
-      <img src="brand/klimatikal-lockup-on-dark.svg" alt="Klimatikal" class="logo-img">
-    </picture>
-  </a>
+  <div id="brand" class="panel">
+    <a class="logo" href="/" aria-label="Klimatikal home">
+      <picture>
+        <source media="(max-width: 600px)" srcset="brand/klimatikal-mark-on-dark.svg">
+        <img src="brand/klimatikal-lockup-on-dark.svg" alt="Klimatikal" class="logo-img">
+      </picture>
+    </a>
+    <nav class="site-nav" aria-label="Site">
+      <a href="/about-us/">About us</a>
+      <a href="/contact-us/">Contact us</a>
+    </nav>
+  </div>
   <div id="layers" class="panel" role="group" aria-label="Weather layer"></div>
 </div>
 
@@ -785,21 +795,6 @@ class App {
     radar.onclick = () => this.setRadar(!this.radarOn);
     box.appendChild(radar);
     this.radarBtn = radar;
-
-    // Not a map control: a way out to the About pages.
-    const aboutSep = document.createElement("span");
-    aboutSep.className = "sep";
-    box.appendChild(aboutSep);
-    const about = document.createElement("a");
-    about.className = "nav";
-    about.href = "/about-us/";
-    about.textContent = "About us";
-    box.appendChild(about);
-    const contact = document.createElement("a");
-    contact.className = "nav";
-    contact.href = "/contact-us/";
-    contact.textContent = "Contact us";
-    box.appendChild(contact);
 
     const slider = document.getElementById("slider");
     slider.max = String(this.steps.length - 1);
