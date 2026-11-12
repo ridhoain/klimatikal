@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Contact us · Klimatikal</title>
-<meta name="description" content="Get in touch with Klimatikal: send a message or write by email.">
+<meta name="description" content="Talk to Klimatikal about consultation on weather and climate data, science and decisions.">
 <link rel="canonical" href="https://klimatikal.com/contact-us/">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
@@ -13,7 +13,7 @@
 <meta name="theme-color" content="#0D0630">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Contact us · Klimatikal">
-<meta property="og:description" content="Get in touch with Klimatikal: send a message or write by email.">
+<meta property="og:description" content="Talk to Klimatikal about consultation on weather and climate data, science and decisions.">
 <meta property="og:url" content="https://klimatikal.com/contact-us/">
 <meta property="og:image" content="https://klimatikal.com/brand/og-image.png">
 <meta property="og:image:width" content="1200">
@@ -40,32 +40,25 @@
 <main>
   <p class="eyebrow">Klimatikal</p>
   <h1>Contact us</h1>
-  <p class="lede">Send us a message, or write to the address below.</p>
+  <p class="lede">Have a weather or climate question, or a decision that depends on one? We offer consultation connecting weather and climate data, science and decisions. Tell us what you need and we will reply by email.</p>
 
   <form id="contact" class="cform" action="/api/contact" method="post" novalidate>
     <label for="c-email">Your email</label>
     <input id="c-email" name="email" type="email" autocomplete="email" maxlength="200" required>
 
     <label for="c-subject">Subject</label>
-    <input id="c-subject" name="subject" type="text" maxlength="150" required>
+    <input id="c-subject" name="subject" type="text" maxlength="150" placeholder="What would you like to discuss?" required>
 
-    <label for="c-message">Message</label>
-    <textarea id="c-message" name="message" rows="8" maxlength="5000" required></textarea>
+    <label for="c-message">How can we help?</label>
+    <textarea id="c-message" name="message" rows="8" maxlength="5000" placeholder="Tell us about your question or project, and what decision it supports." required></textarea>
 
     <div class="hp" aria-hidden="true"><label>Leave this empty <input name="website" type="text" tabindex="-1" autocomplete="off"></label></div>
     <div class="cf-turnstile" data-sitekey="0x4AAAAAAF-couHucToTy3jJ" data-theme="dark"></div>
 
-    <button type="submit">Send message</button>
+    <button type="submit">Request a consultation</button>
     <p id="c-status" class="cstatus" role="status" aria-live="polite"></p>
     <p class="cnote">We use your email only to reply. The check on this form is run by Cloudflare Turnstile, and messages are delivered through Resend.</p>
   </form>
-
-  <p class="or">Or email us directly:</p>
-  <a class="contact-card" href="mailto:ainur.ridho@klimatikal.com">
-    <small>Email</small>
-    <strong>ainur.ridho@klimatikal.com</strong>
-    <span>Ainur Ridho</span>
-  </a>
 </main>
 
 <footer class="site-footer">

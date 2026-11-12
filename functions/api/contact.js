@@ -62,11 +62,11 @@ export async function onRequestPost({ request, env }) {
       from: env.CONTACT_FROM,
       to: [env.CONTACT_TO],
       reply_to: email,
-      subject: `[Klimatikal contact] ${subject}`,
+      subject: `[Klimatikal consultation] ${subject}`,
       text,
     }),
   });
-  if (!res.ok) return json({ ok: false, error: "The message could not be sent. Please email us directly." }, 502);
+  if (!res.ok) return json({ ok: false, error: "The message could not be sent. Please try again in a moment." }, 502);
   return json({ ok: true });
 }
 

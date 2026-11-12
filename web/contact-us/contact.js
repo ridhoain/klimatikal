@@ -14,10 +14,10 @@
     fetch("/api/contact", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) })
       .then(function (r) { return r.json().catch(function () { return { ok: false, error: "Something went wrong." }; }); })
       .then(function (j) {
-        if (j.ok) { form.reset(); say("Thank you. Your message has been sent.", false); }
+        if (j.ok) { form.reset(); say("Thank you. We have received your request and will reply to the email you gave.", false); }
         else { say(j.error || "Something went wrong.", true); if (window.turnstile) try { window.turnstile.reset(); } catch (x) {} }
       })
-      .catch(function () { say("Could not reach the server. Please email us directly.", true); })
+      .catch(function () { say("Could not reach the server. Please try again in a moment.", true); })
       .then(function () { btn.disabled = false; });
   });
 })();
