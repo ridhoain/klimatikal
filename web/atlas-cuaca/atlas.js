@@ -164,6 +164,45 @@
     fig.addEventListener("dshow", function () { p = 0; if (reduce) { p = 0.8; render(); } else { render(); play(true); } });
     if (reduce) { p = 0.8; render(); } else { render(); if (!fig.hidden) play(true); }
   });
+  Array.prototype.forEach.call(document.querySelectorAll('figure.diagram[data-kind="map"]'), function (fig) {
+    var NS = "http://www.w3.org/2000/svg", ctl = fig.querySelector(".dctl"), btn = ctl.querySelector(".dplay"), scrub = ctl.querySelector(".dscrub");
+    var layer = fig.querySelector(".d-parcels"), paths = fig.querySelectorAll(".m-traj"), phases = ctl.querySelectorAll(".dphase span");
+    var TRAIL = 6, GAP = 0.035, parcels = [];
+    Array.prototype.forEach.call(paths, function (pa) {
+      var len = pa.getTotalLength();
+      for (var i = 0; i < TRAIL; i++) {
+        var c = document.createElementNS(NS, "circle");
+        c.setAttribute("class", "d-parcel"); c.setAttribute("r", String(5.5 - i * 0.6)); c.setAttribute("fill", "#1d5fd1");
+        c.style.display = "none"; layer.appendChild(c); parcels.push({ el: c, path: pa, len: len, i: i });
+      }
+    });
+    var p = 0, playing = false, last = 0, DUR = 14000;
+    function render() {
+      var front = p * (1 + TRAIL * GAP);
+      parcels.forEach(function (o) {
+        var f = front - o.i * GAP;
+        if (f < 0 || f > 1) { o.el.style.display = "none"; return; }
+        var q = o.path.getPointAtLength(f * o.len);
+        o.el.style.display = ""; o.el.setAttribute("cx", q.x); o.el.setAttribute("cy", q.y); o.el.style.opacity = String(1 - o.i * 0.15);
+      });
+      var k = p < 0.12 ? 0 : p < 0.8 ? 1 : 2;
+      Array.prototype.forEach.call(phases, function (s) { s.classList.toggle("on", +s.getAttribute("data-ph") === k); });
+      scrub.value = String(Math.round(p * 1000));
+    }
+    function tick(now) {
+      if (!playing) return;
+      if (fig.hidden) { playing = false; btn.setAttribute("aria-pressed", "false"); return; }
+      p += (now - last) / DUR; last = now; if (p >= 1) p = 0;
+      render(); requestAnimationFrame(tick);
+    }
+    function play(on) { playing = on; btn.setAttribute("aria-pressed", String(on)); if (on) { last = performance.now(); requestAnimationFrame(tick); } }
+    btn.addEventListener("click", function () { play(!playing); });
+    scrub.addEventListener("input", function () { play(false); p = scrub.value / 1000; render(); });
+    var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    ctl.hidden = false; fig.classList.add("animated");
+    fig.addEventListener("dshow", function () { p = 0; if (reduce) { p = 1; render(); } else { render(); play(true); } });
+    if (reduce) { p = 1; render(); } else { render(); if (!fig.hidden) play(true); }
+  });
   var cards = Array.prototype.slice.call(document.querySelectorAll(".card"));
   var state = { scale: "all", doc: "all", q: "" };
 

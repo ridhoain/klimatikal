@@ -195,6 +195,10 @@ UI = {
     "c_tab1": ("1 · Udara dari ketinggian", "1 · Air from height"),
     "c_tab2": ("2 · Udara menyusuri permukaan", "2 · Air along the surface"),
     "c_tab3": ("3 · Pendinginan malam", "3 · Night cooling"),
+    "c_tab4": ("4 · Peta aliran Agustus", "4 · August flow map"),
+    "c_m_ph0": ("Udara di atas Australia bagian utara, sepuluh hari sebelum tiba.", "Air over northern Australia, ten days before arrival."),
+    "c_m_ph1": ("Aliran rata-rata dekat permukaan bergerak ke barat laut melintasi Laut Timor dan perairan selatan Nusa Tenggara.", "The mean near-surface flow moves north-west across the Timor Sea and the waters south of Nusa Tenggara."),
+    "c_m_ph2": ("Aliran itu tiba di Jawa dari arah tenggara.", "The flow reaches Java from the south-east."),
     "c_tabs": ("Pilih ilustrasi", "Choose an illustration"),
     "c_start_hi": ("Udara dari ketinggian", "Air from height"),
     "c_start_hi_sub": ("di wilayah tropis atau lintang tinggi", "in the tropics or at high latitudes"),
@@ -208,6 +212,8 @@ UI = {
     "c_cloudy_sub": ("awan menahan panas", "clouds hold heat in"),
     "c_key_cold": ("Udara dingin", "Cold air"),
     "c_key_warm": ("Udara hangat", "Warm air"),
+    "c_key_path": ("Jalur aliran rata-rata", "Mean flow path"),
+    "c_key_wind": ("Angin rata-rata Agustus", "Mean August wind"),
     "c_key_heat": ("Panas dari tanah", "Heat from the ground"),
     "c_a_ph0": ("Udara berada tinggi di atmosfer.", "The air starts high in the atmosphere."),
     "c_a_ph1": ("Udara turun menuju permukaan Jawa tanpa banyak menghangat.", "The air sinks towards Java's surface without warming much."),
@@ -772,6 +778,119 @@ def foehn_figure(e):
 </figure>"""
 
 
+def wind_map_scene(cfg):
+    """Scene 4: a map. Streamlines are traced backward for 10 days from Java through
+    the long-term mean August near-surface wind (NCEP/NCAR Reanalysis 1, 1991-2020),
+    drawn over the real coastlines. A mean-flow approximation, not a set of
+    individual air-parcel trajectories like the paper's HYSPLIT runs."""
+    import math
+    w = json.loads((DIAGRAMS / f"{cfg['map']['wind']}.json").read_text())
+    lats, lons, U, V = w["lat"], w["lon"], w["u_ms"], w["v_ms"]
+    LON0, LON1, LAT1, LAT0 = 92.0, 158.0, -30.0, 10.0          # map box
+    MW = 1000.0
+    MH = MW * (LAT0 - LAT1) / (LON1 - LON0)
+    px = lambda lon: (lon - LON0) / (LON1 - LON0) * MW
+    py = lambda lat: (LAT0 - lat) / (LAT0 - LAT1) * MH
+
+    def wind(lat, lon):
+        if not (lats[-1] <= lat <= lats[0] and lons[0] <= lon <= lons[-1]):
+            return None
+        fi = (lats[0] - lat) / (lats[0] - lats[1]); fj = (lon - lons[0]) / (lons[1] - lons[0])
+        i, j = min(int(fi), len(lats) - 2), min(int(fj), len(lons) - 2)
+        a, b = fi - i, fj - j
+        g = lambda F: (F[i][j] * (1 - a) * (1 - b) + F[i][j + 1] * (1 - a) * b + F[i + 1][j] * a * (1 - b) + F[i + 1][j + 1] * a * b)
+        return g(U), g(V)
+
+    R, DT = 6371000.0, 3 * 3600.0
+
+    def back(lat, lon, steps=80):
+        pts = [(lat, lon)]
+        for _ in range(steps):
+            k1 = wind(lat, lon)
+            if not k1:
+                break
+            mid = (lat - k1[1] * DT / 2 / R * 57.2958, lon - k1[0] * DT / 2 / (R * math.cos(math.radians(lat))) * 57.2958)
+            k2 = wind(*mid)
+            if not k2:
+                break
+            lat -= k2[1] * DT / R * 57.2958
+            lon -= k2[0] * DT / (R * math.cos(math.radians(lat))) * 57.2958
+            pts.append((lat, lon))
+        return pts[::-1]                                          # earliest point first
+
+    starts = cfg["map"]["starts"]
+    trajs = [back(la, lo) for la, lo in starts]
+
+    # coastlines inside the box, thinned
+    coast = json.loads((ROOT / "web" / "geo" / "coast.json").read_text())["geometry"]["coordinates"]
+    land = ""
+    # the source cuts Australia's outline in two at a shared end point: join them
+    lines = [list(l) for l in coast]
+    joined = True
+    while joined:
+        joined = False
+        for i, a_ in enumerate(lines):
+            for j, b_ in enumerate(lines):
+                if i != j and a_[-1] == b_[0] and a_[0] != a_[-1] and b_[0] != b_[-1]:
+                    lines[i] = a_ + b_[1:]
+                    del lines[j]
+                    joined = True
+                    break
+            if joined:
+                break
+    for line in lines:
+        if not any(LON0 - 2 <= x <= LON1 + 2 and LAT1 - 2 <= y <= LAT0 + 2 for x, y in line):
+            continue
+        keep, lx, ly = [], None, None
+        for x, y in line:
+            if lx is None or abs(x - lx) + abs(y - ly) >= 0.3:
+                keep.append((x, y)); lx, ly = x, y
+        if len(keep) > 2:
+            land += f'<path class="m-land" d="M{" L".join(f"{px(x):.1f} {py(y):.1f}" for x, y in keep)}Z"/>'
+
+    # quiver of the mean wind on the data grid
+    quiver = ""
+    for i, la in enumerate(lats):
+        for j, lo in enumerate(lons):
+            if not (LON0 + 1 <= lo <= LON1 - 1):
+                continue
+            u, v = U[i][j], V[i][j]
+            sp = math.hypot(u, v)
+            if sp < 0.3:
+                continue
+            L = 4.2 * sp
+            ux, uy = u / sp, -v / sp                              # svg y points down
+            x0, y0 = px(lo) - ux * L / 2, py(la) - uy * L / 2
+            x1, y1 = x0 + ux * L, y0 + uy * L
+            h = 5.0
+            hx = [(x1, y1), (x1 - ux * h + -uy * h * .5, y1 - uy * h + ux * h * .5), (x1 - ux * h - -uy * h * .5, y1 - uy * h - ux * h * .5)]
+            quiver += (f'<line class="m-wind" x1="{x0:.1f}" y1="{y0:.1f}" x2="{x1:.1f}" y2="{y1:.1f}"/>'
+                       f'<polygon class="m-windhead" points="{" ".join(f"{a:.1f},{b:.1f}" for a, b in hx)}"/>')
+    paths = ""
+    for tj in trajs:
+        paths += f'<path class="m-traj" d="M{" L".join(f"{px(lo):.1f} {py(la):.1f}" for la, lo in tj)}"/>'
+    jx, jy = px(110.0), py(-7.4)
+    pin_ = f'<circle class="d-pin" cx="{jx:.1f}" cy="{jy:.1f}" r="6"/>'
+    keyL = 4.2 * 5
+    scalebar = (f'<line class="m-wind" x1="22" y1="{MH - 24:.0f}" x2="{22 + keyL:.0f}" y2="{MH - 24:.0f}"/>'
+                f'<polygon class="m-windhead" points="{22 + keyL:.0f},{MH - 24:.0f} {22 + keyL - 5:.0f},{MH - 26.5:.0f} {22 + keyL - 5:.0f},{MH - 21.5:.0f}"/>')
+    svg = (f'<svg class="dsvg" viewBox="0 0 {MW:.0f} {MH:.0f}" preserveAspectRatio="none" aria-hidden="true" focusable="false">'
+           f'<rect class="d-water" x="0" y="0" width="{MW:.0f}" height="{MH:.0f}"/>{land}{quiver}{paths}{pin_}{scalebar}<g class="d-parcels"></g></svg>')
+
+    def lab(lon, lat, text, cls=""):
+        return (f'<div class="dlabel {cls}" style="left:{px(lon) / MW * 100:.2f}%;top:{py(lat) / MH * 100:.2f}%">{bi(*text)}</div>')
+
+    labels = "".join([
+        lab(133, -25, ("Australia", "Australia"), "b"),
+        lab(110, -4.2, ("Pulau Jawa", "Java"), "b pill"),
+        lab(104, -18, ("Samudra Hindia", "Indian Ocean"), "m-sea"),
+        lab(145, -4, ("Papua", "Papua"), "m-sea"),
+        lab(122, 7, ("Laut Cina Selatan / Pasifik", "South China Sea / Pacific"), "m-sea"),
+        lab(92 + 21 / 1000 * 66 + 6, -28.6, ("5 m/s", "5 m/s"), "scale al-left"),
+    ])
+    return svg, labels, MH, trajs
+
+
 def coldair_figure(e):
     """Three illustrations of why surface air in Java can be cold, on one real
     terrain profile: (1) air that came down from height, (2) air that travelled
@@ -908,6 +1027,11 @@ def coldair_figure(e):
              + dl((mid + v1) / 2, 2620, UI["c_cloudy"], "b pill", UI["c_cloudy_sub"])
              + dl(crest_km + 6, base, pair("range"), "b"))
 
+    has_map = bool(cfg.get("map"))
+    if has_map:
+        svg_m, lab_m, MH, _tj = wind_map_scene(cfg)
+        wp = json.loads((DIAGRAMS / f"{cfg['map']['wind']}.json").read_text())
+        y0_, y1_ = wp["climatology_years"]
     s_, en_ = tr["start"], tr["end"]
     terr_id = (f"Medan: profil ketinggian SRTM 30 m (NASA, domain publik) lewat OpenTopoData, sepanjang garis dari "
                f"{_fmt_coord(s_['lat'], s_['lon'], 'id')} ke {_fmt_coord(en_['lat'], en_['lon'], 'id')} (diakses {tr['accessed']}); "
@@ -928,6 +1052,16 @@ def coldair_figure(e):
              "tropis yang hangat sebelum tiba.",
              "From the same study: temperature stays warm when the air has long been travelling near the surface through the "
              "warm tropics before it arrives.")),
+        4: ((f"Garis aliran yang ditelusuri mundur 10 hari dari Jawa melalui angin rata-rata jangka panjang bulan Agustus dekat permukaan "
+             f"({y0_}–{y1_}, NCEP/NCAR Reanalysis 1, NOAA PSL). Ini perkiraan aliran rata-rata, bukan lintasan parsel udara pada hari tertentu "
+             f"seperti analisis HYSPLIT dalam Suaydhi (2022), yang meneliti Juni. Gagasan bahwa angin musim dingin Australia ikut mendinginkan Jawa "
+             f"berasal dari artikel Wikipedia yang mengutip petugas BMKG. Panah abu-abu: angin rata-rata pada titik grid 2,5°; garis biru: jalur aliran; "
+             f"waktu perjalanan dipadatkan dalam animasi.",
+             f"Streamlines traced backward 10 days from Java through the long-term mean August near-surface wind ({y0_}–{y1_}, NCEP/NCAR "
+             f"Reanalysis 1, NOAA PSL). This is a mean-flow approximation, not the trajectory of an air parcel on a given day like the HYSPLIT "
+             f"analysis in Suaydhi (2022), which studied June. The idea that Australian winter winds help cool Java comes from the Indonesian "
+             f"Wikipedia article relaying BMKG staff. Grey arrows: mean wind at the 2.5° grid points; blue lines: flow paths; travel time is "
+             f"compressed in the animation.")) if has_map else ("", ""),
         3: (("Penjelasan pendinginan malam ini berasal dari artikel Wikipedia (bahasa Indonesia) yang mengutip petugas BMKG, "
              "bukan dari Suaydhi (2022). Skema ini hanya menggambarkan gagasannya.",
              "This night-cooling explanation comes from the Indonesian Wikipedia article relaying BMKG staff, not from "
@@ -936,21 +1070,25 @@ def coldair_figure(e):
     keys = {
         1: f'<span><i class="sw" style="background:{_hex(COOL)}"></i>{t("c_key_cold")}</span>',
         2: f'<span><i class="sw" style="background:{_hex(WARM)}"></i>{t("c_key_warm")}</span>',
+        4: f'<span><i class="sw" style="background:{_hex(COOL)}"></i>{t("c_key_path")}</span><span><i class="sw" style="background:#9aa9bb"></i>{t("c_key_wind")}</span>',
         3: (f'<span><i class="sw" style="background:{_hex(WARM)}"></i>{t("c_key_heat")}</span>'
             f'<span><i class="sw cloud"></i>{t("d_key_cloud")}</span>'),
     }
     phases = {k: "".join(f'<span data-ph="{i}"{" class=on" if i == 0 else ""}>{t(f"c_{k_}_ph{i}")}</span>' for i in range(3))
-              for k, k_ in ((1, "a"), (2, "b"), (3, "c"))}
+              for k, k_ in ((1, "a"), (2, "b"), (3, "c"), (4, "m"))}
     svgs, labs = {1: svg_a, 2: svg_b, 3: svg_c}, {1: lab_a, 2: lab_b, 3: lab_c}
+    scenes = (1, 2, 3)
+    if has_map:
+        svgs[4], labs[4], scenes = svg_m, lab_m, (1, 2, 3, 4)
     tabs = "".join(f'<button type="button" role="tab" data-scene="{i}" aria-selected="{"true" if i == 1 else "false"}">{t(f"c_tab{i}")}</button>'
-                   for i in (1, 2, 3))
+                   for i in scenes)
     figs = ""
-    for i in (1, 2, 3):
-        kind = ' data-kind="night"' if i == 3 else f' data-stops="{stops_attr(stops_c if i == 1 else stops_w)}" data-phases="{X(xd):.0f},{X(crest_km):.0f},{X(v1 - 20):.0f}"'
+    for i in scenes:
+        kind = ' data-kind="night"' if i == 3 else ' data-kind="map"' if i == 4 else f' data-stops="{stops_attr(stops_c if i == 1 else stops_w)}" data-phases="{X(xd):.0f},{X(crest_km):.0f},{X(v1 - 20):.0f}"'
         figs += f"""<figure class="diagram dscene" data-scene="{i}"{kind}>
   <p class="dhint">{t("d_hint")}</p>
   <div class="dscroll" tabindex="0" role="region" aria-label="{esc(UI['d_region'][0])}" data-focus="{X(crest_km) / VW * 100:.1f}">
-  <div class="dstage">{svgs[i]}{labs[i]}</div>
+  <div class="dstage{" dmap" if i == 4 else ""}"{f' style="aspect-ratio:1000/{MH:.0f}"' if i == 4 else ""}>{svgs[i]}{labs[i]}</div>
   </div>
   <div class="dctl" hidden>
     <button type="button" class="dplay" aria-pressed="false"><span class="lp">{t("d_play")}</span><span class="lq">{t("d_pause")}</span></button>

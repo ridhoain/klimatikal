@@ -107,7 +107,7 @@ Musim Bediding uses a three-scene variant on one terrain line (air from height,
 air along the warm surface, clear-versus-cloudy night cooling). Config needs
 `transect`, `view_km` and `labels` `sea_left`, `sea_right`, `range` only. Scenes 1
 and 2 come from Suaydhi (2022); scene 3 is from Wikipedia/BMKG staff and says so
-in its caption. With JavaScript the scenes are tabs; without it they are stacked.
+in its caption. An optional `diagram.map` (`wind`, `starts`) adds a fourth scene: a map of 10-day backward streamlines through the long-term mean August wind (`atlas/diagrams/fetch_wind.py` fetches NCEP/NCAR data once; it is rate-limited, so run it gently). With JavaScript the scenes are tabs; without it they are stacked.
 
 ## Publishing
 

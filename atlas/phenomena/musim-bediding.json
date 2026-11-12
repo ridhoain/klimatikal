@@ -53,6 +53,31 @@
         "id": "Dataran tinggi Jawa Tengah",
         "en": "Central Java highlands"
       }
+    },
+    "map": {
+      "wind": "wind-aug-seasia",
+      "starts": [
+        [
+          -7.5,
+          106
+        ],
+        [
+          -7.5,
+          108
+        ],
+        [
+          -7.5,
+          110
+        ],
+        [
+          -7.5,
+          112
+        ],
+        [
+          -7.5,
+          114
+        ]
+      ]
     }
   }
 }
