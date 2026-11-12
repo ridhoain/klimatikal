@@ -189,3 +189,23 @@ main.atlas { max-width: 1180px; }
   .entry-grid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .entry-side { position: static; }
 }
+
+/* ---- animation (added by atlas.js; without it the figure stays static) ---- */
+.dctl { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; margin: 10px 0 0; }
+.dplay {
+  font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; min-width: 84px;
+  padding: 6px 14px; border-radius: 999px; border: 1px solid var(--kl-teal);
+  background: transparent; color: var(--kl-lime);
+}
+.dplay:hover { background: rgba(139, 190, 178, .15); }
+.dplay:focus-visible, .dscrub:focus-visible { outline: 2px solid var(--kl-lime); outline-offset: 2px; }
+.dplay .lq, .dplay[aria-pressed="true"] .lp { display: none; }
+.dplay[aria-pressed="true"] .lq { display: inline; }
+.dscrub { flex: 1 1 160px; min-width: 120px; max-width: 360px; accent-color: var(--kl-teal); }
+.dphase { flex: 1 1 100%; margin: 0; min-height: 3em; font-size: 14px; line-height: 1.5; color: var(--text); }
+.dphase span { display: none; }
+.dphase span.on { display: inline; }
+.dphase span.on [lang] { display: none; }
+html[data-lang="id"] .dphase span.on [lang="id"], html[data-lang="en"] .dphase span.on [lang="en"] { display: inline; }
+.diagram.animated .dsvg polygon { opacity: .25; }
+.d-parcel { stroke: #fff; stroke-width: 1.5; }

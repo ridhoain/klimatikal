@@ -192,6 +192,14 @@ UI = {
     "d_key_down": ("Udara turun: lebih hangat & kering", "Sinking air: warmer & drier"),
     "d_key_cloud": ("Awan", "Cloud"),
     "d_key_rain": ("Hujan", "Rain"),
+    "d_play": ("Putar", "Play"),
+    "d_pause": ("Jeda", "Pause"),
+    "d_slider": ("Posisi animasi", "Animation position"),
+    "d_ph0": ("Udara lembap bergerak mendekati pegunungan.", "Moist air moves in towards the mountains."),
+    "d_ph1": ("Udara naik di sisi hadap angin, mendingin; awan terbentuk dan hujan turun.",
+              "Air rises up the windward slope and cools; cloud forms and rain falls."),
+    "d_ph2": ("Melewati puncak, udara kini lebih kering.", "Past the crest, the air is drier."),
+    "d_ph3": ("Udara turun di sisi lee, memanas dan mengering.", "The air sinks on the lee side, warming and drying."),
     "d_hint": ("Geser ke samping untuk melihat seluruh penampang →", "Swipe sideways to see the whole cross-section →"),
     "d_region": ("Penampang medan", "Terrain cross-section"),
 }
@@ -620,7 +628,7 @@ def foehn_figure(e):
     for clr in (260, 640, 1020):
         hs = [max(s + clr, m + 140) for s, m in zip(sm, el)]
         pts = [(X(x), Y(h)) for x, h in zip(xs, hs)]
-        flows += f'<path class="d-air" stroke="url(#{gid})" d="M{" L".join(f"{px:.1f} {py:.1f}" for px, py in pts)}"/>'
+        flows += f'<path class="d-air" data-lane="1" stroke="url(#{gid})" d="M{" L".join(f"{px:.1f} {py:.1f}" for px, py in pts)}"/>'
         for km in [v0 + 16 + 30 * k for k in range(int((v1 - v0 - 20) / 30))]:
             i = min(range(n), key=lambda j: abs(xs[j] - km))
             (ax, ay), (bx, by) = pts[max(0, i - 2)], pts[min(n - 1, i + 2)]
@@ -644,13 +652,13 @@ def foehn_figure(e):
             cx = X(km) + (rnd(k * 3 + j) - 0.5) * 18
             cy = Y(base + 110 + 230 * rnd(k * 5 + j + 2))
             rr = 11 + 10 * rnd(k + j * 7)
-            cloud_edge += f'<circle class="d-cloud-edge" cx="{cx:.1f}" cy="{cy:.1f}" r="{rr + 1.8:.1f}"/>'
-            cloud += f'<circle class="d-cloud" cx="{cx:.1f}" cy="{cy:.1f}" r="{rr:.1f}"/>'
+            cloud_edge += f'<circle class="d-cloud-edge" data-x="{cx:.0f}" cx="{cx:.1f}" cy="{cy:.1f}" r="{rr + 1.8:.1f}"/>'
+            cloud += f'<circle class="d-cloud" data-x="{cx:.0f}" cx="{cx:.1f}" cy="{cy:.1f}" r="{rr:.1f}"/>'
         top_y, bot_y = Y(base + 40), Y(el_at(km))
         # no rain into a deep interior valley: it falls on the ridges and slopes
         in_valley = el_at(km) < 0.5 * sm_at(km)
         if bot_y - top_y > 10 and not in_valley:
-            rain += (f'<line class="d-rain" x1="{X(km):.1f}" y1="{top_y:.1f}" x2="{X(km) - 4:.1f}" '
+            rain += (f'<line class="d-rain" data-x="{X(km):.0f}" x1="{X(km):.1f}" y1="{top_y:.1f}" x2="{X(km) - 4:.1f}" '
                      f'y2="{min(bot_y, top_y + 62):.1f}"/>')
         km += 3
         k += 1
@@ -701,7 +709,9 @@ def foehn_figure(e):
               f"this line is {_fmt_m(crest_m, 'en')} m. The arrows, cloud and rain only illustrate the mechanism; they "
               f"are not measurements.")
 
-    return f"""<figure class="diagram">
+    stops_attr = ";".join(f"{X(k):.0f}:{c[0]},{c[1]},{c[2]}" for k, c in stops)
+    ph_x = f'{X(crest_km - 40):.0f},{X(crest_km):.0f},{X(lee_end):.0f}'
+    return f"""<figure class="diagram" data-stops="{stops_attr}" data-phases="{ph_x}">
   <p class="dhint">{t("d_hint")}</p>
   <div class="dscroll" tabindex="0" role="region" aria-label="{esc(UI['d_region'][0])}" data-focus="{X(crest_km) / VW * 100:.1f}">
   <div class="dstage">
@@ -709,9 +719,15 @@ def foehn_figure(e):
       <defs><linearGradient id="{gid}" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="{VW:.0f}" y2="0">{grad}</linearGradient></defs>
       <rect class="d-water" x="0" y="{Y0:.0f}" width="{VW:.0f}" height="{VH - Y0:.0f}"/>
       {grid}{land}{rain}{cloud_edge}{cloud}{flows}{chevrons}{ridge}{site}
+      <g class="d-parcels"></g>
     </svg>
     {overlay}
   </div>
+  </div>
+  <div class="dctl" hidden>
+    <button type="button" class="dplay" aria-pressed="false"><span class="lp">{t("d_play")}</span><span class="lq">{t("d_pause")}</span></button>
+    <input type="range" class="dscrub" min="0" max="1000" value="0" aria-label="{esc(UI['d_slider'][1])}">
+    <p class="dphase"><span data-ph="0" class="on">{t("d_ph0")}</span><span data-ph="1">{t("d_ph1")}</span><span data-ph="2">{t("d_ph2")}</span><span data-ph="3">{t("d_ph3")}</span></p>
   </div>
   <div class="dkey">
     <span><i class="sw" style="background:{_hex(COOL)}"></i>{t("d_key_up")}</span>
