@@ -103,6 +103,14 @@ On narrow screens the figure scrolls sideways inside its own box.
 
 ## Publishing
 
+**Rebuild after editing `atlas.css`, `atlas.js` or `about.css`.** The generated
+pages carry a short hash of those files in their URLs (`atlas.css?v=7bd819005e`).
+Cloudflare caches stylesheets and scripts for four hours, while pages are always
+fresh, so without the hash a returning visitor could get the new page with an old
+stylesheet (a new component would render unstyled). The hand-written About and
+Contact pages do not use hashed URLs; if you change `about.css`, they can show the
+old styles for up to four hours.
+
 Commit the JSON, any photo, and the rebuilt `web/atlas-cuaca/` folder (the
 index plus one folder per phenomenon), then push; Cloudflare Pages deploys it.
 Old links of the form `/atlas-cuaca/#<id>` still work: they jump to that

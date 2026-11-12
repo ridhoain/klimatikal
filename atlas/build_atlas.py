@@ -27,6 +27,7 @@ Locator maps are drawn from the Natural Earth coastlines already in web/geo/
 from __future__ import annotations
 
 import argparse
+import hashlib
 import html
 import json
 import re
@@ -291,7 +292,24 @@ LANG_SCRIPT = """<script>
   var d = document.documentElement; d.setAttribute("data-lang", l); d.lang = l;
 })();
 </script>
-<script src="/atlas-cuaca/atlas.js" defer></script>"""
+<script src="__ATLAS_JS__" defer></script>"""
+
+
+def asset_url(path: str) -> str:
+    """A site file's URL plus a short hash of its content.
+
+    Cloudflare serves stylesheets and scripts with a four-hour cache, while the
+    HTML is always fetched fresh. Without this, right after a deploy a returning
+    visitor gets the NEW page with their cached OLD stylesheet, and a new
+    component renders unstyled (the foehn diagram did exactly that). A URL that
+    changes with the file's content cannot be stale. Rebuild after editing
+    atlas.css or atlas.js so the pages pick up the new hash."""
+    digest = hashlib.sha1((WEB / path.lstrip("/")).read_bytes()).hexdigest()[:10]
+    return f"{path}?v={digest}"
+
+
+def lang_script() -> str:
+    return LANG_SCRIPT.replace("__ATLAS_JS__", asset_url(f"{BASE}atlas.js"))
 
 
 def head(title, desc, canonical, noindex, og_type="website", extra=""):
@@ -317,9 +335,9 @@ def head(title, desc, canonical, noindex, og_type="website", extra=""):
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="/about-us/about.css">
-<link rel="stylesheet" href="/atlas-cuaca/atlas.css">
-{extra}{LANG_SCRIPT}
+<link rel="stylesheet" href="{asset_url('/about-us/about.css')}">
+<link rel="stylesheet" href="{asset_url(BASE + 'atlas.css')}">
+{extra}{lang_script()}
 </head>
 """
 
