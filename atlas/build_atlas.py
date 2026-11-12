@@ -417,7 +417,7 @@ def site_header(here: str):
   <a class="logo" href="/" aria-label="Klimatikal home">
     <picture>
       <source media="(max-width: 600px)" srcset="/brand/klimatikal-mark-on-dark.svg">
-      <img src="/brand/klimatikal-lockup-on-dark.svg" alt="Klimatikal" class="logo-img">
+      <img src="/brand/klimatikal-lockup-on-dark.svg?v=2" alt="Klimatikal" class="logo-img">
     </picture>
   </a>
   <nav aria-label="Main">
