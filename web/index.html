@@ -909,7 +909,7 @@ class App {
   paintCredit() {
     const sat = this.satOn && this.satManifest ? ` · ${escapeHTML(this.satManifest.attribution)}` : "";
     document.getElementById("credit").innerHTML =
-      `© 2026 Klimatikal · ${escapeHTML(this.manifest.attribution)} · run ${escapeHTML(this.manifest.run)}${sat}`;
+      `© 2026 Klimatikal · ${escapeHTML(this.manifest.attribution)} · run ${escapeHTML(this.manifest.run)}${sat} · <a href="/privacy/">Privacy</a>`;
   }
 
   // Colour key for the active layer, built from the same RAMPS table the
