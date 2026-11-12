@@ -162,6 +162,9 @@ UI = {
     "draft": ("Draf — belum ditinjau", "Draft — not yet reviewed"),
     "photo_needed": ("Foto diperlukan", "Photo needed"),
     "pending": ("Belum diisi", "Not yet filled in"),
+    # What the public sees once an entry is reviewed and still has no local
+    # knowledge: the gap is stated as a fact about the record, not as a to-do.
+    "no_local": ("Belum ada pengetahuan lokal yang terdokumentasi.", "No local knowledge documented yet."),
     "curator": ("Catatan kurator", "Curator notes"),
     "back": ("← Kembali ke peta cuaca", "← Back to the weather map"),
 }
@@ -253,8 +256,10 @@ def card(e):
     if photo:
         media = (f'<figure class="photo"><img src="photos/{esc(photo["file"])}" alt="{esc(photo["alt"])}" '
                  f'loading="lazy"><figcaption>{esc(photo["credit"])} · {esc(photo["licence"])}</figcaption></figure>')
-    else:
+    elif draft:
         media = f'<div class="photo placeholder"><span>{t("photo_needed")}</span></div>'
+    else:
+        media = ""  # a reviewed card without a photo simply has none
 
     badges = [
         f'<span class="badge scale">{t(e["scale"])}</span>',
@@ -271,7 +276,7 @@ def card(e):
     if kl:
         local = f'<p>{bi(kl["id"], kl["en"])}</p>'
     else:
-        local = f'<p class="empty">{t("pending")}</p>'
+        local = f'<p class="empty">{t("pending" if draft else "no_local")}</p>'
 
     sources = ""
     if e.get("sources"):
@@ -385,6 +390,7 @@ def page(entries):
   </a>
   <nav aria-label="Main">
     <a href="/">{t("nav_map")}</a>
+    <a href="/atlas-cuaca/" aria-current="page">Atlas Cuaca</a>
     <a href="/about-us/">{t("nav_about")}</a>
     <a href="/contact-us/">{t("nav_contact")}</a>
     <span class="lang" role="group" aria-label="Language">
