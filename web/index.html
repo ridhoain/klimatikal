@@ -669,6 +669,8 @@ class App {
     this.stepIndex = 0;
     this.playing = false;
     this.gridOn = true;
+    this.labelsOn = true;
+    this.labelLayerIds = [];
     // Radar overlay: synthetic placeholder imagery (see
     // pipeline/radar_demo_gen.py). Nothing here ever requests a BMKG
     // address; everything it fetches is same-origin, under ./radar/.
@@ -784,6 +786,18 @@ class App {
       this.drawGrid(); this.writeURL();
     };
     box.appendChild(grid);
+
+    const labels = document.createElement("button");
+    labels.className = "toggle";
+    labels.textContent = "Labels";
+    labels.title = "City, country, sea and lake names";
+    labels.setAttribute("aria-pressed", String(this.labelsOn));
+    labels.onclick = () => {
+      this.labelsOn = !this.labelsOn;
+      labels.setAttribute("aria-pressed", String(this.labelsOn));
+      this.showLabels(this.labelsOn); this.writeURL();
+    };
+    box.appendChild(labels);
 
     const radarSep = document.createElement("span");
     radarSep.className = "sep";
@@ -956,6 +970,7 @@ class App {
     this.view = h.get("at") ? h.get("at").split(",").map(Number) : null;
     if (h.get("grid") !== null) this.gridOn = h.get("grid") !== "0";
     if (h.get("radar") === "1") this.radarOn = true;
+    if (h.get("labels") !== null) this.labelsOn = h.get("labels") !== "0";
   }
 
   writeURL() {
@@ -965,6 +980,7 @@ class App {
     const h = new URLSearchParams({
       layer: this.layer, step: String(Math.round(this.stepIndex)), at,
       grid: this.gridOn ? "1" : "0", radar: this.radarOn ? "1" : "0",
+      labels: this.labelsOn ? "1" : "0",
     });
     history.replaceState(null, "", `#${h}`);
   }
@@ -980,6 +996,9 @@ class App {
     // province lines alone are 45,000 segments. The weather should not wait.
     const style = {
       version: 8,
+      // Glyphs for the place and water names, self-hosted (Latin ranges only,
+      // so geo/labels-*.json is built with Latin names; see pipeline/build_labels.py).
+      glyphs: `${new URL("geo/fonts/", location.href).href}{fontstack}/{range}.pbf`,
       sources: {},
       layers: [{ id: "bg", type: "background", paint: { "background-color": "#0b1020" } }],
     };
@@ -1044,6 +1063,105 @@ class App {
       line("admin1-casing", "admin1", "rgba(8,12,24,0.35)", w(0.8, 1.6), { minzoom: 2, opacity: fade });
       line("admin1", "admin1", "rgba(255,255,255,0.35)", w(0.4, 0.9), { minzoom: 2, opacity: fade });
     });
+    this.addLabels();
+  }
+
+  // Text labels: oceans/seas/lakes, countries and cities. They are symbol
+  // layers on small GeoJSON point files (./geo/labels-*.json), so MapLibre
+  // does the "dynamic" part itself: collision detection drops whatever does
+  // not fit, and what is kept changes as you zoom and pan. Natural Earth
+  // gives each feature a "show from this zoom" rank (mz, in 256px-tile zoom;
+  // this map's zoom is one lower). Zoom cannot be used inside a filter, so
+  // features are bucketed by whole mz into one layer each, with that layer's
+  // minzoom set. Layers added later win collisions, so buckets go least
+  // important first; within a bucket the biggest city wins (sort key).
+  addLabels() {
+    const map = this.map;
+    const geo = (name) => new URL(`geo/${name}.json`, location.href).href;
+    // A small dot marks the exact place; it collides together with its name.
+    const c = document.createElement("canvas");
+    c.width = c.height = 16;
+    const g = c.getContext("2d");
+    g.beginPath(); g.arc(8, 8, 4.5, 0, 7);
+    g.fillStyle = "#fff"; g.fill();
+    g.lineWidth = 1.8; g.strokeStyle = "rgba(8,12,24,0.85)"; g.stroke();
+    map.addImage("city-dot", g.getImageData(0, 0, 16, 16), { pixelRatio: 2 });
+
+    const vis = this.labelsOn ? "visible" : "none";
+    const halo = (color) => ({ "text-halo-color": color, "text-halo-width": 1.4, "text-halo-blur": 0.4 });
+    const add = (layer) => { map.addLayer({ ...layer, layout: { ...layer.layout, visibility: vis } }); this.labelLayerIds.push(layer.id); };
+    const bucketZoom = (k) => Math.max(0, k - 1.5);
+    const bucket = (k) => ["all", [">=", ["get", "mz"], k], ["<", ["get", "mz"], k + 1]];
+    const FONT = ["Open Sans Semibold"];
+
+    // Water first, so cities and countries sit on top of it.
+    map.addSource("labels-water", { type: "geojson", data: geo("labels-water") });
+    const waterSize = ["match", ["get", "k"],
+      "ocean", 15, "sea", 12.5, "gulf", 11, "bay", 11, "strait", 10.5, "lake", 10.5, 10.5];
+    for (let k = 9; k >= 1; k--) {
+      add({
+        id: `label-water-${k}`, type: "symbol", source: "labels-water",
+        filter: ["all", ["!=", ["get", "k"], "ocean"], bucket(k)], minzoom: bucketZoom(k),
+        layout: {
+          "text-field": ["get", "n"], "text-font": FONT, "text-size": waterSize,
+          "text-letter-spacing": 0.14, "text-max-width": 6, "text-padding": 4,
+          "symbol-sort-key": ["get", "mz"],
+        },
+        paint: { "text-color": "rgba(170,205,255,0.95)", ...halo("rgba(8,14,34,0.9)") },
+      });
+    }
+    // Oceans are huge: letter-spaced capitals that fade out once you are in close.
+    add({
+      id: "label-ocean", type: "symbol", source: "labels-water", filter: ["==", ["get", "k"], "ocean"],
+      maxzoom: 5.5,
+      layout: { "text-field": ["upcase", ["get", "n"]], "text-font": FONT, "text-size": 15,
+                "text-letter-spacing": 0.3, "text-max-width": 8 },
+      paint: { "text-color": "rgba(150,190,250,0.85)", ...halo("rgba(8,14,34,0.9)"),
+               "text-opacity": ["interpolate", ["linear"], ["zoom"], 4.5, 1, 5.5, 0] },
+    });
+
+    map.addSource("labels-cities", { type: "geojson", data: geo("labels-cities") });
+    for (let k = 8; k >= 0; k--) {
+      add({
+        id: `label-city-${k}`, type: "symbol", source: "labels-cities",
+        filter: bucket(k), minzoom: bucketZoom(k),
+        layout: {
+          "icon-image": "city-dot",
+          "icon-size": ["case", ["==", ["get", "cap"], 1], 1, 0.8],
+          "text-field": ["get", "n"], "text-font": FONT,
+          "text-size": ["case", ["==", ["get", "cap"], 1], 13, 11.5],
+          "text-variable-anchor": ["right", "left", "top", "bottom"],
+          "text-radial-offset": 0.6, "text-max-width": 8, "text-padding": 2,
+          "symbol-sort-key": ["-", 0, ["get", "pop"]],
+        },
+        paint: { "text-color": "#fff", ...halo("rgba(8,12,24,0.9)") },
+      });
+    }
+    // Countries sit above cities (added last, so they win collisions) and fade
+    // out by zoom 7. Small states only appear once there is room for them.
+    map.addSource("labels-countries", { type: "geojson", data: geo("labels-countries") });
+    for (const [id, filter, minzoom] of [
+      ["label-countries-minor", [">=", ["get", "r"], 4], 4],
+      ["label-countries", ["<", ["get", "r"], 4], 2.2],
+    ]) {
+      add({
+        id, type: "symbol", source: "labels-countries", filter, minzoom, maxzoom: 7,
+        layout: {
+          "text-field": ["upcase", ["get", "n"]], "text-font": FONT, "text-letter-spacing": 0.1,
+          "text-size": ["interpolate", ["linear"], ["zoom"], 2, 10, 6, 14], "text-max-width": 7,
+          "symbol-sort-key": ["get", "r"],
+        },
+        paint: { "text-color": "rgba(235,240,252,0.85)", ...halo("rgba(8,12,24,0.85)"),
+                 "text-opacity": ["interpolate", ["linear"], ["zoom"], minzoom, 0, minzoom + 0.8, 1, 6, 1, 7, 0] },
+      });
+    }
+  }
+
+  showLabels(visible) {
+    const v = visible ? "visible" : "none";
+    for (const id of this.labelLayerIds) {
+      if (this.map.getLayer(id)) this.map.setLayoutProperty(id, "visibility", v);
+    }
   }
 
   // --- radar overlay (demo placeholder) -----------------------------------
