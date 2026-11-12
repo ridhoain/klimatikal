@@ -109,6 +109,15 @@ air along the warm surface, clear-versus-cloudy night cooling). Config needs
 and 2 come from Suaydhi (2022); scene 3 is from Wikipedia/BMKG staff and says so
 in its caption. An optional `diagram.map` (`wind`, `starts`) adds a fourth scene: a map of 10-day backward streamlines through the long-term mean August wind (`atlas/diagrams/fetch_wind.py` fetches NCEP/NCAR data once; it is rate-limited, so run it gently). With JavaScript the scenes are tabs; without it they are stacked.
 
+### Weather-map sequence (`"type": "synoptic"`)
+
+Borneo Vortex uses a real-data map: sea-level pressure isobars, 925 hPa wind arrows,
+H/L markers and peak cyclonic vorticity, one frame per day. `atlas/diagrams/fetch_daily.py`
+downloads NCEP/NCAR Reanalysis 1 daily means once (gentle: it is rate-limited); the
+page is drawn at build time from that committed JSON. Config: `data`, `view`, `bv_box`,
+`labels`, `key_day`. A 2.5-degree grid shows broad flow, not a sharp vortex, and the
+caption says so. A date must be backed by a source before it is called a vortex event.
+
 ## Publishing
 
 **Rebuild after editing `atlas.css`, `atlas.js` or `about.css`.** The generated

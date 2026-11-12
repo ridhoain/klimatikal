@@ -203,6 +203,30 @@
     fig.addEventListener("dshow", function () { p = 0; if (reduce) { p = 1; render(); } else { render(); play(true); } });
     if (reduce) { p = 1; render(); } else { render(); if (!fig.hidden) play(true); }
   });
+  Array.prototype.forEach.call(document.querySelectorAll('figure.diagram[data-kind="synoptic"]'), function (fig) {
+    var ctl = fig.querySelector(".dctl"), btn = ctl.querySelector(".dplay"), scrub = ctl.querySelector(".dscrub");
+    var frames = fig.querySelectorAll(".sframe"), phases = fig.querySelectorAll(".dsynphase span");
+    var n = +fig.getAttribute("data-n"), cur = +fig.getAttribute("data-key"), timer = null;
+    function show(i) {
+      cur = i;
+      Array.prototype.forEach.call(frames, function (f, k) { f.classList.toggle("on", k === i); });
+      Array.prototype.forEach.call(phases, function (s) { s.classList.toggle("on", +s.getAttribute("data-ph") === i); });
+      scrub.value = String(i);
+    }
+    function stop() { if (timer) { clearInterval(timer); timer = null; } btn.setAttribute("aria-pressed", "false"); }
+    function start() {
+      btn.setAttribute("aria-pressed", "true");
+      timer = setInterval(function () {
+        if (fig.closest("[hidden]")) { stop(); return; }
+        show((cur + 1) % n);
+      }, 2400);
+    }
+    btn.addEventListener("click", function () { if (timer) stop(); else start(); });
+    scrub.addEventListener("input", function () { stop(); show(+scrub.value); });
+    ctl.hidden = false; fig.classList.add("animated");
+    var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!reduce) { show(0); start(); }
+  });
   var cards = Array.prototype.slice.call(document.querySelectorAll(".card"));
   var state = { scale: "all", doc: "all", q: "" };
 

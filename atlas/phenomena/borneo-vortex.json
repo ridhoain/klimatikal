@@ -1,0 +1,97 @@
+{
+  "id": "borneo-vortex",
+  "status": "draft",
+  "name_id": "Borneo Vortex",
+  "name_local": null,
+  "name_en": "Borneo vortex",
+  "scale": "regional",
+  "documentation": "well",
+  "place": {
+    "id": "Kalimantan bagian barat laut dan Laut Cina Selatan bagian selatan",
+    "en": "North-western Borneo and the southern South China Sea"
+  },
+  "lat": 3.0,
+  "lon": 110.0,
+  "scientific": {
+    "id": "Borneo Vortex adalah pusaran siklonik (berputar berlawanan arah jarum jam di belahan bumi utara) di lapisan bawah atmosfer di sekitar Pulau Kalimantan dan Laut Cina Selatan bagian ekuator. Ia paling sering muncul pada musim dingin belahan bumi utara (sekitar Oktober sampai Maret), berskala ratusan hingga sekitar 2.000 km, dan paling kuat di troposfer bawah (kira-kira 925–700 hPa), sering dengan inti hangat dan konveksi dalam. Ulasan dinamika terbitan 2023 menyebut bahwa pada sekitar sepertiga hari ada satu atau lebih pusat pusaran di wilayah ini. Banyak pusaran tumbuh di sisi depan lonjakan udara dingin (cold surge) monsun timur laut yang bergerak ke arah ekuator melintasi Laut Cina Selatan; manual satelit EUMeTrain mencatat bahwa pusaran muncul pada sekitar 60 % kejadian lonjakan dingin itu dan menghalangi lonjakan tersebut melaju ke selatan. Dampaknya terutama hujan: menurut studi yang dikutip ulasan tersebut, pusaran menyumbang 50–55 % hujan Oktober–Maret di Kalimantan barat dan 20–25 % di tenggara Semenanjung Malaysia, dengan hujan terlebat umumnya di utara-barat laut pusat pusaran; angin dekat permukaan biasanya sekitar 10 m/s dan bukan bahaya utama.",
+    "en": "The Borneo vortex is a cyclonic circulation (turning counter-clockwise in the northern hemisphere) in the lower atmosphere around Borneo and the equatorial South China Sea. It is most frequent in northern-hemisphere winter (roughly October to March), spans hundreds to about 2,000 km, and is strongest in the lower troposphere (about 925–700 hPa), often with a warm core and deep convection. A 2023 dynamics paper says one or more vortex centres are present in the region on about a third of days. Many vortices grow on the leading flank of north-east winter monsoon cold surges moving towards the equator across the South China Sea; the EUMeTrain satellite manual notes a vortex in about 60 % of those surge events and says it blocks the surge from moving further south. The impact is mainly rain: according to studies cited in that paper, vortices supply 50–55 % of October–March rainfall over western Borneo and 20–25 % over south-eastern Peninsular Malaysia, with the heaviest rain usually north to north-west of the vortex centre; near-surface winds are typically around 10 m/s and are not the main hazard."
+  },
+  "caveat": {
+    "id": "Angka dan klaim di atas diambil dari dua sumber yang dikutip; sebagian angka (mis. 50–55 %) diteruskan oleh ulasan tersebut dari studi lain. Peta di bawah memakai reanalisis berkisi 2,5°, yang terlalu kasar untuk memperlihatkan pusaran secara tajam, dan periode yang dipilih belum dikonfirmasi dalam pustaka sebagai kejadian Borneo Vortex.",
+    "en": "The figures and claims above come from the two sources cited; some numbers (e.g. 50–55 %) are relayed by the review from other studies. The map below uses a 2.5° reanalysis, too coarse to show the vortex sharply, and the period chosen has not been confirmed in the literature as a Borneo vortex event."
+  },
+  "diagram": {
+    "type": "synoptic",
+    "data": "bv-feb2007",
+    "key_day": 4,
+    "view": {
+      "lon": [
+        95,
+        130
+      ],
+      "lat": [
+        -8,
+        22
+      ]
+    },
+    "bv_box": {
+      "lat": [
+        -2.55,
+        7.55
+      ],
+      "lon": [
+        107.55,
+        117.55
+      ]
+    },
+    "labels": {
+      "borneo": {
+        "id": "Kalimantan",
+        "en": "Borneo",
+        "lon": 114,
+        "lat": 0.5
+      },
+      "scs": {
+        "id": "Laut Cina Selatan",
+        "en": "South China Sea",
+        "lon": 113,
+        "lat": 13
+      },
+      "sumatra": {
+        "id": "Sumatra",
+        "en": "Sumatra",
+        "lon": 102,
+        "lat": -1.5
+      },
+      "java": {
+        "id": "Jawa",
+        "en": "Java",
+        "lon": 110,
+        "lat": -6.8
+      },
+      "china": {
+        "id": "Tiongkok selatan",
+        "en": "Southern China",
+        "lon": 108,
+        "lat": 22.5
+      }
+    }
+  },
+  "local_knowledge": null,
+  "photo": null,
+  "sources": [
+    {
+      "text": "Hardy, S., Methven, J., Schwendike, J., Harvey, B. and Cullen, M. (2023), “Examining the dynamics of a Borneo vortex using a balance approximation tool”, Weather and Climate Dynamics 4, 1019–1043 (CC BY 4.0)",
+      "url": "https://doi.org/10.5194/wcd-4-1019-2023"
+    },
+    {
+      "text": "EUMeTrain, “Northerly Cold Surge”, satellite manual, conceptual models (© 2012 EUMeTrain)",
+      "url": "https://resources.eumetrain.org/satmanu/CM4SH/InNCS/print.htm"
+    },
+    {
+      "text": "Kalnay, E. et al. (1996), NCEP/NCAR Reanalysis 1 data, NOAA Physical Sciences Laboratory (map data)",
+      "url": "https://psl.noaa.gov/data/gridded/data.ncep.reanalysis.html"
+    }
+  ],
+  "curator_notes": "DRAFT. (1) Sources were read through fetches whose output was a summary (Hardy 2023: only the first part of the text verbatim; EUMeTrain: summary, figures not seen). Please skim both before publishing; the 60 % figure, '925-700 hPa', 'about a third of days' and the 50-55 % / 20-25 % shares are from them. Hardy cites Chang et al. 2005 (MWR 133) and Liang et al. 2021 for several numbers; I did not read those. (2) The map is my own plotting of NCEP/NCAR R1 daily data for 28 Jan - 4 Feb 2007 (the Jakarta flood period; EUMeTrain lists 234 mm at Kemayoran on 1 Feb 2007 under cold-surge weather). In that data 925 hPa vorticity peaks near 0-2.5N 110E all week, but a 2.5-degree grid shows a cyclonic shear zone, not a sharp closed vortex, and I have NOT found a source calling this a Borneo vortex event: please confirm or choose another documented case. (3) 'Documentation: well' is my choice (many papers). (4) No Indonesian-language BMKG source yet (a BMKG explainer would help), no photo or local knowledge."
+}

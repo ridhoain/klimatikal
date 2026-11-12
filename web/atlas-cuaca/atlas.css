@@ -233,3 +233,27 @@ html[data-lang="id"] .dphase span.on [lang="id"], html[data-lang="en"] .dphase s
 .m-windhead { fill: #9aa9bb; }
 .m-traj { fill: none; stroke: #1d5fd1; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 2 6; }
 .dlabel.m-sea { font-style: italic; color: #1f4f7a; font-size: 11.5px; text-shadow: none; }
+
+/* ---- weather-map sequence (synoptic diagrams) ---- */
+.dstage.dsyn { min-width: 760px; }
+.s-grat { stroke: rgba(40, 70, 110, .18); stroke-width: 1; stroke-dasharray: 2 6; }
+.s-gt { font-size: 13px; fill: #5b6b7e; }
+.s-bv { fill: rgba(255, 255, 255, .12); stroke: #243447; stroke-width: 1.6; stroke-dasharray: 7 5; }
+.s-boxlab { font-size: 10.5px; color: #243447; font-weight: 600; background: rgba(255, 255, 255, .85); padding: 0 6px; border-radius: 6px; text-shadow: none; }
+.sframe { opacity: 0; transition: opacity .6s ease; }
+.sframe.on { opacity: 1; }
+.s-iso { fill: none; stroke: #6b7b8e; stroke-width: 1; stroke-linejoin: round; }
+.s-iso.major { stroke: #3d4f66; stroke-width: 1.8; }
+.s-il { font-size: 14px; font-weight: 700; fill: #26364b; text-anchor: middle; paint-order: stroke; stroke: #fff; stroke-width: 4px; stroke-linejoin: round; }
+.s-w { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.s-w0 { stroke: #9fb0c4; stroke-width: 1.6; }
+.s-w1 { stroke: #4a7fc1; stroke-width: 2; }
+.s-w2 { stroke: #12306b; stroke-width: 2.6; }
+.s-hl circle { stroke: #fff; stroke-width: 2.5; }
+.s-hl text { font-size: 19px; font-weight: 800; fill: #fff; text-anchor: middle; }
+.s-h circle { fill: #c0392b; }
+.s-l circle { fill: #1d5fd1; }
+.s-vort circle { fill: #fff; stroke: #0D0630; stroke-width: 2; }
+.s-vort path { fill: none; stroke: #0D0630; stroke-width: 2; }
+.s-vort polygon { fill: #0D0630; }
+.dsynphase { max-width: 72ch; margin: 10px 0 0; min-height: 3em; }

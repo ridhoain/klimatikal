@@ -27,6 +27,7 @@ Locator maps are drawn from the Natural Earth coastlines already in web/geo/
 from __future__ import annotations
 
 import argparse
+import datetime
 import hashlib
 import html
 import json
@@ -141,6 +142,9 @@ def bi(id_text, en_text) -> str:
     return f'<span lang="id">{esc(id_text)}</span><span lang="en">{esc(en_text)}</span>'
 
 
+MONTHS = [("Januari", "January"), ("Februari", "February"), ("Maret", "March"), ("April", "April"), ("Mei", "May"), ("Juni", "June"),
+          ("Juli", "July"), ("Agustus", "August"), ("September", "September"), ("Oktober", "October"), ("November", "November"), ("Desember", "December")]
+
 UI = {
     "title": ("Atlas Cuaca Indonesia", "Indonesian Weather Atlas"),
     "intro": (
@@ -199,6 +203,14 @@ UI = {
     "c_m_ph0": ("Udara di atas Australia bagian utara, sepuluh hari sebelum tiba.", "Air over northern Australia, ten days before arrival."),
     "c_m_ph1": ("Aliran rata-rata dekat permukaan bergerak ke barat laut melintasi Laut Timor dan perairan selatan Nusa Tenggara.", "The mean near-surface flow moves north-west across the Timor Sea and the waters south of Nusa Tenggara."),
     "c_m_ph2": ("Aliran itu tiba di Jawa dari arah tenggara.", "The flow reaches Java from the south-east."),
+    "s_box": ("Kotak definisi pusaran Borneo (EUMeTrain)", "Borneo vortex definition box (EUMeTrain)"),
+    "s_hint": ("Geser ke samping untuk melihat seluruh peta →", "Swipe sideways to see the whole map →"),
+    "s_region": ("Peta cuaca harian", "Daily weather map"),
+    "s_slider": ("Hari", "Day"),
+    "s_k0": ("Angin 925 hPa < 5 m/s", "925 hPa wind < 5 m/s"),
+    "s_k1": ("5–10 m/s", "5–10 m/s"),
+    "s_k2": ("> 10 m/s", "> 10 m/s"),
+    "s_kiso": ("Isobar (2 hPa)", "Isobar (2 hPa)"),
     "c_tabs": ("Pilih ilustrasi", "Choose an illustration"),
     "c_start_hi": ("Udara dari ketinggian", "Air from height"),
     "c_start_hi_sub": ("di wilayah tropis atau lintang tinggi", "in the tropics or at high latitudes"),
@@ -295,16 +307,20 @@ def load_entries():
 
         diag = e.get("diagram")
         if diag is not None:
-            need(diag.get("type") in ("foehn", "coldair"), "'diagram.type' must be 'foehn' or 'coldair'")
-            tfile = DIAGRAMS / f"{diag.get('transect', '')}.json"
-            need(tfile.exists(), f"diagram transect file atlas/diagrams/{diag.get('transect')}.json does not exist")
-            vk = diag.get("view_km")
-            need(isinstance(vk, list) and len(vk) == 2 and vk[0] < vk[1], "'diagram.view_km' must be [from_km, to_km]")
-            for key in (("sea_left", "sea_right", "range") if diag.get("type") == "coldair"
+            need(diag.get("type") in ("foehn", "coldair", "synoptic"), "'diagram.type' must be 'foehn', 'coldair' or 'synoptic'")
+            if diag.get("type") == "synoptic":
+                need((DIAGRAMS / f"{diag.get('data', '')}.json").exists(), f"diagram data file atlas/diagrams/{diag.get('data')}.json does not exist")
+                need(diag.get("view") and diag.get("bv_box") and diag.get("labels"), "'diagram' needs view, bv_box and labels")
+            else:
+                tfile = DIAGRAMS / f"{diag.get('transect', '')}.json"
+                need(tfile.exists(), f"diagram transect file atlas/diagrams/{diag.get('transect')}.json does not exist")
+                vk = diag.get("view_km")
+                need(isinstance(vk, list) and len(vk) == 2 and vk[0] < vk[1], "'diagram.view_km' must be [from_km, to_km]")
+            for key in (() if diag.get("type") == "synoptic" else ("sea_left", "sea_right", "range") if diag.get("type") == "coldair"
                         else ("sea_left", "sea_right", "range", "plain", "site")):
                 lab = (diag.get("labels") or {}).get(key) or {}
                 need(lab.get("id") and lab.get("en"), f"'diagram.labels.{key}' needs both 'id' and 'en'")
-            need(diag.get("type") == "coldair" or isinstance((diag.get("labels") or {}).get("site", {}).get("km"), (int, float)),
+            need(diag.get("type") in ("coldair", "synoptic") or isinstance((diag.get("labels") or {}).get("site", {}).get("km"), (int, float)),
                  "'diagram.labels.site.km' must be a number (where the entry's place lies on the line)")
 
         photo = e.get("photo")
@@ -778,6 +794,37 @@ def foehn_figure(e):
 </figure>"""
 
 
+def _coast_paths(px, py, LON0, LON1, LAT1, LAT0):
+    """Natural Earth coastlines (web/geo/coast.json) inside a box, as filled land paths."""
+    # coastlines inside the box, thinned
+    coast = json.loads((ROOT / "web" / "geo" / "coast.json").read_text())["geometry"]["coordinates"]
+    land = ""
+    # the source cuts Australia's outline in two at a shared end point: join them
+    lines = [list(l) for l in coast]
+    joined = True
+    while joined:
+        joined = False
+        for i, a_ in enumerate(lines):
+            for j, b_ in enumerate(lines):
+                if i != j and a_[-1] == b_[0] and a_[0] != a_[-1] and b_[0] != b_[-1]:
+                    lines[i] = a_ + b_[1:]
+                    del lines[j]
+                    joined = True
+                    break
+            if joined:
+                break
+    for line in lines:
+        if not any(LON0 - 2 <= x <= LON1 + 2 and LAT1 - 2 <= y <= LAT0 + 2 for x, y in line):
+            continue
+        keep, lx, ly = [], None, None
+        for x, y in line:
+            if lx is None or abs(x - lx) + abs(y - ly) >= 0.3:
+                keep.append((x, y)); lx, ly = x, y
+        if len(keep) > 2:
+            land += f'<path class="m-land" d="M{" L".join(f"{px(x):.1f} {py(y):.1f}" for x, y in keep)}Z"/>'
+    return land
+
+
 def wind_map_scene(cfg):
     """Scene 4: a map. Streamlines are traced backward for 10 days from Java through
     the long-term mean August near-surface wind (NCEP/NCAR Reanalysis 1, 1991-2020),
@@ -821,32 +868,7 @@ def wind_map_scene(cfg):
     starts = cfg["map"]["starts"]
     trajs = [back(la, lo) for la, lo in starts]
 
-    # coastlines inside the box, thinned
-    coast = json.loads((ROOT / "web" / "geo" / "coast.json").read_text())["geometry"]["coordinates"]
-    land = ""
-    # the source cuts Australia's outline in two at a shared end point: join them
-    lines = [list(l) for l in coast]
-    joined = True
-    while joined:
-        joined = False
-        for i, a_ in enumerate(lines):
-            for j, b_ in enumerate(lines):
-                if i != j and a_[-1] == b_[0] and a_[0] != a_[-1] and b_[0] != b_[-1]:
-                    lines[i] = a_ + b_[1:]
-                    del lines[j]
-                    joined = True
-                    break
-            if joined:
-                break
-    for line in lines:
-        if not any(LON0 - 2 <= x <= LON1 + 2 and LAT1 - 2 <= y <= LAT0 + 2 for x, y in line):
-            continue
-        keep, lx, ly = [], None, None
-        for x, y in line:
-            if lx is None or abs(x - lx) + abs(y - ly) >= 0.3:
-                keep.append((x, y)); lx, ly = x, y
-        if len(keep) > 2:
-            land += f'<path class="m-land" d="M{" L".join(f"{px(x):.1f} {py(y):.1f}" for x, y in keep)}Z"/>'
+    land = _coast_paths(px, py, LON0, LON1, LAT1, LAT0)
 
     # quiver of the mean wind on the data grid
     quiver = ""
@@ -1103,6 +1125,212 @@ def coldair_figure(e):
             f'<p class="dsrc">{bi(terr_id, terr_en)}</p></div>')
 
 
+def _catmull(p0, p1, p2, p3, t):
+    return 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t ** 3)
+
+
+def _upsample(G, f):
+    """Bicubic (Catmull-Rom) upsampling of a regular grid by an integer factor, for smooth isobars."""
+    ny, nx = len(G), len(G[0])
+    cl = lambda i, n: max(0, min(n - 1, i))
+    rows = []
+    for i in range(ny):
+        r = []
+        for j in range(nx - 1):
+            for k in range(f):
+                r.append(_catmull(G[i][cl(j - 1, nx)], G[i][j], G[i][j + 1], G[i][cl(j + 2, nx)], k / f))
+        r.append(G[i][-1])
+        rows.append(r)
+    out = []
+    for i in range(ny - 1):
+        for k in range(f):
+            out.append([_catmull(rows[cl(i - 1, ny)][j], rows[i][j], rows[i + 1][j], rows[cl(i + 2, ny)][j], k / f) for j in range(len(rows[0]))])
+    out.append(rows[-1])
+    return out
+
+
+def _contours(G, level):
+    """Marching squares: polylines (lists of (col,row) in grid units) where G crosses level."""
+    ny, nx = len(G), len(G[0])
+    segs = []
+    for i in range(ny - 1):
+        for j in range(nx - 1):
+            v = (G[i][j], G[i][j + 1], G[i + 1][j + 1], G[i + 1][j])
+            pts = []
+            for a_, b_, (ax, ay), (bx, by) in ((0, 1, (j, i), (j + 1, i)), (1, 2, (j + 1, i), (j + 1, i + 1)),
+                                               (2, 3, (j + 1, i + 1), (j, i + 1)), (3, 0, (j, i + 1), (j, i))):
+                if (v[a_] - level) * (v[b_] - level) < 0:
+                    f = (level - v[a_]) / (v[b_] - v[a_])
+                    pts.append((round(ax + (bx - ax) * f, 3), round(ay + (by - ay) * f, 3)))
+            if len(pts) == 2:
+                segs.append(tuple(pts))
+            elif len(pts) == 4:
+                segs.append((pts[0], pts[1])); segs.append((pts[2], pts[3]))
+    ends = {}
+    for k, (a_, b_) in enumerate(segs):
+        ends.setdefault(a_, []).append(k); ends.setdefault(b_, []).append(k)
+    used, lines = set(), []
+    for k in range(len(segs)):
+        if k in used:
+            continue
+        used.add(k)
+        line = [segs[k][0], segs[k][1]]
+        for end in (0, 1):
+            while True:
+                tip = line[-1] if end == 0 else line[0]
+                nxt = next((m for m in ends.get(tip, []) if m not in used), None)
+                if nxt is None:
+                    break
+                used.add(nxt)
+                other = segs[nxt][1] if segs[nxt][0] == tip else segs[nxt][0]
+                if end == 0:
+                    line.append(other)
+                else:
+                    line.insert(0, other)
+        lines.append(line)
+    return lines
+
+
+def synoptic_figure(e):
+    """A real weather-map sequence: sea-level pressure isobars, 925 hPa wind arrows,
+    pressure extremes and the strongest cyclonic vorticity, for a run of days from
+    the NCEP/NCAR Reanalysis 1. Drawn by this script from data committed in
+    atlas/diagrams/; the page never loads data at run time."""
+    import math
+    tt = globals()["t"]
+    cfg = e["diagram"]
+    d = json.loads((DIAGRAMS / f"{cfg['data']}.json").read_text())
+    LON0, LON1, LAT1, LAT0 = cfg["view"]["lon"][0], cfg["view"]["lon"][1], cfg["view"]["lat"][0], cfg["view"]["lat"][1]
+    W = 1000.0
+    H = W * (LAT0 - LAT1) / (LON1 - LON0)
+    px = lambda lon: (lon - LON0) / (LON1 - LON0) * W
+    py = lambda lat: (LAT0 - lat) / (LAT0 - LAT1) * H
+    lats, lons = d["lat"], d["lon"]
+    F = 3
+    ulat = [lats[0] + (lats[-1] - lats[0]) * r / ((len(lats) - 1) * F) for r in range((len(lats) - 1) * F + 1)]
+    ulon = [lons[0] + (lons[-1] - lons[0]) * c / ((len(lons) - 1) * F) for c in range((len(lons) - 1) * F + 1)]
+    gx = lambda c: px(ulon[0] + (ulon[-1] - ulon[0]) * c / (len(ulon) - 1))
+    gy = lambda r: py(ulat[0] + (ulat[-1] - ulat[0]) * r / (len(ulat) - 1))
+    inview = lambda la, lo: LAT1 <= la <= LAT0 and LON0 <= lo <= LON1
+    land = _coast_paths(px, py, LON0, LON1, LAT1, LAT0)
+    grat = ""
+    for lo in range(int(LON0), int(LON1) + 1, 5):
+        if lo % 5 == 0:
+            grat += f'<line class="s-grat" x1="{px(lo):.1f}" y1="0" x2="{px(lo):.1f}" y2="{H:.0f}"/><text class="s-gt" x="{px(lo) + 4:.1f}" y="{H - 8:.0f}">{lo}°E</text>'
+    for la in range(int(math.ceil(LAT1 / 5) * 5), int(LAT0) + 1, 5):
+        grat += (f'<line class="s-grat" x1="0" y1="{py(la):.1f}" x2="{W:.0f}" y2="{py(la):.1f}"/>'
+                 f'<text class="s-gt" x="6" y="{py(la) - 4:.1f}">{abs(la)}°{"N" if la > 0 else "S" if la < 0 else ""}</text>')
+    bx = cfg["bv_box"]
+    bvbox = (f'<rect class="s-bv" x="{px(bx["lon"][0]):.1f}" y="{py(bx["lat"][1]):.1f}" width="{px(bx["lon"][1]) - px(bx["lon"][0]):.1f}" '
+             f'height="{py(bx["lat"][0]) - py(bx["lat"][1]):.1f}"/>')
+
+    frames, days_txt = "", []
+    key_i = cfg.get("key_day", 0)
+    for t, day in enumerate(d["dates"]):
+        S = d["slp_hpa"][t]
+        U, V = d["u925_ms"][t], d["v925_ms"][t]
+        SS = _upsample(S, F)
+        iso = {"minor": "", "major": ""}
+        labs = ""
+        for lev in range(int(min(min(r) for r in S)) // 2 * 2, int(max(max(r) for r in S)) + 3, 2):
+            lines = [ln for ln in _contours(SS, lev) if len(ln) > 3]
+            if not lines:
+                continue
+            kind = "major" if lev % 4 == 0 else "minor"
+            for ln in lines:
+                iso[kind] += "M" + " L".join(f"{gx(c):.0f} {gy(r):.0f}" for c, r in ln)
+            if kind == "major":
+                ln = max(lines, key=len)
+                cand = [(c, r) for c, r in ln[len(ln) // 3: 2 * len(ln) // 3 + 1] if 50 < gx(c) < W - 50 and 40 < gy(r) < H - 40]
+                if cand:
+                    c, r = cand[len(cand) // 2]
+                    labs += f'<text class="s-il" x="{gx(c):.0f}" y="{gy(r) + 4:.0f}">{lev}</text>'
+        # wind arrows in three speed classes
+        arrows = {0: "", 1: "", 2: ""}
+        for i, la in enumerate(lats):
+            for j, lo in enumerate(lons):
+                if not inview(la, lo):
+                    continue
+                u, v = U[i][j], V[i][j]
+                sp = math.hypot(u, v)
+                if sp < 0.5:
+                    continue
+                L = 4.0 * sp
+                ux, uy = u / sp, -v / sp
+                x0, y0 = px(lo) - ux * L / 2, py(la) - uy * L / 2
+                x1, y1 = x0 + ux * L, y0 + uy * L
+                hh = 6.0
+                a1 = (x1 - hh * (ux * .85 - uy * .5), y1 - hh * (uy * .85 + ux * .5))
+                a2 = (x1 - hh * (ux * .85 + uy * .5), y1 - hh * (uy * .85 - ux * .5))
+                cls = 0 if sp < 5 else 1 if sp < 10 else 2
+                arrows[cls] += f"M{x0:.0f} {y0:.0f} L{x1:.0f} {y1:.0f} M{a1[0]:.0f} {a1[1]:.0f} L{x1:.0f} {y1:.0f} L{a2[0]:.0f} {a2[1]:.0f}"
+        # pressure extremes in view, and strongest cyclonic vorticity in the vortex box
+        cells = [(S[i][j], la, lo) for i, la in enumerate(lats) for j, lo in enumerate(lons) if inview(la, lo)]
+        near = [c_ for c_ in cells if bx["lat"][0] - 2.5 <= c_[1] <= bx["lat"][1] + 2.5 and bx["lon"][0] - 2.5 <= c_[2] <= bx["lon"][1] + 2.5]
+        hi, lo_ = max(cells), min(near)
+        zbest = None
+        for i in range(1, len(lats) - 1):
+            for j in range(1, len(lons) - 1):
+                la, lo = lats[i], lons[j]
+                if not (bx["lat"][0] <= la <= bx["lat"][1] and bx["lon"][0] <= lo <= bx["lon"][1]):
+                    continue
+                dv = (V[i][j + 1] - V[i][j - 1]) / (2 * 2.5 * 111e3 * math.cos(math.radians(la)))
+                du = (U[i - 1][j] - U[i + 1][j]) / (2 * 2.5 * 111e3)
+                z = (dv - du) * 1e5
+                if zbest is None or z > zbest[0]:
+                    zbest = (z, la, lo)
+        mark = (f'<g class="s-hl s-h" transform="translate({px(hi[2]):.0f} {py(hi[1]):.0f})"><circle r="17"/><text y="6">H</text></g>'
+                f'<g class="s-hl s-l" transform="translate({px(lo_[2]):.0f} {py(lo_[1]):.0f})"><circle r="17"/><text y="6">L</text></g>'
+                f'<g class="s-vort" transform="translate({px(zbest[2]):.0f} {py(zbest[1]):.0f})"><circle r="11"/>'
+                f'<path d="M0 -6 A6 6 0 1 0 6 0" /><polygon points="6,-3 10,2 2,2"/></g>')
+        dt = datetime.date.fromisoformat(day)
+        txt = (f'{dt.day} {MONTHS[dt.month - 1][0]} {dt.year}', f'{dt.day} {MONTHS[dt.month - 1][1]} {dt.year}')
+        days_txt.append((txt, hi[0], lo_[0], zbest[0]))
+        frames += (f'<g class="sframe{" on" if t == key_i else ""}" data-i="{t}"><path class="s-iso" d="{iso["minor"]}"/>'
+                   f'<path class="s-iso major" d="{iso["major"]}"/>{labs}'
+                   f'<path class="s-w s-w0" d="{arrows[0]}"/><path class="s-w s-w1" d="{arrows[1]}"/><path class="s-w s-w2" d="{arrows[2]}"/>{mark}</g>')
+
+    def ph(t):
+        (di, de), hi, lo_, z = days_txt[t]
+        return (f'<span data-ph="{t}"{" class=on" if t == key_i else ""}>'
+                f'{bi(di + ": tekanan tertinggi di bingkai " + f"{hi:.0f}" + " hPa (H), terendah di sekitar kotak " + f"{lo_:.0f}" + " hPa (L), selisih " + f"{hi - lo_:.0f}" + " hPa; vortisitas siklonik maks. " + f"{z:.1f}" + "×10⁻⁵ s⁻¹.", de + ": highest pressure in frame " + f"{hi:.0f}" + " hPa (H), lowest around the box " + f"{lo_:.0f}" + " hPa (L), difference " + f"{hi - lo_:.0f}" + " hPa; peak cyclonic vorticity " + f"{z:.1f}" + "×10⁻⁵ s⁻¹.")}</span>')
+    phases = "".join(ph(t) for t in range(len(days_txt)))
+    lab = lambda lon, lat, text, cls="": (f'<div class="dlabel {cls}" style="left:{px(lon) / W * 100:.2f}%;top:{py(lat) / H * 100:.2f}%">{bi(*text)}</div>')
+    labels = "".join([lab(cfg["labels"][k]["lon"], cfg["labels"][k]["lat"], (cfg["labels"][k]["id"], cfg["labels"][k]["en"]), cls)
+                      for k, cls in (("borneo", "b"), ("scs", "m-sea"), ("sumatra", "b"), ("java", "b"), ("china", "b"))]
+                     + [lab((bx["lon"][0] + bx["lon"][1]) / 2, bx["lat"][1] + 1.4, UI["s_box"], "s-boxlab")])
+    y0, y1 = d["dates"][0], d["dates"][-1]
+    cap_id = (f"Peta cuaca harian dari NCEP/NCAR Reanalysis 1 (NOAA PSL), rata-rata harian {d['dates'][0]} sampai {d['dates'][-1]}, kisi 2,5°. "
+              f"Garis kontur: tekanan permukaan laut tiap 2 hPa (angka pada kelipatan 4 hPa). Panah: angin 925 hPa (sekitar 750 m), makin gelap makin kencang. "
+              f"H: tekanan tertinggi dalam bingkai; L: tekanan terendah di dalam atau sekitar (2,5°) kotak putus-putus. Lingkaran dengan panah melengkung: vortisitas siklonik terbesar di dalam kotak putus-putus "
+              f"(kotak yang dipakai EUMeTrain untuk mendefinisikan pusaran Borneo), dihitung di sini dari angin kisi 2,5°. Peta ini menunjukkan keadaan atmosfer pada hari-hari itu; "
+              f"kisi sekasar ini tidak memperlihatkan pusaran sebagai lingkaran tertutup yang tajam, dan penulis belum memeriksa pustaka bahwa pusaran Borneo dikenali pada periode ini.")
+    cap_en = (f"Daily weather maps from the NCEP/NCAR Reanalysis 1 (NOAA PSL), daily means {y0} to {y1}, 2.5° grid. "
+              f"Contours: sea-level pressure every 2 hPa (numbers on multiples of 4 hPa). Arrows: 925 hPa wind (about 750 m up), darker means stronger. "
+              f"H: highest pressure in the frame; L: lowest pressure in or within 2.5° of the dashed box. The circle with a curved arrow marks the strongest cyclonic vorticity inside the dashed box "
+              f"(the box EUMeTrain uses to define a Borneo vortex), computed here from the 2.5° wind grid. The maps show the state of the atmosphere on those days; "
+              f"a grid this coarse does not show the vortex as a sharp closed circle, and the author has not checked the literature to confirm a Borneo vortex was identified in this period.")
+    key = (f'<span><i class="sw" style="background:#9fb0c4"></i>{tt("s_k0")}</span><span><i class="sw" style="background:#4a7fc1"></i>{tt("s_k1")}</span>'
+           f'<span><i class="sw" style="background:#12306b"></i>{tt("s_k2")}</span><span><i class="sw" style="background:#6b7b8e;height:2px"></i>{tt("s_kiso")}</span>')
+    return f"""<figure class="diagram synoptic" data-kind="synoptic" data-n="{len(days_txt)}" data-key="{key_i}">
+  <p class="dhint">{tt("s_hint")}</p>
+  <div class="dscroll" tabindex="0" role="region" aria-label="{esc(UI['s_region'][0])}" data-focus="{(((bx["lon"][0] + bx["lon"][1]) / 2) - LON0) / (LON1 - LON0) * 100:.0f}">
+  <div class="dstage dmap dsyn" style="aspect-ratio:1000/{H:.0f}">
+    <svg class="dsvg" viewBox="0 0 {W:.0f} {H:.0f}" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <rect class="d-water" x="0" y="0" width="{W:.0f}" height="{H:.0f}"/>{land}{grat}{bvbox}{frames}</svg>
+    {labels}
+  </div>
+  </div>
+  <div class="dctl" hidden>
+    <button type="button" class="dplay" aria-pressed="false"><span class="lp">{tt("d_play")}</span><span class="lq">{tt("d_pause")}</span></button>
+    <input type="range" class="dscrub" min="0" max="{len(days_txt) - 1}" value="{key_i}" step="1" aria-label="{esc(UI['s_slider'][1])}">
+  </div>
+  <p class="dphase dsynphase">{phases}</p>
+  <div class="dkey">{key}</div>
+  <figcaption><p>{bi(cap_id, cap_en)}</p></figcaption>
+</figure>"""
+
+
 def entry_page(e):
     draft = e["status"] == "draft"
     sci, kl, place, cav = e["scientific"], e.get("local_knowledge"), e["place"], e.get("caveat")
@@ -1158,7 +1386,7 @@ def entry_page(e):
       {photo_block(e)}
       <h2>{t("scientific")}</h2>
       <p>{bi(sci["id"], sci["en"])}</p>
-      {(coldair_figure(e) if e["diagram"]["type"] == "coldair" else foehn_figure(e)) if e.get("diagram") else ""}
+      {({"coldair": coldair_figure, "synoptic": synoptic_figure}.get(e["diagram"]["type"], foehn_figure)(e)) if e.get("diagram") else ""}
       {caveat}
       <h2>{t("local_knowledge")}</h2>
       {local}
