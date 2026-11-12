@@ -4,6 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Klimatikal</title>
+<meta name="description" content="Live weather map from ECMWF open data: wind, temperature, rain, cloud and pressure forecasts.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#0D0630">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Klimatikal">
+<meta property="og:description" content="Live weather map from ECMWF open data: wind, temperature, rain, cloud and pressure forecasts.">
+<meta property="og:url" content="https://klimatikal.com/">
+<meta property="og:image" content="https://klimatikal.com/brand/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link href="https://unpkg.com/maplibre-gl@5.8.0/dist/maplibre-gl.css" rel="stylesheet">
 <style>
   :root { color-scheme: dark; }
@@ -14,8 +28,16 @@
   .panel { position: absolute; z-index: 2; background: rgba(12,18,34,.86);
     border: 1px solid rgba(255,255,255,.12); border-radius: 10px;
     backdrop-filter: blur(8px); padding: 10px 12px; }
-  #layers { top: 12px; left: 12px; display: flex; gap: 4px; flex-wrap: wrap;
-    max-width: calc(100vw - 62px); padding: 7px 8px; }
+  /* Top-left stack: brand, then the layer toolbar. One container so the two
+     never overlap however the toolbar wraps. */
+  #chrome { position: absolute; top: 12px; left: 12px; z-index: 2; display: flex;
+    flex-direction: column; align-items: flex-start; gap: 8px; max-width: calc(100vw - 62px); }
+  #chrome .panel { position: static; }
+  #brand { display: block; padding: 8px 14px; }
+  /* Sized by height, as the brand guide asks: the SVG has a fixed width. */
+  .logo-img { height: 40px; width: auto; display: block; }
+  @media (max-width: 600px) { .logo-img { height: 32px; } #brand { padding: 8px 10px; } }
+  #layers { display: flex; gap: 4px; flex-wrap: wrap; max-width: 100%; padding: 7px 8px; }
   #layers button { all: unset; cursor: pointer; padding: 6px 8px; border-radius: 7px;
     font-size: 12.5px; color: #cfd8ee; border: 1px solid transparent; white-space: nowrap; }
   #layers button[aria-pressed="true"] { background: #2d6cf6; color: #fff; }
@@ -64,7 +86,15 @@
 <div id="map"></div>
 <canvas id="grid" aria-hidden="true"></canvas>
 
-<div id="layers" class="panel" role="group" aria-label="Weather layer"></div>
+<div id="chrome">
+  <a id="brand" class="panel" href="/" aria-label="Klimatikal home">
+    <picture>
+      <source media="(max-width: 600px)" srcset="brand/klimatikal-mark-on-dark.svg">
+      <img src="brand/klimatikal-lockup-on-dark.svg" alt="Klimatikal" class="logo-img">
+    </picture>
+  </a>
+  <div id="layers" class="panel" role="group" aria-label="Weather layer"></div>
+</div>
 
 <div id="legend" class="panel" aria-label="Colour scale"></div>
 
@@ -82,7 +112,7 @@
 
 <div id="credit"></div>
 
-<div id="boot"><div><div style="font-size:18px;margin-bottom:6px">Klimatikal</div>
+<div id="boot"><div><img src="brand/klimatikal-mark-on-dark.svg" alt="Klimatikal" width="72" height="72" style="display:block;margin:0 auto 10px">
 <div id="boot-msg" style="color:#8e9ab8">Loading the latest forecast…</div></div></div>
 
 <!-- Pinned to a version that still ships a UMD bundle. MapLibre 6 is ESM-only,
