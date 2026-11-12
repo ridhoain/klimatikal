@@ -145,11 +145,13 @@ const RAMPS = {
 
 // Wind particle speed, in pixels per frame for a 10 m/s wind. Lower is slower.
 // Override while tuning with ?windspeed=0.5 (a multiplier on this value).
-const WIND_PX_PER_FRAME = 0.5;
+const WIND_PX_PER_FRAME = 0.25;
 const WIND_SPEED = Number(new URLSearchParams(location.search).get("windspeed")) || 1;
 // A particle is drawn as a streak this many steps long, so slow motion still
 // has a visible trail. It is a drawing choice and does not change the motion.
-const WIND_TRAIL_STEPS = 6;
+// 24 steps at 0.25 px per step is a 6px streak for a 10 m/s wind (about 18px
+// for a 30 m/s one), twice the length it had when it moved twice as fast.
+const WIND_TRAIL_STEPS = 24;
 
 const ENCODING_ID = { scalar8: 0, scalar16: 1, vector8: 2 };
 
@@ -785,15 +787,18 @@ class App {
     // rows on a narrow screen.
     const labelTop = document.getElementById("layers").getBoundingClientRect().bottom + 10;
 
+    // Kept quiet on purpose: the grid is a reference, and the weather and the
+    // coastline are what the eye should land on.
+    const GRID_LINE = "rgba(255,255,255,0.11)";
     ctx.lineWidth = 1;
-    ctx.strokeStyle = "rgba(255,255,255,0.22)";
+    ctx.strokeStyle = GRID_LINE;
     ctx.font = "11px ui-sans-serif, system-ui, sans-serif";
     ctx.textBaseline = "middle";
     const halo = (text, x, y, align) => {
       ctx.textAlign = align;
-      ctx.lineWidth = 3; ctx.strokeStyle = "rgba(8,12,24,0.85)"; ctx.strokeText(text, x, y);
-      ctx.fillStyle = "rgba(235,240,252,0.95)"; ctx.fillText(text, x, y);
-      ctx.lineWidth = 1; ctx.strokeStyle = "rgba(255,255,255,0.22)";
+      ctx.lineWidth = 3; ctx.strokeStyle = "rgba(8,12,24,0.7)"; ctx.strokeText(text, x, y);
+      ctx.fillStyle = "rgba(225,232,248,0.72)"; ctx.fillText(text, x, y);
+      ctx.lineWidth = 1; ctx.strokeStyle = GRID_LINE;
     };
 
     const k0 = Math.ceil(b.getWest() / step), k1 = Math.floor(b.getEast() / step);
@@ -907,10 +912,12 @@ class App {
   // first: it matters most, and the largest file (provinces) goes last.
   addBoundaries() {
     const geo = (name) => new URL(`geo/${name}.json`, location.href).href;
-    const line = (id, source, color, width, extra = {}) => this.map.addLayer({
+    const line = (id, source, color, width, { opacity, ...extra } = {}) => this.map.addLayer({
       id, source, type: "line",
       layout: { "line-join": "round", "line-cap": "round" },
-      paint: { "line-color": color, "line-width": width }, ...extra,
+      paint: { "line-color": color, "line-width": width,
+               ...(opacity ? { "line-opacity": opacity } : {}) },
+      ...extra,
     });
     const w = (a, b) => ["interpolate", ["linear"], ["zoom"], 2, a, 8, b];
     const add = (name, layers) => {
@@ -926,8 +933,10 @@ class App {
       line("admin0", "admin0", "rgba(255,255,255,0.7)", w(0.7, 1.3));
     });
     add("admin1", () => {
-      line("admin1-casing", "admin1", "rgba(8,12,24,0.35)", w(0.8, 1.6), { minzoom: 3.2 });
-      line("admin1", "admin1", "rgba(255,255,255,0.35)", w(0.4, 0.9), { minzoom: 3.2 });
+      // Province lines from zoom 2, fading in so the world view stays clean.
+      const fade = ["interpolate", ["linear"], ["zoom"], 2, 0.3, 4, 1];
+      line("admin1-casing", "admin1", "rgba(8,12,24,0.35)", w(0.8, 1.6), { minzoom: 2, opacity: fade });
+      line("admin1", "admin1", "rgba(255,255,255,0.35)", w(0.4, 0.9), { minzoom: 2, opacity: fade });
     });
   }
 
