@@ -154,6 +154,7 @@ UI = {
     "name_local": ("Nama lokal", "Local name"),
     "name_en": ("Nama Inggris", "English name"),
     "scientific": ("Penjelasan ilmiah", "Scientific description"),
+    "note": ("Catatan", "Note"),
     "local_knowledge": ("Pengetahuan lokal", "Local knowledge"),
     "location": ("Lokasi", "Location"),
     "sources": ("Sumber", "Sources"),
@@ -205,6 +206,9 @@ def load_entries():
         kl = e.get("local_knowledge")
         if kl is not None:
             need(kl.get("id") and kl.get("en"), "'local_knowledge' needs both 'id' and 'en', or null")
+        cav = e.get("caveat")
+        if cav is not None:
+            need(cav.get("id") and cav.get("en"), "'caveat' needs both 'id' and 'en', or leave it out")
 
         photo = e.get("photo")
         if photo is not None:
@@ -284,6 +288,11 @@ def card(e):
         notes = "".join(f"<li>{esc(n)}</li>" for n in e["curator_notes"])
         curator = f'<details class="curator"><summary>{t("curator")}</summary><ul>{notes}</ul></details>'
 
+    # An optional note under the science text, for where sources disagree or
+    # something is not settled. Public, so it must be written for readers.
+    cav = e.get("caveat")
+    caveat_html = (f'<p class="caveat"><b>{t("note")}</b> {bi(cav["id"], cav["en"])}</p>' if cav else "")
+
     map_href = f'/#layer=wind&step=0&at={e["lon"]:.2f},{e["lat"]:.2f},7'
     return f"""    <article class="card" id="{esc(e['id'])}" data-scale="{e['scale']}" data-doc="{e['documentation']}" data-search="{esc(search)}">
       {media}
@@ -292,6 +301,7 @@ def card(e):
         {"".join(names)}
         <h4>{t("scientific")}</h4>
         <p>{bi(sci["id"], sci["en"])}</p>
+        {caveat_html}
         <h4>{t("local_knowledge")}</h4>
         {local}
         <h4>{t("location")}</h4>

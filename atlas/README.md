@@ -23,6 +23,7 @@ file name must equal `id` (it becomes the card's link: `/atlas-cuaca/#slug`).
 | `place` | `{ "id": "...", "en": "..." }` |
 | `lat`, `lon` | the pin; decimal degrees |
 | `scientific` | `{ "id": "...", "en": "..." }`, short |
+| `caveat` | optional `{ "id": "...", "en": "..." }`: a public note under the science text, for where sources disagree or something is unsettled |
 | `local_knowledge` | `{ "id": "...", "en": "..." }` or `null` |
 | `photo` | `null`, or `{ "file", "alt", "credit", "licence" }` |
 | `sources` | list of `{ "text", "url" }` (`url` optional) |

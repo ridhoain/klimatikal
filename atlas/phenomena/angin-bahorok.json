@@ -21,6 +21,11 @@
     "en": "The Bahorok wind is a warm, dry downslope wind (the foehn effect) on the eastern side of the Bukit Barisan range in North Sumatra, blowing on the plains of Deli, Langkat and Serdang. Moist air crossing the range sheds its rain on the windward side and loses moisture; descending the lee side, here the eastern slopes, it warms at the dry adiabatic rate and arrives on the plains as a warmer, drier wind. According to the AMS Glossary of Meteorology, which spells it “bohorok”, it sets in during May and remains common until September. Its effect on the tobacco estates of the Deli plains made it feared. On days when it blows, the windward side gets more rain than normal."
   },
 
+  "caveat": {
+    "id": "Sumber-sumber berbeda soal monsun penyebabnya. Entri AMS menyebut “monsun timur” yang melintasi Pegunungan Barisan, sedangkan daftar angin foehn dari EUMeTrain mengaitkannya dengan monsun barat daya. Arah aliran udara belum dikonfirmasi dalam atlas ini.",
+    "en": "Sources differ on the monsoon behind it. The AMS entry names the “east monsoon” crossing the Barisan Mountains, while EUMeTrain's list of foehn winds ties it to the south-west monsoon. The airflow direction has not yet been confirmed for this atlas."
+  },
+
   "local_knowledge": null,
 
   "photo": null,
@@ -29,6 +34,10 @@
     {
       "text": "American Meteorological Society, Glossary of Meteorology: “Bohorok”",
       "url": "https://glossary.ametsoc.org/wiki/Bohorok"
+    },
+    {
+      "text": "EUMeTrain, “Foehn”, satellite manual: list of foehn winds and their local names (© 2014 EUMeTrain)",
+      "url": "https://resources.eumetrain.org/satmanu/CMs/Fh/print.htm"
     }
   ],
 
@@ -36,7 +45,8 @@
     "AMS ENTRY CONFIRMED from the text you pasted. The card paraphrases it (months, tobacco concern, windward-side rain, spelling 'bohorok') and cites it; the AMS wording is copyrighted and is deliberately not reproduced. It is a glossary entry, not research.",
     "REMOVED from my first draft because the AMS entry does not support them: 'gusty' and 'damages crops'. The card now says only what AMS says: it is feared for its effect on the Deli tobacco plantations.",
     "SPELLING: the AMS entry prints the plains as 'Deli, Langkat, and Lerdang'. The card says 'Serdang' (Deli Serdang), presumably the same place and a typo in the glossary. Please confirm.",
-    "UNRESOLVED, YOUR CALL: the AMS entry attributes the wind to the 'east monsoon' crossing the Barisan Mountains, while a European foehn-name list (EUMeTrain) reportedly says south-west monsoon. The card repeats neither. My reasoning, not a source: the Deli plains lie on the east, lee side of Bukit Barisan, so a foehn there needs air crossing the range from the west or south-west; air crossing from the east would put the foehn on the west side. So 'east monsoon' may be an old name for the dry-season monsoon and not a wind direction. If you want it in the card, tell me the wording (for example 'AMS attributes it to the east monsoon, a term that here denotes the dry season') and I will add it with the attribution.",
+    "CAVEAT ADDED, STILL UNSETTLED: the card now shows a public 'Note' saying the sources differ (AMS: 'east monsoon' crossing the Barisan; EUMeTrain: south-west monsoon) and that the airflow direction is not confirmed. Both are now verified by reading: AMS from your paste, EUMeTrain from the page itself. Its list shows 'Sumatra, during SW- Monsoon' then 'Bohorok' with no description; I read the region-and-name pairing from the list layout, which the page does not state outright.",
+    "MY REASONING, deliberately NOT on the page: the Deli plains lie on the east, lee side of Bukit Barisan, so a foehn there needs air crossing the range from the west or south-west; air crossing from the east would put the foehn on the west side. That favours the south-west reading, and 'east monsoon' may be an old name for the dry-season monsoon and not a wind direction. If you can confirm this from a source, the Note can be replaced with a plain statement.",
     "Lead, unread: an Indonesian literature review on foehn winds (Jurnal Phydagogic, vol. 7 no. 1, 2024; ojs.unsulbar.ac.id/index.php/phy/article/view/3849) reportedly lists Bahorok under the Deli region. Its PDF could not be read here and the authors are not confirmed, so it is not cited.",
     "Not found: no peer-reviewed study measuring Bahorok wind speed, temperature or crop damage turned up in my searches. If one exists it will help most; Indonesian journals and BMKG's North Sumatra office (BBMKG Wilayah I, Medan) are the places to ask.",
     "Local knowledge: empty. Searches found nothing on the community's own account of this wind. Plantation-company records (for example the Deli Maatschappij) and Karo or Langkat Malay oral accounts are possible places, but this needs a named source; do not paraphrase from memory.",
