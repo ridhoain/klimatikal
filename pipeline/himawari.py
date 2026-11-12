@@ -12,6 +12,10 @@ is 24 MB per 10-minute full disk, is available day and night, and shows cold
 cloud tops, which is what a weather map wants. Visible and true colour are a
 later phase: B03 alone is 140 MB per slot.
 
+It keeps the last HISTORY_HOURS (3) of 10-minute frames so the site's time slider
+can step through them; each run builds the missing ones, newest first, at most
+--max-new per run. Frames whose image has gone are dropped from the manifest.
+
 Output (same safety order as build_run.py, the manifest goes last):
     sat/ir/<YYYYMMDDTHHMMZ>.webp   image, Web Mercator, so MapLibre can place it
                                    with four corners and no distortion
@@ -72,7 +76,8 @@ LEGEND_TICKS = [-80, -60, -40, -20, 0]
 ATTRIBUTION = "Satellite: Himawari-9 (JMA), via NOAA Open Data"
 CACHE_IMAGE = "public, max-age=31536000, immutable"
 CACHE_MANIFEST = "public, max-age=60"
-KEEP_FRAMES = 6
+HISTORY_HOURS = 3      # the site's slider offers this much past satellite time
+MAX_NEW = 4            # frames built per scheduled run; a gap heals over a few runs
 
 
 def log(message: str) -> None:
@@ -213,6 +218,19 @@ class Sink:
                 return None
             raise
 
+    def exists(self, key: str) -> bool:
+        if self.dry_run:
+            return (Path(self.dest) / key).exists()
+        from botocore.exceptions import ClientError
+
+        try:
+            self.client.head_object(Bucket=self.bucket, Key=key)
+            return True
+        except ClientError as err:
+            if err.response.get("Error", {}).get("Code") in ("404", "NoSuchKey", "NotFound"):
+                return False
+            raise
+
     def delete(self, key: str) -> None:
         if self.dry_run:
             (Path(self.dest) / key).unlink(missing_ok=True)
@@ -250,42 +268,13 @@ def manifest_for(frames: list[dict]) -> dict:
     }
 
 
-def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--slot", help="UTC slot to build, e.g. 2026-11-12T13:00; default newest complete")
-    ap.add_argument("--dry-run", action="store_true", help="write to --dest instead of R2")
-    ap.add_argument("--dest", default="./out", help="output directory for --dry-run")
-    ap.add_argument("--keep", type=int, default=KEEP_FRAMES, help="frames to retain")
-    ap.add_argument("--force", action="store_true", help="rebuild even if this slot is published")
-    args = ap.parse_args()
+def iso(slot: dt.datetime) -> str:
+    return f"{slot:%Y-%m-%dT%H:%MZ}"
 
-    t0 = time.time()
-    s3 = noaa_client()
-    if args.slot:
-        slot = dt.datetime.strptime(args.slot, "%Y-%m-%dT%H:%M").replace(tzinfo=dt.timezone.utc)
-        keys = slot_keys(s3, slot)
-        if not is_complete(keys):
-            raise SystemExit(f"slot {args.slot} is missing or incomplete ({len(keys)} files)")
-    else:
-        found = newest_complete_slot(s3, dt.datetime.now(dt.timezone.utc))
-        if not found:
-            raise SystemExit("no complete slot in the last two hours; NOAA copy may be behind")
-        slot, keys = found
+
+def build_frame(s3, slot: dt.datetime, keys: list[str], sink: Sink) -> dict:
+    """Download, reproject, colour and upload one slot; return its manifest entry."""
     stamp = f"{slot:%Y%m%dT%H%MZ}"
-    log(f"newest complete slot: {stamp} ({len(keys)} segments)")
-
-    sink = Sink(args.dest, args.dry_run)
-    old = sink.read_json("sat/manifest.json") or {"frames": []}
-    frames = old["frames"]
-    # Frames from before bounds were stored per frame came from an older, smaller
-    # crop. Drop them (and their images) so they can never be drawn with the
-    # wrong corners.
-    stale = [f for f in frames if "bounds" not in f]
-    frames = [f for f in frames if "bounds" in f]
-    if any(f["t"] == f"{slot:%Y-%m-%dT%H:%MZ}" for f in frames) and not args.force:
-        log("already published, nothing to do")
-        return
-
     with tempfile.TemporaryDirectory() as tmp:
         def fetch(key: str) -> str:
             path = Path(tmp) / Path(key).name
@@ -294,40 +283,102 @@ def main() -> None:
 
         with ThreadPoolExecutor(max_workers=SEGMENTS) as pool:   # boto3 clients are thread-safe
             files = list(pool.map(fetch, keys))
-        log(f"downloaded {sum(Path(f).stat().st_size for f in files) / 1e6:.0f} MB")
+        log(f"{stamp}: downloaded {sum(Path(f).stat().st_size for f in files) / 1e6:.0f} MB")
         kelvin = brightness_temperature(files)
 
     valid = np.isfinite(kelvin)
     if valid.mean() < 0.5:
         # Nearest-neighbour onto a grid that is mostly on-disk should be mostly
         # valid; anything else means the read or the geolocation failed.
-        raise SystemExit(f"only {valid.mean():.0%} of pixels valid, refusing to publish")
-    log(f"reprojected {kelvin.shape[1]}x{kelvin.shape[0]}, "
-        f"{np.nanmin(kelvin) - 273.15:.0f} to {np.nanmax(kelvin) - 273.15:.0f} C")
+        raise SystemExit(f"{stamp}: only {valid.mean():.0%} of pixels valid, refusing to publish")
 
     body = webp_bytes(colourise(kelvin))
+    del kelvin, valid
+    gc.collect()
     # The file name carries a hash of the content. Images are cached for a year
     # ("immutable"), so one name must never mean two different pictures: when it
     # did (a changed crop rebuilt under the same slot name), browsers kept the old
     # picture and drew it with the new corners, squeezed.
     name = f"ir/{stamp}-{hashlib.sha1(body).hexdigest()[:8]}.webp"
-    key = f"sat/{name}"
-    sink.put(key, body, "image/webp", CACHE_IMAGE)
-    log(f"uploaded {key} ({len(body) / 1e6:.1f} MB)")
+    sink.put(f"sat/{name}", body, "image/webp", CACHE_IMAGE)
+    log(f"{stamp}: uploaded {name} ({len(body) / 1e6:.1f} MB)")
+    return {"t": iso(slot), "image": name, "bounds": frame_bounds()}
 
-    frames = [f for f in frames if f["t"] != f"{slot:%Y-%m-%dT%H:%MZ}"]
-    frames.append({"t": f"{slot:%Y-%m-%dT%H:%MZ}", "image": name, "bounds": frame_bounds()})
-    frames.sort(key=lambda f: f["t"])
-    dropped, frames = frames[:-args.keep] + stale, frames[-args.keep:]
 
-    # Manifest last: until this write the site keeps showing the previous frame.
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--slot", help="treat this UTC slot as the newest, e.g. 2026-11-12T13:00")
+    ap.add_argument("--dry-run", action="store_true", help="write to --dest instead of R2")
+    ap.add_argument("--dest", default="./out", help="output directory for --dry-run")
+    ap.add_argument("--hours", type=float, default=HISTORY_HOURS, help="hours of history to keep")
+    ap.add_argument("--max-new", type=int, default=MAX_NEW, help="most frames to build in this run")
+    ap.add_argument("--force", action="store_true", help="rebuild the newest slot even if published")
+    args = ap.parse_args()
+
+    t0 = time.time()
+    s3 = noaa_client()
+    if args.slot:
+        newest = dt.datetime.strptime(args.slot, "%Y-%m-%dT%H:%M").replace(tzinfo=dt.timezone.utc)
+        if not is_complete(slot_keys(s3, newest)):
+            raise SystemExit(f"slot {args.slot} is missing or incomplete")
+    else:
+        found = newest_complete_slot(s3, dt.datetime.now(dt.timezone.utc))
+        if not found:
+            raise SystemExit("no complete slot in the last two hours; NOAA copy may be behind")
+        newest = found[0]
+    log(f"newest complete slot: {iso(newest)}")
+
+    sink = Sink(args.dest, args.dry_run)
+    old = sink.read_json("sat/manifest.json") or {"frames": []}
+    # Frames from before bounds were stored per frame came from an older, smaller
+    # crop; frames whose image has gone (deleted, or never uploaded) would draw
+    # nothing. Either way they leave the manifest, so the site never offers them.
+    stale = [f for f in old["frames"] if "bounds" not in f]
+    frames = [f for f in old["frames"] if "bounds" in f and sink.exists(f"sat/{f['image']}")]
+    stale += [f for f in old["frames"] if "bounds" in f and f not in frames]
+
+    # Every 10-minute slot in the window, newest first, minus what we have.
+    n = int(round(args.hours * 6))
+    wanted = [newest - dt.timedelta(minutes=10 * k) for k in range(n + 1)]
+    have = {f["t"] for f in frames}
+    todo = [sl for sl in wanted if iso(sl) not in have or (sl == newest and args.force)]
+    if not todo:
+        log("already published, nothing to do")
+        if stale:
+            write_manifest(sink, frames)
+        return
+    todo = todo[:args.max_new]
+    log(f"building {len(todo)} of {len(wanted)} slots in the window")
+
+    for slot in todo:
+        keys = slot_keys(s3, slot)
+        if not is_complete(keys):
+            log(f"{iso(slot)}: missing or incomplete, skipped")
+            continue
+        frame = build_frame(s3, slot, keys, sink)
+        frames = [f for f in frames if f["t"] != frame["t"]] + [frame]
+        frames.sort(key=lambda f: f["t"])
+        # Manifest after every frame: a crash later loses nothing already built,
+        # and until this write the site keeps showing what it had.
+        write_manifest(sink, frames)
+
+    # Leave the window: drop frames older than it, then delete their files
+    # (never one a kept frame still points at).
+    oldest = iso(newest - dt.timedelta(minutes=10 * n))
+    dropped = [f for f in frames if f["t"] < oldest] + stale
+    frames = [f for f in frames if f["t"] >= oldest]
+    if dropped:
+        write_manifest(sink, frames)
+        keep_images = {f["image"] for f in frames}
+        for f in dropped:
+            if f["image"] not in keep_images:
+                sink.delete(f"sat/{f['image']}")
+    log(f"done in {time.time() - t0:.0f}s, {len(frames)} frames kept, {len(dropped)} pruned")
+
+
+def write_manifest(sink: Sink, frames: list[dict]) -> None:
     sink.put("sat/manifest.json", json.dumps(manifest_for(frames)).encode(),
              "application/json", CACHE_MANIFEST)
-    keep_images = {f["image"] for f in frames}
-    for f in dropped:
-        if f["image"] not in keep_images:      # never delete a file a kept frame still uses
-            sink.delete(f"sat/{f['image']}")
-    log(f"done in {time.time() - t0:.0f}s, {len(frames)} frames kept, {len(dropped)} pruned")
 
 
 if __name__ == "__main__":

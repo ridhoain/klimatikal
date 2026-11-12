@@ -60,12 +60,15 @@
   #ticks i { position: absolute; top: 0; width: 1px; height: 4px; margin-left: -.5px;
     background: rgba(255,255,255,.28); }
   #ticks i.half { height: 6px; background: rgba(255,255,255,.45); }
+  #ticks i.sat { height: 6px; background: #5ad1ff; }
   #ticks i.day { height: 9px; background: rgba(255,255,255,.8); }
   #ticks button { all: unset; cursor: pointer; position: absolute; top: 10px; transform: translateX(-50%);
     font-size: 10.5px; line-height: 1; color: #9fb0d4; white-space: nowrap; padding: 2px 3px;
     border-radius: 4px; font-variant-numeric: tabular-nums; }
   #ticks button[hidden] { display: none; }  /* `all: unset` above would otherwise show it */
+  #ticks button.sat { color: #5ad1ff; }
   #ticks button:hover, #ticks button:focus-visible { color: #fff; background: #243156; }
+  #stamp small.obs { color: #5ad1ff; }
   #stamp small { display: block; font-size: 11px; color: #8e9ab8; text-align: right; }
   #stamp { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 13px; }
   #play { all: unset; cursor: pointer; padding: 4px 10px; border-radius: 7px; background: #243156; }
@@ -692,7 +695,18 @@ class App {
     this.textures = new Map();
     this.pending = new Map();
     this.layer = "wind";
-    this.stepIndex = 0;
+    this.stepIndex = 0;       // forecast-step units (may be fractional); what the weather layers read
+    // The slider runs along `axis`: normally the forecast steps; with the
+    // satellite on, the last few hours of satellite frames first (10-minute
+    // steps), then the forecast steps after them. `pos` is the slider position
+    // (float while playing); stepIndex is derived from it, so the weather field
+    // always matches the time shown. See buildAxis().
+    this.axis = null;
+    this.pos = 0;
+    this.stepFromURL = false;
+    this.satShown = null;     // the frame currently in the map's image source
+    this.satSwap = 0;         // latest-wins token for frame swaps while scrubbing
+    this.satBad = new Set();  // images that failed to load; dropped from the axis
     this.playing = false;
     this.gridOn = true;
     this.labelsOn = true;
@@ -867,9 +881,10 @@ class App {
     this.satOpacity = satOp;
 
     const slider = document.getElementById("slider");
-    slider.max = String(this.steps.length - 1);
-    slider.value = String(this.stepIndex);
-    slider.oninput = () => { this.stepIndex = +slider.value; this.onTimeChange(); };
+    this.axis = this.buildAxis();
+    slider.max = String(this.axis.length - 1);
+    slider.oninput = () => { this.setPos(+slider.value); this.onTimeChange(); };
+    this.setPos(Math.round(this.stepIndex));
 
     this.buildTicks();
     const timeBox = document.getElementById("time");
@@ -940,7 +955,7 @@ class App {
     const gradient = m.colormap.map(([v, c]) => `rgb(${c[0]},${c[1]},${c[2]}) ${(at(v) * 100).toFixed(1)}%`).join(", ");
     const t = this.satFrame ? new Date(this.satFrame.t) : null;
     const hh = (d, off) => String(new Date(d.getTime() + off * 3600e3).getUTCHours()).padStart(2, "0");
-    const note = t ? `Observed ${hh(t, 0)}:${String(t.getUTCMinutes()).padStart(2, "0")} UTC (${hh(t, 7)}:${String(t.getUTCMinutes()).padStart(2, "0")} WIB)` : "";
+    const note = !t ? "No satellite image for this time" : `Observed ${hh(t, 0)}:${String(t.getUTCMinutes()).padStart(2, "0")} UTC (${hh(t, 7)}:${String(t.getUTCMinutes()).padStart(2, "0")} WIB)`;
     return this.legendColumn(m.label, m.unit, gradient,
       m.legend_ticks.map((v) => ({ v, p: at(v) })), note);
   }
@@ -1022,42 +1037,103 @@ class App {
 
   tick() {
     if (!this.playing) return;
-    this.stepIndex += 0.08;
-    if (this.stepIndex > this.steps.length - 1) this.stepIndex = 0;
-    document.getElementById("slider").value = String(Math.round(this.stepIndex));
+    let p = this.pos + 0.08;
+    if (p > this.axis.length - 1) p = 0;
+    this.setPos(p);
     this.onTimeChange();
     requestAnimationFrame(() => this.tick());
   }
 
-  // A tick for every forecast step, taller at 12:00 and 00:00 UTC, and a date
-  // label at each 00:00 UTC (plus the first step). Labels are dropped, not
-  // squeezed, when there is no room (see layoutTickLabels); every label is
-  // also a button that jumps to that time.
+  // --- the time axis ------------------------------------------------------
+  // forecast-step index (fractional) for a clock time, by the manifest's steps
+  siAt(date) {
+    const hours = (date.getTime() - this.runStart.getTime()) / 3600e3;
+    const st = this.steps, last = st.length - 1;
+    if (hours <= st[0]) return 0;
+    if (hours >= st[last]) return last;
+    let k = 0;
+    while (st[k + 1] <= hours) k++;
+    return k + (hours - st[k]) / (st[k + 1] - st[k]);
+  }
+
+  // Entries {kind, t, si, frame?}. Without satellite: the forecast steps, as
+  // always. With it: the satellite frames (observed, past), then only the
+  // forecast steps that come after the newest frame, so the slider reads as one
+  // timeline "last few hours as observed, then what is forecast". Forecast
+  // hours older than the window are left out while the satellite is on.
+  buildAxis() {
+    const fc = this.steps.map((h, i) => ({ kind: "fc", si: i, t: this.validAt(i) }));
+    if (!(this.satOn && this.satLoaded && this.satManifest)) return fc;
+    const maxT = this.validAt(this.steps.length - 1).getTime();
+    const sat = this.satManifest.frames
+      .filter((f) => f.bounds && !this.satBad.has(f.image))
+      .map((f) => { const t = new Date(f.t); return { kind: "sat", frame: f, t, si: this.siAt(t) }; })
+      .filter((e) => !isNaN(e.t) && e.t.getTime() >= this.runStart.getTime() && e.t.getTime() <= maxT)
+      .sort((a, b) => a.t - b.t);
+    if (!sat.length) return fc;
+    const after = sat[sat.length - 1].t.getTime() + 15 * 60e3;
+    return sat.concat(fc.filter((e) => e.t.getTime() > after));
+  }
+
+  setPos(p) {
+    const n = this.axis.length;
+    p = Math.max(0, Math.min(n - 1, p));
+    this.pos = p;
+    const i = Math.floor(p), j = Math.min(i + 1, n - 1);
+    this.stepIndex = this.axis[i].si + (this.axis[j].si - this.axis[i].si) * (p - i);
+    document.getElementById("slider").value = String(Math.round(p));
+  }
+
+  // Rebuild after the satellite is switched, loaded, refreshed or loses a frame.
+  // Keeps the same clock time (nearest entry) unless told to jump to the newest
+  // satellite frame, which is what you want on switching it on.
+  rebuildAxis({ toLatestSat = false } = {}) {
+    const cur = this.axis && this.axis[Math.round(this.pos)];
+    const when = cur ? cur.t.getTime() : this.validAt(Math.round(this.stepIndex)).getTime();
+    this.axis = this.buildAxis();
+    document.getElementById("slider").max = String(this.axis.length - 1);
+    let target = 0, best = Infinity;
+    this.axis.forEach((e, i) => { const d = Math.abs(e.t.getTime() - when); if (d < best) { best = d; target = i; } });
+    if (toLatestSat) {
+      for (let i = this.axis.length - 1; i >= 0; i--) if (this.axis[i].kind === "sat") { target = i; break; }
+    }
+    this.buildTicks();
+    this.setPos(target);
+    this.onTimeChange();
+  }
+
+  // A tick for every entry of the axis (satellite ones in blue), taller at
+  // 12:00 and 00:00 UTC, and a date label at each 00:00 UTC plus the first
+  // entry. Labels are dropped, not squeezed, when there is no room (see
+  // layoutTickLabels); every label is also a button that jumps to that time.
   buildTicks() {
     const box = document.getElementById("ticks");
-    const n = this.steps.length;
+    const n = this.axis.length;
     box.textContent = "";
     this.tickLabels = [];
     const frac = (i) => (n > 1 ? i / (n - 1) : 0);
+    const two = (v) => String(v).padStart(2, "0");
     for (let i = 0; i < n; i++) {
-      const d = this.validAt(i), hr = d.getUTCHours();
+      const e = this.axis[i], d = e.t, hr = d.getUTCHours();
       const t = document.createElement("i");
-      if (hr === 0) t.className = "day"; else if (hr === 12) t.className = "half";
+      if (e.kind === "sat") t.className = "sat";
+      else if (hr === 0) t.className = "day"; else if (hr === 12) t.className = "half";
       t.style.left = `${frac(i) * 100}%`;
       box.appendChild(t);
-      if (hr === 0 || i === 0) {
+      if ((e.kind === "fc" && hr === 0) || i === 0) {
         const b = document.createElement("button");
         b.type = "button";
-        b.textContent = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", timeZone: "UTC" })
-          + (hr === 0 ? "" : ` ${String(hr).padStart(2, "0")}Z`);
+        const date = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", timeZone: "UTC" });
+        if (e.kind === "sat") {
+          b.className = "sat";
+          b.textContent = `Satellite ${two(hr)}:${two(d.getUTCMinutes())}Z`;
+        } else {
+          b.textContent = date + (hr === 0 ? "" : ` ${two(hr)}Z`);
+        }
         b.title = d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })
-          + ` ${String(hr).padStart(2, "0")}:00 UTC`;
+          + ` ${two(hr)}:${two(d.getUTCMinutes())} UTC`;
         b.style.left = `${frac(i) * 100}%`;
-        b.onclick = () => {
-          this.stepIndex = i;
-          document.getElementById("slider").value = String(i);
-          this.onTimeChange();
-        };
+        b.onclick = () => { this.setPos(i); this.onTimeChange(); };
         box.appendChild(b);
         this.tickLabels.push({ el: b, x: frac(i) });
       }
@@ -1083,15 +1159,20 @@ class App {
   }
 
   onTimeChange() {
-    const d = this.validAt(Math.round(this.stepIndex));
-    const hh = String(d.getUTCHours()).padStart(2, "0");
+    const entry = this.axis[Math.round(this.pos)];
+    const d = entry.t;
+    const two = (v) => String(v).padStart(2, "0");
     const day = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
     // Indonesia is UTC+7 (WIB); the map's audience is there, so show it too.
     const wib = new Date(d.getTime() + 7 * 3600e3);
     const wibDay = wib.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
-    const wibH = String(wib.getUTCHours()).padStart(2, "0");
+    const hasSat = this.axis.some((e) => e.kind === "sat");
+    const tag = hasSat
+      ? `<small class="${entry.kind === "sat" ? "obs" : ""}">${entry.kind === "sat" ? "Satellite observation" : "Forecast"}</small>` : "";
     document.getElementById("stamp").innerHTML =
-      `${day} ${hh}:00 UTC<small>${wibDay === day ? "" : wibDay + " "}${wibH}:00 WIB</small>`;
+      `${day} ${two(d.getUTCHours())}:${two(d.getUTCMinutes())} UTC` +
+      `<small>${wibDay === day ? "" : wibDay + " "}${two(wib.getUTCHours())}:${two(wib.getUTCMinutes())} WIB</small>${tag}`;
+    this.applySatelliteTime(entry);
     this.textureFor(this.layer, Math.floor(this.stepIndex) + 1);  // prefetch
     this.writeURL();
     this.map && this.map.triggerRepaint();
@@ -1105,7 +1186,10 @@ class App {
   readURL() {
     const h = new URLSearchParams(location.hash.slice(1));
     if (h.get("layer") && this.manifest.layers[h.get("layer")]) this.layer = h.get("layer");
-    if (h.get("step")) this.stepIndex = Math.max(0, Math.min(this.steps.length - 1, +h.get("step")));
+    if (h.get("step")) {
+      this.stepIndex = Math.max(0, Math.min(this.steps.length - 1, +h.get("step")));
+      this.stepFromURL = true;
+    }
     this.view = h.get("at") ? h.get("at").split(",").map(Number) : null;
     if (h.get("grid") !== null) this.gridOn = h.get("grid") !== "0";
     if (h.get("radar") === "1") this.radarOn = true;
@@ -1118,7 +1202,7 @@ class App {
     const c = this.map.getCenter();
     const at = `${c.lng.toFixed(2)},${c.lat.toFixed(2)},${this.map.getZoom().toFixed(1)}`;
     const h = new URLSearchParams({
-      layer: this.layer, step: String(Math.round(this.stepIndex)), at,
+      layer: this.layer, step: String(Math.round(this.stepIndex * 100) / 100), at,
       grid: this.gridOn ? "1" : "0", radar: this.radarOn ? "1" : "0",
       sat: this.satOn ? "1" : "0",
       labels: this.labelsOn ? "1" : "0",
@@ -1333,10 +1417,11 @@ class App {
     if (this.satBtn) this.satBtn.setAttribute("aria-pressed", String(on));
     if (this.satOpacity) this.satOpacity.hidden = !on;
     if (on) {
-      if (this.satLoaded) this.showSatellite(true);
-      else if (!this.satLoading) this.loadSatellite();
+      if (this.satLoaded) this.rebuildAxis({ toLatestSat: true });   // jump to "now"
+      else if (!this.satLoading) this.loadSatellite({ toLatestSat: true });
     } else if (this.satLoaded) {
       this.showSatellite(false);
+      this.rebuildAxis();                                          // back to the forecast axis
     }
     this.writeURL();
     this.paintLegend();
@@ -1348,21 +1433,60 @@ class App {
       this.map.setLayoutProperty("sat", "visibility", visible ? "visible" : "none");
   }
 
-  satCoordinates() {
+  satCoordinates(frame) {
     // Each frame carries its own corners; the manifest's are the fallback.
-    const { west, south, east, north } = (this.satFrame && this.satFrame.bounds) || this.satManifest.bounds;
+    const { west, south, east, north } = (frame && frame.bounds) || this.satManifest.bounds;
     return [[west, north], [east, north], [east, south], [west, south]];
   }
 
-  async loadSatellite() {
+  // Show the satellite frame that belongs to this slider entry, or hide the
+  // layer when the slider is on a forecast time (there is no image for the
+  // future). Frames are fetched and decoded off-screen first and the latest
+  // request wins, so dragging the slider does not queue up a stack of 4 MB
+  // downloads and never shows a half-loaded picture.
+  applySatelliteTime(entry) {
+    if (!this.satOn || !this.satLoaded || !this.map) return;
+    const frame = entry && entry.kind === "sat" ? entry.frame : null;
+    if (!frame) {
+      this.showSatellite(false);
+      if (this.satFrame) { this.satFrame = null; this.paintLegend(); }
+      return;
+    }
+    this.showSatellite(true);
+    if (this.satShown && this.satShown.image === frame.image) {
+      if (this.satFrame !== frame) { this.satFrame = frame; this.paintLegend(); }
+      return;
+    }
+    const token = ++this.satSwap;
+    const url = `${DATA}/sat/${frame.image}`;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      if (token !== this.satSwap) return;                // a newer request superseded this one
+      this.map.getSource("sat").updateImage({ url, coordinates: this.satCoordinates(frame) });
+      this.satShown = frame;
+      this.satFrame = frame;
+      this.paintLegend();
+    };
+    img.onerror = () => {
+      if (token !== this.satSwap) return;
+      console.warn("satellite frame failed to load, dropping it from the slider", frame.image);
+      this.satBad.add(frame.image);
+      this.rebuildAxis();
+    };
+    img.src = url;
+  }
+
+  async loadSatellite({ toLatestSat = false } = {}) {
     this.satLoading = true;
     try {
       const m = await this.fetchJSON(`${DATA}/sat/manifest.json`);
       if (!m.frames || !m.frames.length) throw new Error("no satellite frames published yet");
       this.satManifest = m;
-      this.satFrame = m.frames[m.frames.length - 1];
+      const latest = m.frames[m.frames.length - 1];
+      this.satShown = latest;
       this.map.addSource("sat", {
-        type: "image", url: `${DATA}/sat/${this.satFrame.image}`, coordinates: this.satCoordinates(),
+        type: "image", url: `${DATA}/sat/${latest.image}`, coordinates: this.satCoordinates(latest),
       });
       const before = this.radarLayerIds.length && this.map.getLayer(this.radarLayerIds[0])
         ? this.radarLayerIds[0]
@@ -1370,10 +1494,12 @@ class App {
       this.map.addLayer({
         id: "sat", type: "raster", source: "sat",
         paint: { "raster-opacity": this.satOpacity ? +this.satOpacity.value / 100 : 1, "raster-fade-duration": 0 },
-        layout: { visibility: this.satOn ? "visible" : "none" },
+        layout: { visibility: "none" },     // applySatelliteTime shows it on a satellite entry
       }, before);
       this.satLoaded = true;
-      // New frame every ten minutes: look again every few and swap in place.
+      // On a plain page load (no time in the URL) start at the newest image.
+      this.rebuildAxis({ toLatestSat: toLatestSat || !this.stepFromURL });
+      // New frame every ten minutes: look again every few.
       setInterval(() => this.refreshSatellite(), 5 * 60e3);
     } catch (err) {
       console.warn("satellite layer unavailable", err);
@@ -1395,14 +1521,16 @@ class App {
     if (!this.satOn || !this.satLoaded) return;
     try {
       const m = await this.fetchJSON(`${DATA}/sat/manifest.json`);
-      const newest = m.frames && m.frames[m.frames.length - 1];
-      if (!newest || (this.satFrame && newest.t === this.satFrame.t)) return;
+      const last = (x) => x.frames && x.frames[x.frames.length - 1];
+      const before = last(this.satManifest), after = last(m);
+      if (!after || (before && after.t === before.t)) return;
+      // If the slider was sitting on the newest frame, follow it to the new one.
+      const cur = this.axis[Math.round(this.pos)];
+      const following = cur.kind === "sat" && before && cur.frame.t === before.t;
       this.satManifest = m;
-      this.satFrame = newest;
-      this.map.getSource("sat").updateImage({ url: `${DATA}/sat/${newest.image}`, coordinates: this.satCoordinates() });
-      this.paintLegend();
+      this.rebuildAxis({ toLatestSat: following });
     } catch (err) {
-      console.warn("satellite refresh failed; keeping the current frame", err);
+      console.warn("satellite refresh failed; keeping the current frames", err);
     }
   }
 
