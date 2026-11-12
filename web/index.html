@@ -52,7 +52,7 @@
   #layers button[aria-pressed="true"] { background: #2d6cf6; color: #fff; }
   #layers button:focus-visible { border-color: #8ab4ff; }
   #time { bottom: 12px; left: 12px; right: 12px; display: flex; align-items: center; gap: 12px; }
-  #time { padding-bottom: 6px; }
+  #time { padding-bottom: 6px; flex-wrap: wrap; row-gap: 4px; }
   #track { flex: 1; min-width: 80px; position: relative; }
   #track input { width: 100%; display: block; margin: 0; accent-color: #2d6cf6; }
   /* Ticks line up with the range thumb's travel: it is inset by half its width. */
@@ -76,36 +76,40 @@
      spacing follows the zoom. It must never swallow a click or a hover. */
   #grid { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
     pointer-events: none; }
-  #legend { bottom: 88px; right: 12px; width: min(340px, calc(100vw - 24px)); }
-  #legend .title { display: flex; justify-content: space-between; gap: 8px;
-    font-size: 12px; color: #cfd8ee; margin-bottom: 6px; }
-  #legend .title span:last-child { color: #8e9ab8; }
-  #legend .bar { height: 12px; border-radius: 3px; background-color: #0b1020;
-    border: 1px solid rgba(255,255,255,.25); }
-  #legend .ticks { position: relative; height: 16px; margin-top: 3px; font-size: 11px;
-    color: #cfd8ee; font-variant-numeric: tabular-nums; }
-  #legend .ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+  /* Vertical colour key on the right edge, sitting just above the time panel
+     (--time-h is kept in step with that panel's height from JS). */
+  #legend { bottom: calc(var(--time-h, 100px) + 24px); right: 12px; width: auto;
+    display: flex; gap: 14px; padding: 8px 10px; }
+  #legend .col { display: flex; flex-direction: column; align-items: flex-end; }
+  #legend .title { text-align: right; font-size: 12px; color: #cfd8ee; margin-bottom: 6px;
+    max-width: 88px; line-height: 1.25; }
+  #legend .title span { display: block; }
+  #legend .title span:last-child { color: #8e9ab8; font-size: 11px; }
+  #legend .body { display: flex; gap: 6px; height: clamp(140px, 34vh, 280px); }
+  #legend .ticks { position: relative; width: 30px; font-size: 11px; color: #cfd8ee;
+    font-variant-numeric: tabular-nums; }
+  #legend .ticks span { position: absolute; right: 0; transform: translateY(50%); white-space: nowrap; }
   #legend .ticks span.first { transform: none; }
-  #legend .ticks span.last { transform: translateX(-100%); }
+  #legend .ticks span.last { transform: translateY(100%); }
+  #legend .bar { width: 12px; border-radius: 3px; background-color: #0b1020;
+    border: 1px solid rgba(255,255,255,.25); }
+  #legend .note { margin-top: 6px; max-width: 88px; text-align: right; font-size: 10px; color: #9fb0d4; }
   #readout { top: 12px; right: 56px; min-width: 150px; font-variant-numeric: tabular-nums; }
   #readout b { font-weight: 600; font-size: 16px; }
-  /* The attribution is a licence condition, so it has to stay legible over
-     whatever the field happens to be painting underneath it. */
-  #credit { position: absolute; z-index: 2; bottom: 88px; left: 12px; font-size: 11px;
-    color: #e4e9f5; max-width: min(60ch, calc(100vw - 388px)); background: rgba(8,12,24,.62); padding: 4px 8px;
-    border-radius: 6px; backdrop-filter: blur(3px); }
+  /* The attribution is a licence condition, so it stays on screen and legible:
+     small, but full-contrast text on the panel, on its own line under the slider. */
+  #credit { flex: 1 0 100%; order: 5; font-size: 10px; line-height: 1.35; color: #cfd8ee;
+    margin-top: 2px; }
   #credit a { color: #bcc9e8; }
   #boot { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center;
     background: #0b1020; text-align: center; padding: 24px; }
   .err { color: #ff9b9b; max-width: 60ch; }
   /* Last in the sheet on purpose: these must win over the base rules above. */
   @media (max-width: 720px) {
-    #legend { left: 12px; width: auto; bottom: 130px; }
+    #legend { gap: 10px; padding: 6px 8px; }
     /* Narrow screens: play + time on one row, the full-width bar under them. */
-    #time { flex-wrap: wrap; row-gap: 4px; }
     #stamp { margin-left: auto; }
     #track { order: 3; flex: 1 0 100%; }
-    #credit { bottom: 198px; max-width: calc(100vw - 24px); }
   }
 </style>
 </head>
@@ -142,9 +146,8 @@
   <button id="play" aria-label="Play or pause">▶</button>
   <div id="track"><input id="slider" type="range" min="0" max="0" step="1" value="0" aria-label="Forecast time"><div id="ticks" aria-hidden="true"></div></div>
   <span id="stamp">—</span>
+  <div id="credit"></div>
 </div>
-
-<div id="credit"></div>
 
 <div id="boot"><div><img src="brand/klimatikal-mark-on-dark.svg" alt="Klimatikal" width="72" height="72" style="display:block;margin:0 auto 10px">
 <div id="boot-msg" style="color:#8e9ab8">Loading the latest forecast…</div></div></div>
@@ -835,6 +838,9 @@ class App {
     slider.oninput = () => { this.stepIndex = +slider.value; this.onTimeChange(); };
 
     this.buildTicks();
+    const timeBox = document.getElementById("time");
+    new ResizeObserver(() =>
+      document.documentElement.style.setProperty("--time-h", `${timeBox.offsetHeight}px`)).observe(timeBox);
     // The bar's width changes with the stamp text beside it, not just the window.
     new ResizeObserver(() => this.layoutTickLabels()).observe(document.getElementById("ticks"));
 
@@ -867,21 +873,27 @@ class App {
     const ticks = r.evenLegend
       ? r.stops.map(([v], i) => ({ v, p: at(i) }))
       : r.ticks.map((v) => ({ v, p: (v - lo) / (hi - lo) }));
-    const last = ticks.length - 1;
-    let html =
-      `<div class="title"><span>${escapeHTML(spec ? spec.label : this.layer)}</span>` +
-      `<span>${escapeHTML(r.unitLabel)}</span></div>` +
-      `<div class="bar" style="background-image:linear-gradient(to right, ${gradient})"></div>` +
-      `<div class="ticks">` + ticks.map((t, i) =>
-        `<span class="${i === 0 ? "first" : i === last ? "last" : ""}" ` +
-        `style="left:${(t.p * 100).toFixed(1)}%">${t.v}</span>`).join("") + `</div>`;
+    let html = this.legendColumn(spec ? spec.label : this.layer, r.unitLabel, gradient, ticks);
     if (this.radarOn) html += this.radarLegendHTML();
     document.getElementById("legend").innerHTML = html;
   }
 
-  // A second, smaller key appended under the main one while the radar
-  // overlay is on. Separate block, not a sixth RAMPS entry: radar is a
-  // toggle over whatever parameter is selected, not one of the five fields.
+  // One vertical key: low values at the bottom, high at the top. `ticks` are
+  // {v, p} with p in 0..1 along the bar.
+  legendColumn(title, unit, gradient, ticks, note = "") {
+    const last = ticks.length - 1;
+    return `<div class="col">` +
+      `<div class="title"><span>${escapeHTML(title)}</span><span>${escapeHTML(unit)}</span></div>` +
+      `<div class="body"><div class="ticks">` + ticks.map((t, i) =>
+        `<span class="${i === 0 ? "first" : i === last ? "last" : ""}" ` +
+        `style="bottom:${(t.p * 100).toFixed(1)}%">${t.v}</span>`).join("") + `</div>` +
+      `<div class="bar" style="background-image:linear-gradient(to top, ${gradient})"></div></div>` +
+      (note ? `<div class="note">${escapeHTML(note)}</div>` : "") + `</div>`;
+  }
+
+  // A second key beside the main one while the radar overlay is on. Separate
+  // block, not a sixth RAMPS entry: radar is a toggle over whatever parameter
+  // is selected, not one of the five fields.
   radarLegendHTML() {
     const rr = RADAR_RAMP;
     const lo = rr.ticks[0], hi = rr.ticks[rr.ticks.length - 1];
@@ -889,15 +901,8 @@ class App {
     const gradient = rr.stops.map(([v, c]) =>
       `rgba(${c[0]},${c[1]},${c[2]},${(c[3] / 255).toFixed(3)}) ${(at(v) * 100).toFixed(1)}%`
     ).join(", ");
-    const last = rr.ticks.length - 1;
-    return `<div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12)">` +
-      `<div class="title"><span>Radar · demo</span><span>${escapeHTML(rr.unitLabel)}</span></div>` +
-      `<div class="bar" style="background-image:linear-gradient(to right, ${gradient})"></div>` +
-      `<div class="ticks">` + rr.ticks.map((v, i) =>
-        `<span class="${i === 0 ? "first" : i === last ? "last" : ""}" ` +
-        `style="left:${(at(v) * 100).toFixed(1)}%">${v}</span>`).join("") + `</div>` +
-      `<div style="margin-top:4px;font-size:10.5px;color:#9fb0d4">` +
-      `Synthetic placeholder for a few cities — not from BMKG.</div></div>`;
+    return this.legendColumn("Radar · demo", rr.unitLabel, gradient,
+      rr.ticks.map((v) => ({ v, p: at(v) })), "Synthetic placeholder for a few cities, not from BMKG.");
   }
 
   // Latitude/longitude grid on a canvas laid over the map. Spacing is chosen
