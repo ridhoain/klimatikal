@@ -14,32 +14,59 @@
   .panel { position: absolute; z-index: 2; background: rgba(12,18,34,.86);
     border: 1px solid rgba(255,255,255,.12); border-radius: 10px;
     backdrop-filter: blur(8px); padding: 10px 12px; }
-  #layers { top: 12px; left: 12px; display: flex; gap: 6px; flex-wrap: wrap; max-width: calc(100vw - 24px); }
-  #layers button { all: unset; cursor: pointer; padding: 6px 11px; border-radius: 7px;
-    font-size: 13px; color: #cfd8ee; border: 1px solid transparent; }
+  #layers { top: 12px; left: 12px; display: flex; gap: 4px; flex-wrap: wrap;
+    max-width: calc(100vw - 62px); padding: 7px 8px; }
+  #layers button { all: unset; cursor: pointer; padding: 6px 8px; border-radius: 7px;
+    font-size: 12.5px; color: #cfd8ee; border: 1px solid transparent; white-space: nowrap; }
   #layers button[aria-pressed="true"] { background: #2d6cf6; color: #fff; }
   #layers button:focus-visible { border-color: #8ab4ff; }
   #time { bottom: 12px; left: 12px; right: 12px; display: flex; align-items: center; gap: 12px; }
   #time input { flex: 1; accent-color: #2d6cf6; min-width: 80px; }
   #stamp { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 13px; }
   #play { all: unset; cursor: pointer; padding: 4px 10px; border-radius: 7px; background: #243156; }
-  #readout { top: 12px; right: 12px; min-width: 150px; font-variant-numeric: tabular-nums; }
+  #layers .sep { width: 1px; background: rgba(255,255,255,.18); margin: 2px 4px; }
+  #layers button.toggle[aria-pressed="true"] { background: #243156; color: #fff;
+    border-color: rgba(255,255,255,.25); }
+  /* Coordinate grid: a canvas over the map, redrawn on every move so the
+     spacing follows the zoom. It must never swallow a click or a hover. */
+  #grid { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
+    pointer-events: none; }
+  #legend { bottom: 70px; right: 12px; width: min(340px, calc(100vw - 24px)); }
+  #legend .title { display: flex; justify-content: space-between; gap: 8px;
+    font-size: 12px; color: #cfd8ee; margin-bottom: 6px; }
+  #legend .title span:last-child { color: #8e9ab8; }
+  #legend .bar { height: 12px; border-radius: 3px; background-color: #0b1020;
+    border: 1px solid rgba(255,255,255,.25); }
+  #legend .ticks { position: relative; height: 16px; margin-top: 3px; font-size: 11px;
+    color: #cfd8ee; font-variant-numeric: tabular-nums; }
+  #legend .ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+  #legend .ticks span.first { transform: none; }
+  #legend .ticks span.last { transform: translateX(-100%); }
+  #readout { top: 12px; right: 56px; min-width: 150px; font-variant-numeric: tabular-nums; }
   #readout b { font-weight: 600; font-size: 16px; }
   /* The attribution is a licence condition, so it has to stay legible over
      whatever the field happens to be painting underneath it. */
   #credit { position: absolute; z-index: 2; bottom: 70px; left: 12px; font-size: 11px;
-    color: #e4e9f5; max-width: 60ch; background: rgba(8,12,24,.62); padding: 4px 8px;
+    color: #e4e9f5; max-width: min(60ch, calc(100vw - 388px)); background: rgba(8,12,24,.62); padding: 4px 8px;
     border-radius: 6px; backdrop-filter: blur(3px); }
   #credit a { color: #bcc9e8; }
   #boot { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center;
     background: #0b1020; text-align: center; padding: 24px; }
   .err { color: #ff9b9b; max-width: 60ch; }
+  /* Last in the sheet on purpose: these must win over the base rules above. */
+  @media (max-width: 720px) {
+    #legend { left: 12px; width: auto; }
+    #credit { bottom: 138px; max-width: calc(100vw - 24px); }
+  }
 </style>
 </head>
 <body>
 <div id="map"></div>
+<canvas id="grid" aria-hidden="true"></canvas>
 
 <div id="layers" class="panel" role="group" aria-label="Weather layer"></div>
+
+<div id="legend" class="panel" aria-label="Colour scale"></div>
 
 <div id="readout" class="panel" hidden>
   <div id="readout-label" style="font-size:12px;color:#9fb0d4"></div>
@@ -77,24 +104,52 @@ const DATA =
 // Display ranges and colour ramps. These are presentation, not encoding: the
 // encoding range in the manifest is deliberately wider so nothing clips, and
 // these narrower ranges are what make the map readable.
+// Each parameter has its own colour map, chosen for what it measures:
+//   wind      speed, sequential, transparent when calm so the particles read
+//   temp      diverging around freezing: purple/blue cold, green mild, red hot
+//   precip    radar-style green -> yellow -> red -> purple, clear when dry
+//   cloud     white with rising opacity, so clear sky stays clear
+//   msl       diverging around the standard 1013 hPa: purple low, orange high
+// stops are [value, [r, g, b, alpha 0..255]]; `opacity` multiplies the alpha
+// when drawn. The legend is built from this same table, so the key cannot
+// drift from the colours on the map. `evenLegend` spaces the legend by stop
+// instead of by value, for fields (precipitation) where most of the interest
+// is crowded near zero.
 const RAMPS = {
-  wind:   { display: [0, 32], unitLabel: "m/s", stops: [
-            [0,[20,30,60,0]], [3,[40,90,160,170]], [8,[70,190,180,220]],
-            [14,[250,220,120,235]], [22,[240,130,70,245]], [32,[220,60,90,255]]] },
-  temp:   { display: [-40, 45], unitLabel: "°C", stops: [
-            [-40,[40,10,80,220]], [-20,[40,80,180,225]], [0,[70,180,200,225]],
-            [12,[110,200,120,225]], [24,[240,210,110,230]], [34,[235,130,60,240]],
-            [45,[190,40,60,245]]] },
-  precip: { display: [0, 20], unitLabel: "mm/3h", stops: [
-            [0,[0,0,0,0]], [0.2,[90,160,220,70]], [1,[60,120,230,160]],
-            [4,[50,80,220,210]], [10,[140,60,210,235]], [20,[220,60,140,245]]] },
-  cloud:  { display: [0, 100], unitLabel: "%", stops: [
-            [0,[255,255,255,0]], [30,[220,228,245,60]], [70,[235,240,250,150]],
-            [100,[255,255,255,215]]] },
-  msl:    { display: [960, 1045], unitLabel: "hPa", stops: [
-            [960,[60,110,220,210]], [990,[110,180,230,190]], [1013,[240,240,240,120]],
-            [1030,[240,170,90,200]], [1045,[220,70,70,220]]] },
+  wind: { display: [0, 32], unitLabel: "m/s", opacity: 0.7, ticks: [0, 5, 10, 15, 20, 25, 30],
+    stops: [
+      [0,  [22, 34, 77, 0]],    [2,  [43, 95, 168, 150]], [5,  [43, 163, 181, 215]],
+      [10, [111, 208, 106, 235]], [15, [242, 224, 74, 245]], [20, [245, 154, 58, 250]],
+      [25, [229, 71, 63, 255]], [32, [184, 35, 154, 255]]] },
+  temp: { display: [-40, 45], unitLabel: "°C", opacity: 0.72, ticks: [-40, -30, -20, -10, 0, 10, 20, 30, 40],
+    stops: [
+      [-40, [42, 10, 94, 255]],  [-25, [63, 75, 184, 255]], [-10, [61, 143, 224, 255]],
+      [0,   [159, 216, 238, 255]], [8, [127, 207, 138, 255]], [16, [230, 227, 115, 255]],
+      [24,  [245, 166, 64, 255]], [32, [226, 85, 58, 255]], [40, [168, 20, 46, 255]],
+      [45,  [110, 10, 36, 255]]] },
+  precip: { display: [0, 20], unitLabel: "mm/3h", opacity: 0.9, evenLegend: true,
+    stops: [
+      [0,   [0, 0, 0, 0]],       [0.1, [155, 231, 164, 90]], [0.5, [79, 196, 106, 170]],
+      [1,   [31, 158, 79, 210]], [2.5, [243, 227, 71, 235]], [5,   [245, 154, 43, 245]],
+      [10,  [226, 54, 46, 250]], [20,  [176, 18, 154, 255]]] },
+  cloud: { display: [0, 100], unitLabel: "%", opacity: 0.9, ticks: [0, 25, 50, 75, 100],
+    stops: [
+      [0,   [255, 255, 255, 0]],   [20, [235, 240, 250, 40]], [50, [235, 240, 250, 120]],
+      [80,  [245, 248, 255, 190]], [100, [255, 255, 255, 235]]] },
+  msl: { display: [960, 1045], unitLabel: "hPa", opacity: 0.72, ticks: [960, 980, 1000, 1013, 1030, 1045],
+    stops: [
+      [960,  [91, 58, 156, 255]],  [985,  [63, 127, 212, 255]], [1000, [143, 208, 232, 255]],
+      [1013, [242, 242, 242, 255]], [1025, [245, 199, 106, 255]], [1040, [224, 112, 58, 255]],
+      [1045, [212, 72, 47, 255]]] },
 };
+
+// Wind particle speed, in pixels per frame for a 10 m/s wind. Lower is slower.
+// Override while tuning with ?windspeed=0.5 (a multiplier on this value).
+const WIND_PX_PER_FRAME = 0.5;
+const WIND_SPEED = Number(new URLSearchParams(location.search).get("windspeed")) || 1;
+// A particle is drawn as a streak this many steps long, so slow motion still
+// has a visible trail. It is a drawing choice and does not change the motion.
+const WIND_TRAIL_STEPS = 6;
 
 const ENCODING_ID = { scalar8: 0, scalar16: 1, vector8: 2 };
 
@@ -303,7 +358,7 @@ const DRAW_VS = `
   attribute float a_index, a_end;
   uniform sampler2D u_old, u_new;
   uniform mat4 u_matrix;
-  uniform float u_side, u_worldShift, u_jump;
+  uniform float u_side, u_worldShift, u_jump, u_trail;
   varying float v_end;
 
   vec2 unpack(vec4 px) {
@@ -322,7 +377,11 @@ const DRAW_VS = `
     vec2 delta = newP - oldP;
     bool teleported = abs(delta.x) > u_jump || abs(delta.y) > u_jump;
 
-    vec2 pos = (a_end > 0.5 && !teleported) ? newP : oldP;
+    // The head is where the particle is now; the tail is extrapolated back
+    // along its last step. Speed is then free to be slow without the streak
+    // shrinking to a dot.
+    vec2 tail = teleported ? newP : newP - delta * u_trail;
+    vec2 pos = a_end > 0.5 ? newP : tail;
     v_end = teleported ? 0.0 : a_end;
     gl_Position = u_matrix * vec4(pos.x + u_worldShift, pos.y, 0.0, 1.0);
     gl_PointSize = 1.5;
@@ -416,6 +475,12 @@ class WeatherLayer {
     const app = this.app;
     const frame = app.currentFrame();
     if (!frame) { this.map.triggerRepaint(); return; }
+    // First weather frame is ready: now it is safe to start on the boundaries.
+    // Deferred, because adding layers from inside a render callback is not.
+    if (app.boundariesPending) {
+      app.boundariesPending = false;
+      setTimeout(() => app.addBoundaries(), 0);
+    }
     const { spec, now, next, blend, name } = frame;
 
     // --- colour field -----------------------------------------------------
@@ -435,7 +500,7 @@ class WeatherLayer {
     gl.uniform1f(f.loc.u_blend, blend);
     gl.uniform1f(f.loc.u_dlo, RAMPS[name].display[0]);
     gl.uniform1f(f.loc.u_dhi, RAMPS[name].display[1]);
-    gl.uniform1f(f.loc.u_opacity, name === "wind" ? 0.55 : 0.85);
+    gl.uniform1f(f.loc.u_opacity, RAMPS[name].opacity);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     const shifts = app.worldShifts();
@@ -475,14 +540,17 @@ class WeatherLayer {
     // pixels a reference wind should cover in a frame and work backwards, so
     // the trails look the same at every zoom instead of vanishing when you
     // zoom out and streaking when you zoom in.
-    const TRAIL_PX = 2.2, V_REF = 10;             // 10 m/s draws a 2.2px trail
+    const TRAIL_PX = WIND_PX_PER_FRAME * WIND_SPEED, V_REF = 10;  // px moved per frame at 10 m/s
     const pxPerMercator = 512 * Math.pow(2, this.map.getZoom());
     const stepMercator = TRAIL_PX / pxPerMercator;
     const frameFactor = Math.min(3, dt * 60);     // keep real-time speed steady
     // metres per mercator unit at the equator, so m/s becomes mercator/second
     gl.uniform1f(u.loc.u_dt, (stepMercator * 4.0075e7 / V_REF) * frameFactor);
     gl.uniform1f(u.loc.u_rand, Math.random() + 1.0);
-    gl.uniform1f(u.loc.u_drop, 0.004);
+    // Respawn rate per frame. Lower than it was because particles now move
+    // several times slower: at the old rate they were replaced before they had
+    // travelled far enough to trace a streamline.
+    gl.uniform1f(u.loc.u_drop, 0.0015);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -506,6 +574,7 @@ class WeatherLayer {
     gl.uniformMatrix4fv(d.loc.u_matrix, false, matrix);
     gl.uniform1f(d.loc.u_side, this.side);
     gl.uniform1f(d.loc.u_opacity, 1.0);
+    gl.uniform1f(d.loc.u_trail, WIND_TRAIL_STEPS);
     // Well above the fastest legitimate step (a 50 m/s wind is 5x the
     // reference), far below a respawn or a wrap, which are 0.3 or more.
     gl.uniform1f(d.loc.u_jump, 12 * stepMercator);
@@ -536,6 +605,7 @@ class App {
     this.layer = "wind";
     this.stepIndex = 0;
     this.playing = false;
+    this.gridOn = true;
   }
 
   async boot() {
@@ -617,15 +687,32 @@ class App {
     for (const name of Object.keys(this.manifest.layers)) {
       const b = document.createElement("button");
       b.textContent = this.manifest.layers[name].label;
+      b.dataset.layer = name;
       b.setAttribute("aria-pressed", String(name === this.layer));
       b.onclick = () => {
         this.layer = name;
-        [...box.children].forEach((c, i) =>
-          c.setAttribute("aria-pressed", String(Object.keys(this.manifest.layers)[i] === name)));
-        this.writeURL(); this.paintReadoutLabel(); this.map && this.map.triggerRepaint();
+        box.querySelectorAll("button[data-layer]").forEach((c) =>
+          c.setAttribute("aria-pressed", String(c.dataset.layer === name)));
+        this.writeURL(); this.paintReadoutLabel(); this.paintLegend();
+        this.map && this.map.triggerRepaint();
       };
       box.appendChild(b);
     }
+
+    // The grid is not a layer of weather, so it gets its own toggle.
+    const sep = document.createElement("span");
+    sep.className = "sep";
+    box.appendChild(sep);
+    const grid = document.createElement("button");
+    grid.className = "toggle";
+    grid.textContent = "Grid";
+    grid.setAttribute("aria-pressed", String(this.gridOn));
+    grid.onclick = () => {
+      this.gridOn = !this.gridOn;
+      grid.setAttribute("aria-pressed", String(this.gridOn));
+      this.drawGrid(); this.writeURL();
+    };
+    box.appendChild(grid);
 
     const slider = document.getElementById("slider");
     slider.max = String(this.steps.length - 1);
@@ -642,7 +729,91 @@ class App {
     document.getElementById("credit").innerHTML =
       `${escapeHTML(this.manifest.attribution)} · run ${escapeHTML(this.manifest.run)}`;
     this.paintReadoutLabel();
+    this.paintLegend();
     this.onTimeChange();
+  }
+
+  // Colour key for the active layer, built from the same RAMPS table the
+  // shader's colour texture is built from.
+  paintLegend() {
+    const r = RAMPS[this.layer];
+    const spec = this.manifest.layers[this.layer];
+    if (!r) return;
+    const [lo, hi] = r.display;
+    const n = r.stops.length;
+    const at = (i) => (r.evenLegend ? i / (n - 1) : (r.stops[i][0] - lo) / (hi - lo));
+    const gradient = r.stops.map(([, c], i) =>
+      `rgba(${c[0]},${c[1]},${c[2]},${(c[3] / 255 * r.opacity).toFixed(3)}) ${(at(i) * 100).toFixed(1)}%`
+    ).join(", ");
+    const ticks = r.evenLegend
+      ? r.stops.map(([v], i) => ({ v, p: at(i) }))
+      : r.ticks.map((v) => ({ v, p: (v - lo) / (hi - lo) }));
+    const last = ticks.length - 1;
+    document.getElementById("legend").innerHTML =
+      `<div class="title"><span>${escapeHTML(spec ? spec.label : this.layer)}</span>` +
+      `<span>${escapeHTML(r.unitLabel)}</span></div>` +
+      `<div class="bar" style="background-image:linear-gradient(to right, ${gradient})"></div>` +
+      `<div class="ticks">` + ticks.map((t, i) =>
+        `<span class="${i === 0 ? "first" : i === last ? "last" : ""}" ` +
+        `style="left:${(t.p * 100).toFixed(1)}%">${t.v}</span>`).join("") + `</div>`;
+  }
+
+  // Latitude/longitude grid on a canvas laid over the map. Spacing is chosen
+  // from the zoom so lines stay about 90px apart, and it is redrawn on every
+  // move, so it stays "dynamic" as you pan and zoom.
+  drawGrid() {
+    const cv = document.getElementById("grid");
+    const map = this.map;
+    if (!cv || !map) return;
+    const dpr = window.devicePixelRatio || 1;
+    const w = cv.clientWidth, h = cv.clientHeight;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
+      cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    }
+    const ctx = cv.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    if (!this.gridOn) return;
+
+    const pxPerDeg = 512 * Math.pow(2, map.getZoom()) / 360;
+    const STEPS = [0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 45, 90];
+    const step = STEPS.find((s) => s * pxPerDeg >= 90) || 90;
+    const num = (v) => String(+v.toFixed(2));
+    const b = map.getBounds();
+    const south = Math.max(-85, b.getSouth()), north = Math.min(85, b.getNorth());
+    // Keep the longitude labels clear of the layer panel, which grows to two
+    // rows on a narrow screen.
+    const labelTop = document.getElementById("layers").getBoundingClientRect().bottom + 10;
+
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(255,255,255,0.22)";
+    ctx.font = "11px ui-sans-serif, system-ui, sans-serif";
+    ctx.textBaseline = "middle";
+    const halo = (text, x, y, align) => {
+      ctx.textAlign = align;
+      ctx.lineWidth = 3; ctx.strokeStyle = "rgba(8,12,24,0.85)"; ctx.strokeText(text, x, y);
+      ctx.fillStyle = "rgba(235,240,252,0.95)"; ctx.fillText(text, x, y);
+      ctx.lineWidth = 1; ctx.strokeStyle = "rgba(255,255,255,0.22)";
+    };
+
+    const k0 = Math.ceil(b.getWest() / step), k1 = Math.floor(b.getEast() / step);
+    for (let k = k0; k <= k1 && k - k0 < 400; k++) {
+      const lng = k * step;
+      const x = Math.round(map.project([lng, 0]).x) + 0.5;
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+      const wrapped = ((((lng + 180) % 360) + 360) % 360) - 180;
+      const abs = Math.abs(wrapped);
+      const hemi = abs === 0 || abs === 180 ? "" : wrapped < 0 ? "W" : "E";
+      if (x > 24 && x < w - 24) halo(`${num(abs)}°${hemi}`, x, labelTop, "center");
+    }
+    const j0 = Math.ceil(south / step), j1 = Math.floor(north / step);
+    for (let j = j0; j <= j1 && j - j0 < 400; j++) {
+      const lat = j * step;
+      const y = Math.round(map.project([0, lat]).y) + 0.5;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      const hemi = lat === 0 ? "" : lat < 0 ? "S" : "N";
+      if (y > labelTop + 20 && y < h - 70) halo(`${num(Math.abs(lat))}°${hemi}`, 8, y - 8, "left");
+    }
   }
 
   tick() {
@@ -674,38 +845,90 @@ class App {
     if (h.get("layer") && this.manifest.layers[h.get("layer")]) this.layer = h.get("layer");
     if (h.get("step")) this.stepIndex = Math.max(0, Math.min(this.steps.length - 1, +h.get("step")));
     this.view = h.get("at") ? h.get("at").split(",").map(Number) : null;
+    if (h.get("grid") !== null) this.gridOn = h.get("grid") !== "0";
   }
 
   writeURL() {
     if (!this.map) return;
     const c = this.map.getCenter();
     const at = `${c.lng.toFixed(2)},${c.lat.toFixed(2)},${this.map.getZoom().toFixed(1)}`;
-    const h = new URLSearchParams({ layer: this.layer, step: String(Math.round(this.stepIndex)), at });
+    const h = new URLSearchParams({
+      layer: this.layer, step: String(Math.round(this.stepIndex)), at, grid: this.gridOn ? "1" : "0",
+    });
     history.replaceState(null, "", `#${h}`);
   }
 
   startMap() {
     const [lng, lat, zoom] = this.view && this.view.length === 3 ? this.view : [118, -2, 3.2];
+    // The basemap is lines only: coastlines and administrative boundaries,
+    // bundled in ./geo (Natural Earth, public domain, simplified). No filled
+    // polygons, no labels, no equator or tropic lines. A flat background is the
+    // only thing under the weather field.
+    // The boundary sources are added after the map has loaded, not in the
+    // style: a map "load" waits for every source in the style, and the
+    // province lines alone are 45,000 segments. The weather should not wait.
+    const style = {
+      version: 8,
+      sources: {},
+      layers: [{ id: "bg", type: "background", paint: { "background-color": "#0b1020" } }],
+    };
     this.map = new maplibregl.Map({
       container: "map",
-      // Keyless basemap so this runs with no accounts. The architecture doc
-      // still has "self-hosted PMTiles basemap" as an unverified decision.
-      style: "https://demotiles.maplibre.org/style.json",
+      style,
       center: [lng, lat], zoom, minZoom: 1, maxZoom: 9,
-      attributionControl: { compact: true },
+      attributionControl: { compact: true, customAttribution: "Boundaries: Natural Earth" },
     });
-    this.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+    this.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    // The weather layer and the grid are north-up. Rotating would skew both.
+    this.map.dragRotate.disable();
+    this.map.touchZoomRotate.disableRotation();
     this.map.on("load", () => {
       this.map.addLayer(new WeatherLayer(this));   // sets this.gl via onAdd
       const boot = document.getElementById("boot");
       if (boot) boot.remove();
+      this.drawGrid();
+      // The boundaries are added once the first weather frame has drawn (see
+      // WeatherLayer.render), so the forecast is never queued behind line work.
+      this.boundariesPending = true;
       // Write the hash once on load. Without this a view is only shareable
       // after the user happens to pan, which is a confusing way to fail.
       this.writeURL();
     });
+    this.map.on("move", () => this.drawGrid());
+    this.map.on("resize", () => this.drawGrid());
     this.map.on("moveend", () => this.writeURL());
     this.map.on("mousemove", (e) => this.probe(e.lngLat));
     this.map.on("mouseout", () => { document.getElementById("readout").hidden = true; });
+  }
+
+  // Coastline and administrative boundaries, drawn above the weather field so
+  // the coast stays readable, each with a dark casing so it also reads over
+  // pale cloud. Added after the weather layer, so they sit above it. Coast
+  // first: it matters most, and the largest file (provinces) goes last.
+  addBoundaries() {
+    const geo = (name) => new URL(`geo/${name}.json`, location.href).href;
+    const line = (id, source, color, width, extra = {}) => this.map.addLayer({
+      id, source, type: "line",
+      layout: { "line-join": "round", "line-cap": "round" },
+      paint: { "line-color": color, "line-width": width }, ...extra,
+    });
+    const w = (a, b) => ["interpolate", ["linear"], ["zoom"], 2, a, 8, b];
+    const add = (name, layers) => {
+      this.map.addSource(name, { type: "geojson", data: geo(name) });
+      layers();
+    };
+    add("coast", () => {
+      line("coast-casing", "coast", "rgba(8,12,24,0.5)", w(1.6, 2.6));
+      line("coast", "coast", "rgba(255,255,255,0.92)", w(0.8, 1.4));
+    });
+    add("admin0", () => {
+      line("admin0-casing", "admin0", "rgba(8,12,24,0.45)", w(1.4, 2.4));
+      line("admin0", "admin0", "rgba(255,255,255,0.7)", w(0.7, 1.3));
+    });
+    add("admin1", () => {
+      line("admin1-casing", "admin1", "rgba(8,12,24,0.35)", w(0.8, 1.6), { minzoom: 3.2 });
+      line("admin1", "admin1", "rgba(255,255,255,0.35)", w(0.4, 0.9), { minzoom: 3.2 });
+    });
   }
 
   // Read the value under the cursor from the PNG itself, on a 2D canvas.
