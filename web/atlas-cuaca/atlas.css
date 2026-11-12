@@ -257,3 +257,30 @@ html[data-lang="id"] .dphase span.on [lang="id"], html[data-lang="en"] .dphase s
 .s-vort path { fill: none; stroke: #0D0630; stroke-width: 2; }
 .s-vort polygon { fill: #0D0630; }
 .dsynphase { max-width: 72ch; margin: 10px 0 0; min-height: 3em; }
+
+/* ---- Bun Upas: radiation frost in four slices of grass and air ---- */
+.fsteps { margin: 22px 0 8px; }
+.fstep { margin: 0 0 20px; }
+.ftitle { margin: 0 0 8px; font-size: 14.5px; line-height: 1.45; color: var(--text); }
+.ftitle b { display: inline-block; min-width: 1.6em; text-align: center; margin-right: 6px; border-radius: 999px; background: var(--kl-teal); color: #0D0630; }
+.f-space { fill: #1b2a4a; }
+.f-star { fill: #fff; opacity: .85; }
+.f-soil { fill: #8a6a4a; }
+.dlabel.onspace { color: #dfe8f7; font-size: 11px; text-shadow: none; }
+.dlabel.onsoil { color: #f3e6d6; font-size: 11.5px; text-shadow: none; }
+.f-bl { fill: none; stroke: #4f7a3a; stroke-width: 3; stroke-linecap: round; }
+.f-bl-ice { fill: none; stroke: #7fa6d4; stroke-width: 7; stroke-linecap: round; }
+.f-bl-frost { fill: none; stroke: #f4f9ff; stroke-width: 4; stroke-linecap: round; }
+.f-cr { fill: none; stroke: #f4f9ff; stroke-width: 1.8; stroke-linecap: round; }
+.f-lw path { fill: none; stroke: #c4452d; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 5 7; animation: f-rise 2.6s linear infinite; }
+.f-lw.back path { stroke: #d98a7a; }
+.f-head { fill: #c4452d; }
+.f-head.back { fill: #d98a7a; }
+@keyframes f-rise { to { stroke-dashoffset: -24; } }
+.f-post { stroke: #5b6b7e; stroke-width: 2.5; }
+.f-box { fill: #fff; stroke: #5b6b7e; stroke-width: 2; }
+.f-slat { stroke: #b9c4d2; stroke-width: 1.4; }
+.dkey .sw.ice { height: 10px; width: 14px; border-radius: 2px; background: #f4f9ff; border: 2px solid #7fa6d4; box-sizing: border-box; }
+.frostcap { margin: 10px 0 8px; }
+.fcap { max-width: 72ch; margin: 0 0 8px; font-size: 14px; line-height: 1.6; color: var(--text); }
+@media (prefers-reduced-motion: reduce) { .f-lw path { animation: none; } }

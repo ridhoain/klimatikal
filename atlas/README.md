@@ -118,6 +118,15 @@ page is drawn at build time from that committed JSON. Config: `data`, `view`, `b
 `labels`, `key_day`. A 2.5-degree grid shows broad flow, not a sharp vortex, and the
 caption says so. A date must be backed by a source before it is called a vortex event.
 
+### Frost slices (`"type": "frost"`)
+
+Bun Upas uses a self-contained schematic: four slices of grass and air (dusk,
+clear night, before dawn, cloudy night for comparison). Config is just
+`"diagram": {"type": "frost"}`; no terrain or data file. Arrows drift by CSS only
+(stopped under `prefers-reduced-motion`), it needs no JavaScript, and the caption
+states that it is not to scale and shows no temperatures. The wording lives in
+`build_atlas.py` (`frost_figure`, `FROST_UI`), so reuse it only for radiation frost.
+
 ## Publishing
 
 **Rebuild after editing `atlas.css`, `atlas.js` or `about.css`.** The generated

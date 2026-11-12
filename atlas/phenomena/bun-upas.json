@@ -1,0 +1,58 @@
+{
+  "id": "bun-upas",
+  "status": "draft",
+  "name_id": "Bun Upas (Embun Upas)",
+  "name_local": "Bun Upas",
+  "name_en": "Upas frost (“poison dew”)",
+  "scale": "local",
+  "documentation": "poor",
+  "place": {
+    "id": "Dataran Tinggi Dieng, Jawa Tengah",
+    "en": "Dieng Plateau, Central Java"
+  },
+  "lat": -7.21,
+  "lon": 109.91,
+  "summary": {
+    "id": "Lapisan es tipis yang menyelimuti rumput dan tanaman di Dataran Tinggi Dieng pada malam kemarau yang cerah dan dingin; warga menyebutnya “embun racun” karena dapat mematikan tanaman kentang.",
+    "en": "A thin layer of ice on grass and crops on the Dieng Plateau on clear, cold dry-season nights; locals call it “poison dew” because it can kill potato plants."
+  },
+  "scientific": {
+    "id": "Bun upas (juga ditulis embun upas) adalah lapisan es tipis yang menutupi rumput, daun, dan tanaman di Dataran Tinggi Dieng pada malam musim kemarau yang cerah. Menurut BMKG, penduduk Dieng mengartikan namanya sebagai “embun racun”, karena es itu menyelimuti tanaman kentang dan mematikannya; BMKG juga menyebutnya embun es, yang kadang disangka salju. BMKG menyebut gerak semu matahari, masuknya udara dingin, dan laju penurunan suhu terhadap ketinggian sebagai faktor di balik cuaca dingin yang mendahuluinya, tanpa merincinya, dan menyebut suhu dingin seperti ini umum terjadi pada bulan-bulan puncak kemarau, Juli sampai September. Penjelasan BMKG: pada musim itu awan dan hujan berkurang, sehingga energi yang dilepas bumi pada malam hari tidak tertahan dan lolos ke luar angkasa, dan udara dekat permukaan mendingin dari malam hingga pagi. Angin timur dari Australia yang sedang musim dingin, disebut BMKG monsun dingin Australia, ikut membawa udara yang lebih dingin ke Jawa. Rujukan umum tentang embun beku radiasi (FAO dan materi pelatihan NWS) menambahkan mekanismenya: pada malam cerah dan tenang, rumput dan tanah melepas panas lebih cepat daripada yang mereka terima, sehingga udara paling dingin berada tepat di atas permukaan dan suhu naik seiring ketinggian (inversi permukaan). Bila permukaan mencapai titik beku, uap air dapat langsung menjadi es (embun beku, hoar), atau embun yang sudah terbentuk membeku. Awan dan angin melemahkan proses ini, dan permukaan tanah bisa lebih dingin daripada suhu yang dicatat termometer standar pada ketinggian sekitar 1,25–2 m, sehingga es dapat muncul walau pembacaan resmi masih di atas nol.",
+    "en": "Bun upas (also written embun upas) is a thin layer of ice that covers grass, leaves and crops on the Dieng Plateau on clear dry-season nights. According to BMKG, Dieng residents take the name to mean “poison dew”, because the ice coats potato plants and kills them; BMKG also calls it ice dew, which some people mistake for snow. BMKG names the apparent motion of the sun, intrusions of cold air and the rate at which temperature falls with height as factors behind the cold weather that precedes it, without detailing them, and says such cold is common in the peak months of the dry season, July to September. BMKG's explanation: in that season clouds and rain are fewer, so the energy the earth gives off at night is not held back and escapes to space, and the air near the surface cools from night into morning. Easterly winds from Australia in its winter, called the Australian cold monsoon by BMKG, also bring cooler air to Java. General references on radiation frost (FAO and an NWS training page) add the mechanism: on a clear, calm night grass and soil lose heat faster than they receive it, so the coldest air lies right above the surface and temperature rises with height (a surface inversion). If the surface reaches freezing, water vapour can turn straight into ice (hoar frost), or dew that has already formed can freeze. Cloud and wind weaken the process, and the ground surface can be colder than the temperature logged by a standard thermometer at about 1.25–2 m, so ice can appear while the official reading is still above zero."
+  },
+  "caveat": {
+    "id": "Artikel BMKG (2021) hanya menyebut faktor-faktor pendahulu tanpa rincian dan tidak menyajikan angka pengamatan. Mekanisme pendinginan radiasi dan pembentukan es di atas berasal dari rujukan umum tentang embun beku radiasi (FAO; materi pelatihan NWS Amerika Serikat), bukan dari studi yang mengukur embun upas di Dieng; kami belum menemukan studi seperti itu. Atlas ini belum mencantumkan angka suhu minimum Dieng karena belum ada sumber yang sudah kami baca yang menyatakan jenis pengukurannya (suhu udara atau suhu permukaan rumput).",
+    "en": "The BMKG article (2021) only names the preceding factors without detail and gives no observations. The radiative-cooling and ice-formation mechanism above comes from general references on radiation frost (FAO; a US NWS training page), not from a study that measured bun upas at Dieng; we have not found one. This atlas gives no Dieng minimum temperature because no source we have read says what kind of measurement it is (air temperature or grass-surface temperature)."
+  },
+  "diagram": {
+    "type": "frost"
+  },
+  "local_knowledge": null,
+  "photo": null,
+  "sources": [
+    {
+      "text": "BMKG, Iis Widya Harmoko (27 Juli 2021), “Mencermati Periode Terjadinya Embun Upas dan Bediding”",
+      "url": "https://www.bmkg.go.id/artikel/mencermati-periode-terjadinya-embun-upas-dan-bediding"
+    },
+    {
+      "text": "FAO, “Frost protection: fundamentals, practice, and economics”, Volume 1, Chapter 1 (Introduction)",
+      "url": "https://www.fao.org/4/y7223e/y7223e07.htm"
+    },
+    {
+      "text": "Haby, J., “Dew and frost development”, training page (weather.gov, NWS Houston/Galveston path; no date shown)",
+      "url": "https://www.weather.gov/source/zhu/ZHU_Training_Page/fog_stuff/Dew_Frost/Dew_Frost.htm"
+    }
+  ],
+  "curator_notes": [
+    "Sources were read through a fetch agent that returned its own account of each page (BMKG article, FAO chapter, NWS training page), not the pages verbatim. Please skim all three, especially: BMKG (dates, the three factors, 'Juli-September', clear-sky wording, Herizal's Australian monsoon quote); FAO (inversion top 9-60 m, hoar frost vs frozen dew, frost defined at 1.25-2 m); NWS page (ground colder than the screen; frost can form when the screen reads in the upper 30s F; the page itself says frost is not frozen dew in one answer and allows frozen dew in another).",
+    "The NWS training page is by Jeff Haby; the publisher is inferred from the URL only. It is a training page, not a journal article. A better citation (a Met Office, WMO or journal source on radiation frost) would strengthen it.",
+    "The BMKG Jawa Tengah explanation that '0 C or minus' figures often refer to the grass-surface minimum, not air temperature, came from a news snippet I could not open (Tirto blocked automated access, HTTP 403). It is NOT used on the page. If you can paste that article or a BMKG page saying it, I can add the grass-versus-air point with a Dieng source and add temperatures.",
+    "Not used: press temperatures (minus 2 C and lower), the plateau's altitude and specific frost dates from news. They were only seen in search snippets. Add them if you send a readable source.",
+    "Name: the spelling 'Bun Upas' and the local-name role come from you; BMKG writes 'embun upas'. 'name_local: Bun Upas' is therefore your attribution; please confirm it is the local (Javanese) usage and whether a Dieng-specific term for it exists.",
+    "Pin (-7.21, 109.91) is my approximation of the plateau around Dieng Kulon; please confirm or give the Arjuna temple complex coordinates.",
+    "documentation: 'poor' is my choice (few readable sources, no Dieng measurement study found).",
+    "Illustration: four schematic slices (dusk, clear night, before dawn, cloudy night comparison). No temperatures, layer depths exaggerated (stated in the caption). The 'Standard thermometer' box is labelled about 1.25-2 m per FAO/NWS. Arrows drift by CSS only; a prefers-reduced-motion rule stops them (rule written, not tested with the OS setting).",
+    "Local knowledge: empty. The pranata mangsa or farmers' own account of bun upas would need a named source. Photo: none; add file, credit and licence if you have one.",
+    "Related: Musim Bediding is in the atlas; BMKG's article treats bediding and embun upas together. I did not add a cross-link (the page template has none)."
+  ]
+}

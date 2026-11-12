@@ -31,6 +31,7 @@ import datetime
 import hashlib
 import html
 import json
+import math
 import re
 import shutil
 import sys
@@ -307,8 +308,10 @@ def load_entries():
 
         diag = e.get("diagram")
         if diag is not None:
-            need(diag.get("type") in ("foehn", "coldair", "synoptic"), "'diagram.type' must be 'foehn', 'coldair' or 'synoptic'")
-            if diag.get("type") == "synoptic":
+            need(diag.get("type") in ("foehn", "coldair", "synoptic", "frost"), "'diagram.type' must be 'foehn', 'coldair', 'synoptic' or 'frost'")
+            if diag.get("type") == "frost":
+                pass  # self-contained schematic: no data file, no labels to configure
+            elif diag.get("type") == "synoptic":
                 need((DIAGRAMS / f"{diag.get('data', '')}.json").exists(), f"diagram data file atlas/diagrams/{diag.get('data')}.json does not exist")
                 need(diag.get("view") and diag.get("bv_box") and diag.get("labels"), "'diagram' needs view, bv_box and labels")
             else:
@@ -316,11 +319,11 @@ def load_entries():
                 need(tfile.exists(), f"diagram transect file atlas/diagrams/{diag.get('transect')}.json does not exist")
                 vk = diag.get("view_km")
                 need(isinstance(vk, list) and len(vk) == 2 and vk[0] < vk[1], "'diagram.view_km' must be [from_km, to_km]")
-            for key in (() if diag.get("type") == "synoptic" else ("sea_left", "sea_right", "range") if diag.get("type") == "coldair"
+            for key in (() if diag.get("type") in ("synoptic", "frost") else ("sea_left", "sea_right", "range") if diag.get("type") == "coldair"
                         else ("sea_left", "sea_right", "range", "plain", "site")):
                 lab = (diag.get("labels") or {}).get(key) or {}
                 need(lab.get("id") and lab.get("en"), f"'diagram.labels.{key}' needs both 'id' and 'en'")
-            need(diag.get("type") in ("coldair", "synoptic") or isinstance((diag.get("labels") or {}).get("site", {}).get("km"), (int, float)),
+            need(diag.get("type") in ("coldair", "synoptic", "frost") or isinstance((diag.get("labels") or {}).get("site", {}).get("km"), (int, float)),
                  "'diagram.labels.site.km' must be a number (where the entry's place lies on the line)")
 
         photo = e.get("photo")
@@ -1125,6 +1128,151 @@ def coldair_figure(e):
             f'<p class="dsrc">{bi(terr_id, terr_en)}</p></div>')
 
 
+def frost_figure(e):
+    """Radiation frost in four slices of grass and air (dusk, clear night, before
+    dawn, and a cloudy night for comparison). A schematic of a mechanism, never a
+    measurement: no terrain file, no temperatures, layer depths exaggerated. Plain
+    SVG plus HTML labels, so it is complete without JavaScript; the upward heat
+    arrows drift by CSS only (and stand still under prefers-reduced-motion)."""
+    VW, VH, SPACE, GR = 1000.0, 330.0, 34.0, 248.0
+    rnd = lambda i: ((i * 7919 + 13) % 101) / 100.0
+    P = lambda *xs: " ".join(f"{x:.1f}" for x in xs)
+
+    def lab(x, y, text, cls="b pill", sub=None):
+        s = f'<span class="sub">{bi(*sub)}</span>' if sub else ""
+        return f'<div class="dlabel {cls}" style="left:{x / VW * 100:.2f}%;top:{y / VH * 100:.2f}%">{bi(*text)}{s}</div>'
+
+    def wave(x, y0, y1, amp=5.0, period=24.0, cls="f-lw", op=1.0):
+        pts, y, k = [], y0, 0
+        while y > y1:
+            pts.append((x + amp * math.sin(k * 6.2832 * 6 / period), y))
+            y -= 6
+            k += 1
+        d = "M" + " L".join(f"{px:.1f} {py:.1f}" for px, py in pts)
+        head = f'<polygon class="f-head" points="{P(x, y1 - 8, x - 6, y1 + 4, x + 6, y1 + 4)}"/>'
+        return f'<g class="{cls}" opacity="{op}"><path d="{d}"/>{head}</g>'
+
+    def wave_down(x, y0, y1):
+        d = "M" + " L".join(f"{x + 4 * math.sin(k):.1f} {y0 + k * 6:.1f}" for k in range(int((y1 - y0) / 6)))
+        head = f'<polygon class="f-head back" points="{P(x, y1 + 8, x - 6, y1 - 4, x + 6, y1 - 4)}"/>'
+        return f'<g class="f-lw back"><path d="{d}"/>{head}</g>'
+
+    xs_arrow = [60 + 90 * k for k in range(10)]
+
+    def blades(ice):
+        under = over = crystals = ""
+        for i, x in enumerate(range(8, 1000, 14)):
+            h = 20 + 12 * rnd(i)
+            lean = (rnd(i + 3) - 0.5) * 12
+            d = f"M{x} {GR + 2:.0f} Q{x + lean * 0.3:.1f} {GR - h * 0.6:.1f} {x + lean:.1f} {GR - h:.1f}"
+            tx, ty = x + lean, GR - h
+            if ice:
+                under += f'<path class="f-bl-ice" d="{d}"/>'
+                over += f'<path class="f-bl-frost" d="{d}"/>'
+                if i % 2 == 0:
+                    crystals += (f'<path class="f-cr" d="M{tx - 4.5:.1f} {ty:.1f} L{tx + 4.5:.1f} {ty:.1f} M{tx:.1f} {ty - 4.5:.1f} '
+                                 f'L{tx:.1f} {ty + 4.5:.1f} M{tx - 3:.1f} {ty - 3:.1f} L{tx + 3:.1f} {ty + 3:.1f} '
+                                 f'M{tx - 3:.1f} {ty + 3:.1f} L{tx + 3:.1f} {ty - 3:.1f}"/>')
+            else:
+                over += f'<path class="f-bl" d="{d}"/>'
+        return under + over + crystals
+
+    def shelter():
+        return (f'<line class="f-post" x1="820" y1="146" x2="820" y2="{GR:.0f}"/>'
+                f'<rect class="f-box" x="798" y="116" width="44" height="30" rx="2"/>'
+                + "".join(f'<line class="f-slat" x1="802" x2="838" y1="{y}" y2="{y}"/>' for y in (124, 131, 138)))
+
+    stars = lambda k: "".join(f'<circle class="f-star" cx="{(37 + 113 * i + 29 * k) % 980 + 10}" cy="{8 + (i * 7 + k * 5) % 18}" r="{1.1 + 0.5 * rnd(i + k):.1f}"/>'
+                              for i in range(14))
+
+    def cloud():
+        edge = fill = ""
+        for j in range(16):
+            cx = 70 + j * 57
+            cy = 92 + (rnd(j * 3) - 0.5) * 18
+            r = 24 + 14 * rnd(j + 5)
+            edge += f'<circle class="d-cloud-edge" cx="{cx}" cy="{cy:.1f}" r="{r + 1.8:.1f}"/>'
+            fill += f'<circle class="d-cloud" cx="{cx}" cy="{cy:.1f}" r="{r:.1f}"/>'
+        return edge + fill
+
+    def stage(n, stops, inner, labels):
+        gid = f"fa-{e['id']}-{n}"
+        grad = (f'<linearGradient id="{gid}" x1="0" y1="0" x2="0" y2="1">'
+                + "".join(f'<stop offset="{o}%" stop-color="{c}"/>' for o, c in stops) + "</linearGradient>")
+        svg = (f'<svg class="dsvg" viewBox="0 0 {VW:.0f} {VH:.0f}" preserveAspectRatio="none" aria-hidden="true" focusable="false">'
+               f'<defs>{grad}</defs><rect x="0" y="{SPACE:.0f}" width="{VW:.0f}" height="{GR - SPACE:.0f}" fill="url(#{gid})"/>'
+               f'<rect class="f-space" x="0" y="0" width="{VW:.0f}" height="{SPACE:.0f}"/>{stars(n)}'
+               f'<rect class="f-soil" x="0" y="{GR:.0f}" width="{VW:.0f}" height="{VH - GR:.0f}"/>{inner}</svg>')
+        common = lab(500, 17, ("Angkasa", "Space"), "onspace") + lab(10, 292, ("Tanah", "Soil"), "onsoil al-left")
+        return (f'<div class="dscroll" tabindex="0" role="region" aria-label="{esc(FROST_UI["region"][0])}">'
+                f'<div class="dstage">{svg}{common}{labels}</div></div>')
+
+    air_warm = [(0, "#f4ece3"), (100, "#f2cfae")]
+    air_cold = [(0, "#eef1f6"), (45, "#cfe0f3"), (100, "#5a93d4")]
+    air_cold2 = [(0, "#eef1f6"), (40, "#c4d9f0"), (100, "#4a86cc")]
+    air_mild = [(0, "#eef1f6"), (100, "#dbe7f4")]
+    A = "".join(wave(x, GR - 4, 150, op=0.6) for x in xs_arrow)
+    B = "".join(wave(x, GR - 4, SPACE + 8) for x in xs_arrow)
+    D = "".join(wave(x, GR - 4, 128) for x in xs_arrow) + "".join(wave_down(x + 45, 126, 200) for x in xs_arrow[:-1])
+
+    panels = [
+        (1, ("Senja: tanah mulai melepas panas", "Dusk: the ground starts giving off heat"), air_warm,
+         f'{A}{blades(False)}',
+         lab(500, 120, ("Tanah melepas panas ke atas", "The ground gives heat off upward"), "b pill",
+             ("radiasi gelombang panjang", "longwave radiation"))),
+        (2, ("Malam cerah dan tenang: panas lolos, udara tepat di atas rumput paling dingin",
+             "Clear, calm night: heat escapes, the air right above the grass is coldest"), air_cold,
+         f'{B}{shelter()}{blades(False)}',
+         lab(250, 95, ("Panas lolos ke angkasa", "Heat escapes to space"))
+         + lab(820, 88, ("Termometer standar", "Standard thermometer"), "b pill", ("± 1,25–2 m dari tanah", "about 1.25–2 m above ground"))
+         + lab(470, 212, ("Udara terdingin di rumput", "Coldest air at the grass"), "b pill",
+               ("makin ke atas makin hangat", "warmer with height")),),
+        (3, ("Menjelang fajar, bila permukaan mencapai titik beku: es terbentuk",
+             "Before dawn, if the surface reaches freezing: ice forms"), air_cold2,
+         f'{B}{blades(True)}',
+         lab(500, 205, ("Es menyelimuti rumput dan daun", "Ice coats grass and leaves"), "b pill",
+             ("uap air menjadi es, atau embun membeku", "vapour turns to ice, or dew freezes"))),
+        (4, ("Pembanding, malam berawan", "For comparison, a cloudy night"), air_mild,
+         f'<g>{cloud()}</g>{D}{blades(False)}',
+         lab(500, 92, ("Awan", "Cloud"), "b")
+         + lab(500, 188, ("Awan mengembalikan sebagian panas", "Cloud sends part of the heat back"), "b pill",
+               ("pendinginan lebih lemah", "cooling is weaker"))),
+    ]
+    figs = ""
+    for n, title, stops, inner, labels in panels:
+        hint = f'<p class="dhint">{t("d_hint")}</p>' if n == 1 else ""   # once is enough
+        figs += (f'<figure class="fstep"><p class="ftitle"><b>{n}</b> {bi(*title)}</p>'
+                 f'{hint}{stage(n, stops, inner, labels)}</figure>\n')
+    key = (f'<span><i class="sw" style="background:#5a93d4"></i>{bi(*FROST_UI["k_cold"])}</span>'
+           f'<span><i class="sw" style="background:#f2cfae"></i>{bi(*FROST_UI["k_warm"])}</span>'
+           f'<span><i class="sw" style="background:#c4452d"></i>{bi(*FROST_UI["k_heat"])}</span>'
+           f'<span><i class="sw ice"></i>{bi(*FROST_UI["k_ice"])}</span>')
+    return (f'<div class="fsteps">{figs}<div class="dkey">{key}</div>'
+            f'<div class="diagram frostcap"><p class="fcap">{bi(*FROST_UI["caption"])}</p></div></div>')
+
+
+FROST_UI = {
+    "region": ("Irisan rumput dan udara", "Slice of grass and air"),
+    "k_cold": ("Udara dingin", "Cold air"),
+    "k_warm": ("Udara lebih hangat", "Milder air"),
+    "k_heat": ("Panas yang dilepas", "Heat given off"),
+    "k_ice": ("Es", "Ice"),
+    "caption": (
+        "Skema satu malam, bukan hasil pengukuran dan tanpa skala: lapisan udara dekat tanah digambar jauh lebih tebal daripada "
+        "aslinya (menurut FAO, puncak lapisan inversi pada malam radiasi umumnya sekitar 9–60 m), dan warna hanya kualitatif, "
+        "bukan suhu. Urutan langit cerah dan kering, panas lolos, lalu udara dekat permukaan mendingin mengikuti artikel BMKG (2021), "
+        "yang juga menyebut bahwa awan menahan panas. Lapisan terdingin tepat di atas tanah (inversi permukaan), selisih antara "
+        "termometer standar dan permukaan tanah, serta pembentukan es melalui deposisi uap atau pembekuan embun berasal dari FAO "
+        "dan materi pelatihan NWS tentang embun beku radiasi pada umumnya, bukan dari penelitian di Dieng.",
+        "A one-night schematic, not a measurement and not to scale: the air layer near the ground is drawn far thicker than in "
+        "reality (according to FAO, the top of the inversion on a radiation night is typically about 9–60 m), and colours are "
+        "qualitative, not temperatures. The sequence of clear dry sky, heat escaping, then the air near the surface cooling follows "
+        "the BMKG article (2021), which also says clouds hold heat in. The coldest layer right above the ground (surface inversion), "
+        "the gap between a standard thermometer and the ground surface, and ice forming by vapour deposition or by dew freezing come "
+        "from FAO and an NWS training page on radiation frost in general, not from research at Dieng."),
+}
+
+
 def _catmull(p0, p1, p2, p3, t):
     return 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t ** 3)
 
@@ -1386,7 +1534,7 @@ def entry_page(e):
       {photo_block(e)}
       <h2>{t("scientific")}</h2>
       <p>{bi(sci["id"], sci["en"])}</p>
-      {({"coldair": coldair_figure, "synoptic": synoptic_figure}.get(e["diagram"]["type"], foehn_figure)(e)) if e.get("diagram") else ""}
+      {({"coldair": coldair_figure, "synoptic": synoptic_figure, "frost": frost_figure}.get(e["diagram"]["type"], foehn_figure)(e)) if e.get("diagram") else ""}
       {caveat}
       <h2>{t("local_knowledge")}</h2>
       {local}
