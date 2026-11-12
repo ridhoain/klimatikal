@@ -20,6 +20,16 @@ on:
     # Re-measure if builds start picking up the previous cycle.
     - cron: "52 7,19 * * *"     # 00z and 12z
     - cron: "47 0,12 * * *"     # 18z and 06z
+  # A push that changes the forecast code rebuilds straight away, forced (the
+  # current run may already be published with the old output). The workflow
+  # file itself is deliberately not listed: editing it should not start a
+  # long rebuild. Web-only pushes do not match.
+  push:
+    branches: [main]
+    paths:
+      - pipeline/build_run.py
+      - pipeline/encoding.py
+      - pipeline/requirements.txt
   workflow_dispatch:        # always pair this with a schedule: it is how you test
     inputs:
       force:
@@ -56,7 +66,7 @@ jobs:
         # A scheduled build that starts before ECMWF has uploaded the next cycle
         # finds the current one already published and exits in seconds. Tick
         # "force" on a manual run to rebuild anyway.
-        run: python build_run.py ${{ inputs.force && '--force' || '' }}
+        run: python build_run.py ${{ (inputs.force || github.event_name == 'push') && '--force' || '' }}
 
   heartbeat:
     # Keeps the schedule alive. Without it the pipeline stops after 60 quiet

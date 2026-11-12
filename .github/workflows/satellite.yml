@@ -12,6 +12,15 @@ name: build satellite frame
 on:
   schedule:
     - cron: "7,17,27,37,47,57 * * * *"
+  # A push that changes the job rebuilds straight away, forced, because the
+  # newest slot may already be published with the old code's output. Web-only
+  # pushes do not match these paths.
+  push:
+    branches: [main]
+    paths:
+      - pipeline/himawari.py
+      - pipeline/requirements-himawari.txt
+      - .github/workflows/satellite.yml
   workflow_dispatch:
     inputs:
       force:
@@ -45,4 +54,4 @@ jobs:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
-        run: python himawari.py ${{ inputs.force && '--force' || '' }}
+        run: python himawari.py ${{ (inputs.force || github.event_name == 'push') && '--force' || '' }}
