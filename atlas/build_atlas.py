@@ -435,7 +435,7 @@ def site_header(here: str):
 def site_footer():
     return f"""<footer class="site-footer">
   <a href="/">{t("back")}</a>
-  <span>Klimatikal · Weather and Climate Intelligence</span>
+  <span>© 2026 Klimatikal · Weather and Climate Intelligence</span>
 </footer>"""
 
 
