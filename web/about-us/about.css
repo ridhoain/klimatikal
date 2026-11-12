@@ -72,6 +72,24 @@ h3 { margin: 0; font-size: 17px; font-weight: 600; color: var(--text); }
 .cites li { margin: 0 0 12px; padding-left: 4px; max-width: 78ch; overflow-wrap: anywhere; }
 .cites li::marker { color: var(--kl-teal); }
 
+/* contact details: a line on a profile, and the card on /contact-us/ */
+.contact { margin: 10px 0 0; font-size: 15px; }
+.contact-card {
+  display: block; max-width: 520px; padding: 20px 22px; text-decoration: none;
+  background: var(--kl-deep); border: 1px solid rgba(139, 190, 178, .25); border-radius: 14px;
+  color: var(--text);
+}
+.contact-card:hover { border-color: var(--kl-teal); }
+.contact-card small {
+  display: block; margin-bottom: 8px; font-size: 12px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--kl-teal);
+}
+.contact-card strong {
+  display: block; font-size: clamp(17px, 4.6vw, 22px); font-weight: 600;
+  color: var(--kl-lime); overflow-wrap: anywhere;
+}
+.contact-card span { display: block; margin-top: 6px; color: var(--kl-teal); font-size: 15px; }
+
 /* about-us index */
 .lede { color: var(--kl-teal); margin: 8px 0 28px; max-width: 60ch; }
 .people { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }

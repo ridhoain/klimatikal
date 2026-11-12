@@ -795,6 +795,11 @@ class App {
     about.href = "/about-us/";
     about.textContent = "About us";
     box.appendChild(about);
+    const contact = document.createElement("a");
+    contact.className = "nav";
+    contact.href = "/contact-us/";
+    contact.textContent = "Contact us";
+    box.appendChild(contact);
 
     const slider = document.getElementById("slider");
     slider.max = String(this.steps.length - 1);
