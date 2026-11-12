@@ -137,34 +137,40 @@ main.atlas { max-width: 1180px; }
 .dstage {
   min-width: 520px;
   position: relative; aspect-ratio: 1000 / 330; overflow: hidden;
-  border: 1px solid rgba(139, 190, 178, .3); border-radius: 12px;
-  background: linear-gradient(to bottom, #100833 0%, #1a2a56 100%);
+  border: 1px solid #c8d1dc; border-radius: 12px;
+  background: #ffffff;
 }
 .dsvg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.d-water { fill: rgba(139, 190, 178, .3); }
-.d-land { fill: #2b4468; }
-.d-ridge { fill: none; stroke: var(--kl-teal); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
-.d-grid { stroke: rgba(139, 190, 178, .2); stroke-width: 1; stroke-dasharray: 3 5; }
+/* The illustration has its own palette, apart from the site's: a white page,
+   blue for cool air, red for warm air, sage-green land, ocean-blue sea. */
+.d-water { fill: #5fb0dc; }
+.d-land { fill: #9caf88; }
+.d-ridge { fill: none; stroke: #5d7149; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.d-grid { stroke: #d3dae3; stroke-width: 1; stroke-dasharray: 3 5; }
 .d-air { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-.d-cloud { fill: rgba(236, 240, 250, .93); stroke: rgba(255, 255, 255, .5); stroke-width: 1; }
-.d-rain { stroke: rgba(170, 205, 255, .95); stroke-width: 2; stroke-linecap: round; }
-.d-site { stroke: var(--kl-lime); stroke-width: 1.5; stroke-dasharray: 3 4; }
+/* Clouds are drawn twice, edges first and fills over them, so overlapping puffs
+   read as one outlined cloud instead of a pile of circles. */
+.d-cloud-edge { fill: #98a8bb; }
+.d-cloud { fill: #f1f4f8; }
+.d-rain { stroke: #4a8fe0; stroke-width: 2; stroke-linecap: round; }
+.d-site { stroke: #243447; stroke-width: 1.5; stroke-dasharray: 3 4; }
+.d-pin { fill: #0D0630; stroke: #ffffff; stroke-width: 2.5; }
 /* Labels are HTML on top of the SVG so their size does not shrink with it. */
 .dlabel {
   position: absolute; transform: translate(-50%, -50%); text-align: center; white-space: nowrap;
-  font-size: 12.5px; line-height: 1.25; color: var(--text); pointer-events: none;
-  text-shadow: 0 0 4px #0D0630, 0 0 8px #0D0630, 0 0 8px #0D0630;
+  font-size: 12.5px; line-height: 1.25; color: #1f2a3a; pointer-events: none;
+  text-shadow: 0 0 3px #fff, 0 0 6px #fff, 0 0 6px #fff;
 }
-.dlabel.b { font-weight: 600; color: var(--kl-lime); }
+.dlabel.b { font-weight: 600; color: #17324f; }
 .dlabel.pill {
-  background: rgba(13, 6, 48, .84); border: 1px solid rgba(139, 190, 178, .3);
+  background: rgba(255, 255, 255, .94); border: 1px solid #c0cad6;
   border-radius: 8px; padding: 1px 8px; text-shadow: none;
 }
 .dlabel.scale.pill { padding: 0 5px; border-radius: 5px; border-color: transparent; }
 .dlabel.al-left { transform: translate(0, -50%); text-align: left; }
 .dlabel.al-right { transform: translate(-100%, -50%); text-align: right; }
-.dlabel .sub { display: block; font-weight: 400; font-size: 11px; color: var(--kl-teal); }
-.dlabel.scale { font-size: 10.5px; color: var(--kl-teal); opacity: .85; }
+.dlabel .sub { display: block; font-weight: 400; font-size: 11px; color: #5b6b7e; }
+.dlabel.scale { font-size: 10.5px; color: #6a7889; }
 @media (max-width: 600px) {
   .dlabel { font-size: 10.5px; }
   .dlabel .sub { display: none; }
@@ -172,8 +178,10 @@ main.atlas { max-width: 1180px; }
 }
 .dkey { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: 12px 0 6px; font-size: 13px; }
 .dkey .sw { display: inline-block; width: 22px; height: 4px; border-radius: 2px; margin-right: 7px; vertical-align: middle; }
-.dkey .sw.cloud { height: 10px; width: 14px; border-radius: 50%; background: rgba(236, 240, 250, .93); }
-.dkey .sw.rain { width: 3px; height: 12px; background: rgba(170, 205, 255, .95); transform: rotate(12deg); }
+.dkey .sw.cloud { height: 10px; width: 14px; border-radius: 50%; background: #f1f4f8; border: 1.5px solid #98a8bb; box-sizing: border-box; }
+.dkey .sw.rain { width: 3px; height: 12px; background: #4a8fe0; transform: rotate(12deg); }
+.dkey .sw.land { height: 10px; width: 14px; border-radius: 2px; background: #9caf88; }
+.dkey .sw.sea { height: 10px; width: 14px; border-radius: 2px; background: #5fb0dc; }
 .diagram figcaption { max-width: 72ch; }
 .diagram figcaption p { margin: 0 0 8px; font-size: 14px; line-height: 1.6; color: var(--text); }
 .diagram figcaption p.src { font-size: 12.5px; color: var(--kl-teal); }

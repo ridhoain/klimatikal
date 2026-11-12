@@ -514,7 +514,7 @@ def index_page(listed, with_drafts):
 # the foehn diagram: real terrain, illustrative airflow
 # --------------------------------------------------------------------------
 
-TEAL, LIME, MID = (139, 190, 178), (230, 249, 175), (184, 220, 176)  # brand teal / lime / a blend
+COOL, WARM, START = (29, 95, 209), (214, 45, 32), (240, 160, 122)  # blue = cool air, red = warm air, a warm start
 
 
 def _lerp(a, b, t):
@@ -574,7 +574,7 @@ def foehn_figure(e):
 
     # colour of the air along the line: starts mild, is coolest at the crest,
     # and ends warmer than it began on the lee side
-    stops = [(v0, MID), (crest_km, TEAL), (lee_end, LIME), (v1, LIME)]
+    stops = [(v0, START), (crest_km, COOL), (lee_end, WARM), (v1, WARM)]
 
     def air(km):
         for (ka, ca), (kb, cb) in zip(stops, stops[1:]):
@@ -636,14 +636,16 @@ def foehn_figure(e):
     # cloud and rain over the windward slope, up to the crest
     rnd = lambda i: ((i * 7919) % 101) / 100.0
     first_high = next((x for x, m in zip(xs, el) if m >= 300), crest_km - 40)
-    cloud, rain, k = "", "", 0
+    cloud, cloud_edge, rain, k = "", "", "", 0
     km = first_high
     while km < crest_km - 1:
         base = sm_at(km) + 360
         for j in range(2):
             cx = X(km) + (rnd(k * 3 + j) - 0.5) * 18
             cy = Y(base + 110 + 230 * rnd(k * 5 + j + 2))
-            cloud += f'<circle class="d-cloud" cx="{cx:.1f}" cy="{cy:.1f}" r="{11 + 10 * rnd(k + j * 7):.1f}"/>'
+            rr = 11 + 10 * rnd(k + j * 7)
+            cloud_edge += f'<circle class="d-cloud-edge" cx="{cx:.1f}" cy="{cy:.1f}" r="{rr + 1.8:.1f}"/>'
+            cloud += f'<circle class="d-cloud" cx="{cx:.1f}" cy="{cy:.1f}" r="{rr:.1f}"/>'
         top_y, bot_y = Y(base + 40), Y(el_at(km))
         # no rain into a deep interior valley: it falls on the ridges and slopes
         in_valley = el_at(km) < 0.5 * sm_at(km)
@@ -656,7 +658,7 @@ def foehn_figure(e):
     site_km = labels["site"]["km"]
     sx, sy = X(site_km), Y(el_at(site_km))
     site = (f'<line class="d-site" x1="{sx:.1f}" y1="{sy:.1f}" x2="{sx:.1f}" y2="{Y(el_at(site_km) + 520):.1f}"/>'
-            f'<circle class="pin" cx="{sx:.1f}" cy="{sy:.1f}" r="7"/>')
+            f'<circle class="d-pin" cx="{sx:.1f}" cy="{sy:.1f}" r="7"/>')
 
     def dl(km, m, text, cls="", sub=None):
         sub_html = f'<span class="sub">{bi(*sub)}</span>' if sub else ""
@@ -706,14 +708,14 @@ def foehn_figure(e):
     <svg class="dsvg" viewBox="0 0 {VW:.0f} {VH:.0f}" preserveAspectRatio="none" aria-hidden="true" focusable="false">
       <defs><linearGradient id="{gid}" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="{VW:.0f}" y2="0">{grad}</linearGradient></defs>
       <rect class="d-water" x="0" y="{Y0:.0f}" width="{VW:.0f}" height="{VH - Y0:.0f}"/>
-      {grid}{land}{rain}{cloud}{flows}{chevrons}{ridge}{site}
+      {grid}{land}{rain}{cloud_edge}{cloud}{flows}{chevrons}{ridge}{site}
     </svg>
     {overlay}
   </div>
   </div>
   <div class="dkey">
-    <span><i class="sw" style="background:{_hex(TEAL)}"></i>{t("d_key_up")}</span>
-    <span><i class="sw" style="background:{_hex(LIME)}"></i>{t("d_key_down")}</span>
+    <span><i class="sw" style="background:{_hex(COOL)}"></i>{t("d_key_up")}</span>
+    <span><i class="sw" style="background:{_hex(WARM)}"></i>{t("d_key_down")}</span>
     <span><i class="sw cloud"></i>{t("d_key_cloud")}</span>
     <span><i class="sw rain"></i>{t("d_key_rain")}</span>
   </div>
