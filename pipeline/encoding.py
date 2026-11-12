@@ -15,7 +15,7 @@ Two rules that are easy to get wrong and expensive to debug:
    the same colour would mean different things six hours apart.
 
 Row 0 of every PNG is 90 degrees north. Column 0 is 180 degrees west. The
-source GRIB runs 0..359.75 east, so the pipeline rolls it; see reproject().
+source GRIB is reordered to that using its own coordinates; see reproject().
 """
 
 from __future__ import annotations
@@ -88,18 +88,43 @@ LAYERS: dict[str, dict] = {
 # original GRIB, which the pipeline downloads anyway, not these files.
 
 
-def reproject(field: np.ndarray) -> np.ndarray:
+def reproject(
+    field: np.ndarray,
+    lats: np.ndarray | None = None,
+    lons: np.ndarray | None = None,
+) -> np.ndarray:
     """Put a raw 0.25 degree GRIB field into image orientation.
 
-    ECMWF delivers latitude 90 -> -90 (north first, which already matches
-    image row order) and longitude 0 -> 359.75. A web map wants -180 -> 179.75,
-    so the array is rolled half a turn. Skip this and the map is shifted by
-    exactly half the world, which looks plausible enough at a glance to waste
-    an afternoon.
+    The image wants latitude 90 -> -90 (row 0 is north) and longitude
+    -180 -> 179.75 (column 0 is the antimeridian).
+
+    Do not assume which way the source file is laid out: take its own
+    latitude and longitude coordinates and sort to the target. A hard-coded
+    "GRIB runs 0..359.75, so roll half a turn" was wrong for the ECMWF open
+    data files, which already start at -180, and the map came out shifted by
+    exactly half the world. That error looks plausible enough at a glance to
+    waste an afternoon, so the coordinates are also checked.
+
+    With no coordinates given the layout is assumed to be the target layout.
     """
     if field.shape != (NLAT, NLON):
         raise ValueError(f"expected {(NLAT, NLON)}, got {field.shape}")
-    return np.roll(field, -NLON // 2, axis=1)
+
+    out = field
+    if lats is not None:
+        lats = np.asarray(lats, dtype=np.float64)
+        order = np.argsort(-lats, kind="stable")  # north first
+        out = out[order, :]
+        if not np.allclose(lats[order], np.linspace(90.0, -90.0, NLAT), atol=1e-3):
+            raise ValueError("latitudes are not a 90..-90 grid at 0.25 degree")
+    if lons is not None:
+        lons = np.asarray(lons, dtype=np.float64)
+        wrapped = (lons + 180.0) % 360.0 - 180.0  # 180 -> -180, 359.75 -> -0.25
+        order = np.argsort(wrapped, kind="stable")
+        out = out[:, order]
+        if not np.allclose(wrapped[order], np.arange(-180.0, 180.0, 0.25), atol=1e-3):
+            raise ValueError("longitudes are not a full 0.25 degree global ring")
+    return out
 
 
 def _normalise(values: np.ndarray, lo: float, hi: float, gamma: float | None) -> np.ndarray:

@@ -44,14 +44,45 @@ def png_bytes(rgba: np.ndarray) -> bytes:
     return buf.getvalue()
 
 
-def test_reproject_moves_the_prime_meridian_to_the_middle():
-    # Column index of a given longitude, before and after the roll.
-    field = np.tile(np.arange(NLON, dtype=np.float64), (NLAT, 1))
-    rolled = reproject(field)
-    # After the roll, column 0 must hold what was at 180 degrees east.
-    assert rolled[0, 0] == NLON // 2
-    # and the centre column must hold longitude 0.
-    assert rolled[0, NLON // 2] == 0
+def _lon_tagged_field(lons: np.ndarray) -> np.ndarray:
+    """A field whose value is its own longitude (wrapped to -180..180)."""
+    wrapped = (lons + 180.0) % 360.0 - 180.0
+    return np.tile(wrapped, (NLAT, 1))
+
+
+def test_reproject_handles_a_grid_that_starts_at_minus_180():
+    # ECMWF open data layout. This is the case that was shifted by half the
+    # world when the pipeline assumed 0..359.75.
+    lons = np.arange(-180.0, 180.0, 0.25)
+    out = reproject(_lon_tagged_field(lons), lons=lons)
+    assert out[0, 0] == -180.0
+    assert out[0, NLON // 2] == 0.0
+    assert out[0, -1] == 179.75
+
+
+def test_reproject_handles_a_grid_that_starts_at_0():
+    lons = np.arange(0.0, 360.0, 0.25)
+    out = reproject(_lon_tagged_field(lons), lons=lons)
+    assert out[0, 0] == -180.0
+    assert out[0, NLON // 2] == 0.0
+    assert out[0, -1] == 179.75
+
+
+def test_reproject_orders_latitude_north_first():
+    lats = np.linspace(-90.0, 90.0, NLAT)  # south first, as some files are
+    field = np.tile(lats[:, None], (1, NLON))
+    out = reproject(field, lats=lats)
+    assert out[0, 0] == 90.0 and out[-1, 0] == -90.0
+
+
+def test_reproject_rejects_a_grid_that_is_not_global():
+    lons = np.arange(0.0, 360.0, 0.25)
+    lons[10] += 0.1  # a grid with a wrong coordinate must fail loudly
+    try:
+        reproject(_lon_tagged_field(lons), lons=lons)
+    except ValueError:
+        return
+    raise AssertionError("expected ValueError")
 
 
 def test_alpha_is_always_opaque():

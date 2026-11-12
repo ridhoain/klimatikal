@@ -127,7 +127,13 @@ def read_fields(path: Path) -> dict[str, np.ndarray]:
             if values.shape != (NLAT, NLON):
                 raise SystemExit(f"{short}: unexpected grid {values.shape}")
             _, convert = CONVERSIONS[short]
-            fields[short] = reproject(convert(values))
+            # Reorder with the file's own coordinates, never an assumption
+            # about which way the grid runs.
+            fields[short] = reproject(
+                convert(values),
+                lats=ds[name].coords["latitude"].values,
+                lons=ds[name].coords["longitude"].values,
+            )
     missing = set(ALL_PARAMS) - set(fields)
     if missing:
         raise SystemExit(f"missing parameters in {path.name}: {sorted(missing)}")
