@@ -67,7 +67,12 @@
 // pipeline's ./out directory next to this file; swap to the R2 custom domain in
 // Stage D and nothing else changes.
 // ---------------------------------------------------------------------------
-const DATA = new URLSearchParams(location.search).get("data") || "./data";
+// ?data=<url> overrides. Otherwise: local folder when served from localhost,
+// the public R2 bucket in production.
+const LOCAL_HOSTS = ["localhost", "127.0.0.1", "[::1]"];
+const DATA =
+  new URLSearchParams(location.search).get("data") ||
+  (LOCAL_HOSTS.includes(location.hostname) ? "./data" : "https://data.klimatikal.com");
 
 // Display ranges and colour ramps. These are presentation, not encoding: the
 // encoding range in the manifest is deliberately wider so nothing clips, and
