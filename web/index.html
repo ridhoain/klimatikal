@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Klimatikal</title>
+<link href="https://unpkg.com/maplibre-gl@5.8.0/dist/maplibre-gl.css" rel="stylesheet">
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #0b1020;
+    font: 14px/1.4 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; color: #e9edf7; }
+  #map { position: absolute; inset: 0; }
+  .panel { position: absolute; z-index: 2; background: rgba(12,18,34,.86);
+    border: 1px solid rgba(255,255,255,.12); border-radius: 10px;
+    backdrop-filter: blur(8px); padding: 10px 12px; }
+  #layers { top: 12px; left: 12px; display: flex; gap: 6px; flex-wrap: wrap; max-width: calc(100vw - 24px); }
+  #layers button { all: unset; cursor: pointer; padding: 6px 11px; border-radius: 7px;
+    font-size: 13px; color: #cfd8ee; border: 1px solid transparent; }
+  #layers button[aria-pressed="true"] { background: #2d6cf6; color: #fff; }
+  #layers button:focus-visible { border-color: #8ab4ff; }
+  #time { bottom: 12px; left: 12px; right: 12px; display: flex; align-items: center; gap: 12px; }
+  #time input { flex: 1; accent-color: #2d6cf6; min-width: 80px; }
+  #stamp { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 13px; }
+  #play { all: unset; cursor: pointer; padding: 4px 10px; border-radius: 7px; background: #243156; }
+  #readout { top: 12px; right: 12px; min-width: 150px; font-variant-numeric: tabular-nums; }
+  #readout b { font-weight: 600; font-size: 16px; }
+  /* The attribution is a licence condition, so it has to stay legible over
+     whatever the field happens to be painting underneath it. */
+  #credit { position: absolute; z-index: 2; bottom: 70px; left: 12px; font-size: 11px;
+    color: #e4e9f5; max-width: 60ch; background: rgba(8,12,24,.62); padding: 4px 8px;
+    border-radius: 6px; backdrop-filter: blur(3px); }
+  #credit a { color: #bcc9e8; }
+  #boot { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center;
+    background: #0b1020; text-align: center; padding: 24px; }
+  .err { color: #ff9b9b; max-width: 60ch; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div id="layers" class="panel" role="group" aria-label="Weather layer"></div>
+
+<div id="readout" class="panel" hidden>
+  <div id="readout-label" style="font-size:12px;color:#9fb0d4"></div>
+  <b id="readout-value">—</b>
+  <div id="readout-pos" style="font-size:11px;color:#7f8dae;margin-top:2px"></div>
+</div>
+
+<div id="time" class="panel">
+  <button id="play" aria-label="Play or pause">▶</button>
+  <input id="slider" type="range" min="0" max="0" step="1" value="0" aria-label="Forecast time">
+  <span id="stamp">—</span>
+</div>
+
+<div id="credit"></div>
+
+<div id="boot"><div><div style="font-size:18px;margin-bottom:6px">Klimatikal</div>
+<div id="boot-msg" style="color:#8e9ab8">Loading the latest forecast…</div></div></div>
+
+<!-- Pinned to a version that still ships a UMD bundle. MapLibre 6 is ESM-only,
+     so moving to it means a bundler or an import map, not a src swap. -->
+<script src="https://unpkg.com/maplibre-gl@5.8.0/dist/maplibre-gl.js"></script>
+<script>
+// ---------------------------------------------------------------------------
+// Where the data lives. Same-origin "/data" during Stage C so you can serve the
+// pipeline's ./out directory next to this file; swap to the R2 custom domain in
+// Stage D and nothing else changes.
+// ---------------------------------------------------------------------------
+const DATA = new URLSearchParams(location.search).get("data") || "./data";
+
+// Display ranges and colour ramps. These are presentation, not encoding: the
+// encoding range in the manifest is deliberately wider so nothing clips, and
+// these narrower ranges are what make the map readable.
+const RAMPS = {
+  wind:   { display: [0, 32], unitLabel: "m/s", stops: [
+            [0,[20,30,60,0]], [3,[40,90,160,170]], [8,[70,190,180,220]],
+            [14,[250,220,120,235]], [22,[240,130,70,245]], [32,[220,60,90,255]]] },
+  temp:   { display: [-40, 45], unitLabel: "°C", stops: [
+            [-40,[40,10,80,220]], [-20,[40,80,180,225]], [0,[70,180,200,225]],
+            [12,[110,200,120,225]], [24,[240,210,110,230]], [34,[235,130,60,240]],
+            [45,[190,40,60,245]]] },
+  precip: { display: [0, 20], unitLabel: "mm/3h", stops: [
+            [0,[0,0,0,0]], [0.2,[90,160,220,70]], [1,[60,120,230,160]],
+            [4,[50,80,220,210]], [10,[140,60,210,235]], [20,[220,60,140,245]]] },
+  cloud:  { display: [0, 100], unitLabel: "%", stops: [
+            [0,[255,255,255,0]], [30,[220,228,245,60]], [70,[235,240,250,150]],
+            [100,[255,255,255,215]]] },
+  msl:    { display: [960, 1045], unitLabel: "hPa", stops: [
+            [960,[60,110,220,210]], [990,[110,180,230,190]], [1013,[240,240,240,120]],
+            [1030,[240,170,90,200]], [1045,[220,70,70,220]]] },
+};
+
+const ENCODING_ID = { scalar8: 0, scalar16: 1, vector8: 2 };
+
+// ---------------------------------------------------------------------------
+// Shared GLSL: decode a value from the PNG, and convert mercator to latitude.
+// The decode here must match pipeline/encoding.py exactly. If you change one,
+// change the other and rerun test_encoding.py.
+// ---------------------------------------------------------------------------
+const GLSL_DECODE = `
+  uniform int   u_encoding;
+  uniform float u_min, u_max, u_gamma;
+
+  float applyRange(float unit) {
+    float g = pow(clamp(unit, 0.0, 1.0), u_gamma);
+    return g * (u_max - u_min) + u_min;
+  }
+  // Returns the layer's scalar value: magnitude for a vector layer.
+  float decodeValue(vec4 px) {
+    if (u_encoding == 1) return applyRange((px.r * 255.0 * 256.0 + px.g * 255.0) / 65535.0);
+    if (u_encoding == 2) {
+      float u = applyRange(px.r);
+      float v = applyRange(px.g);
+      return length(vec2(u, v));
+    }
+    return applyRange(px.r);
+  }
+  vec2 decodeVector(vec4 px) { return vec2(applyRange(px.r), applyRange(px.g)); }
+
+  const float PI = 3.1415926535897932;
+  // mercator y in 0..1 (0 = north edge) -> latitude in degrees
+  float mercToLat(float y) { return degrees(2.0 * atan(exp((1.0 - 2.0 * y) * PI)) - PI * 0.5); }
+  float latToMerc(float lat) {
+    float s = sin(radians(clamp(lat, -85.051129, 85.051129)));
+    return 0.5 - log((1.0 + s) / (1.0 - s)) / (4.0 * PI);
+  }
+  // Data row 0 is 90N and column 0 is 180W, so this is the sampling coordinate.
+  vec2 dataUV(float mercX, float mercY) {
+    return vec2(fract(mercX), (90.0 - mercToLat(mercY)) / 180.0);
+  }`;
+
+function compile(gl, type, src) {
+  const sh = gl.createShader(type);
+  gl.shaderSource(sh, src);
+  gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+    throw new Error(gl.getShaderInfoLog(sh) + "\n---\n" + src);
+  }
+  return sh;
+}
+function program(gl, vs, fs) {
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl, gl.VERTEX_SHADER, vs));
+  gl.attachShader(p, compile(gl, gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  // Look up by naming convention, not by trial: an unused uniform (u_encoding
+  // is optimised out of the update shader, which only needs the vector path)
+  // has no location, and falling back to getAttribLocation would hand back -1
+  // and make gl.uniform1i throw. null is a legal no-op for uniform calls.
+  const cache = new Map();
+  const loc = new Proxy({}, { get: (_, name) => {
+    if (!cache.has(name)) {
+      cache.set(name, String(name).startsWith("a_")
+        ? gl.getAttribLocation(p, name)
+        : gl.getUniformLocation(p, name));
+    }
+    return cache.get(name);
+  }});
+  return { p, loc };
+}
+function texture(gl, source, wrapS) {
+  const t = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapS || gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  // Never let the browser premultiply: the pixels are numbers, not colour.
+  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+  // REPEAT on a 1440x721 texture is only legal in WebGL2. Under WebGL1 a
+  // non-power-of-two texture with REPEAT renders black, so fall back and
+  // accept a one-texel seam at the antimeridian.
+  if (wrapS === gl.REPEAT && !(typeof WebGL2RenderingContext !== "undefined"
+        && gl instanceof WebGL2RenderingContext)) {
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  }
+  if (source instanceof Uint8Array) {
+    // square data texture for particle state
+    const side = Math.sqrt(source.length / 4);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, side, side, 0, gl.RGBA, gl.UNSIGNED_BYTE, source);
+  } else {
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+  }
+  return t;
+}
+function rampTexture(gl, stops, display) {
+  const N = 256, data = new Uint8Array(N * 4);
+  const [lo, hi] = display;
+  for (let i = 0; i < N; i++) {
+    const v = lo + (hi - lo) * (i / (N - 1));
+    let a = stops[0], b = stops[stops.length - 1];
+    for (let s = 0; s < stops.length - 1; s++) {
+      if (v >= stops[s][0] && v <= stops[s + 1][0]) { a = stops[s]; b = stops[s + 1]; break; }
+    }
+    const t = b[0] === a[0] ? 0 : (v - a[0]) / (b[0] - a[0]);
+    for (let c = 0; c < 4; c++) data[i * 4 + c] = Math.round(a[1][c] + (b[1][c] - a[1][c]) * t);
+  }
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, N, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+  return tex;
+}
+
+// ---------------------------------------------------------------------------
+// Layer 1: the colour field. One quad over the whole world; every fragment
+// converts its mercator position to a latitude and samples the data there.
+// ---------------------------------------------------------------------------
+const FIELD_VS = `
+  attribute vec2 a_pos;
+  uniform mat4 u_matrix;
+  uniform float u_worldShift;
+  varying vec2 v_merc;
+  void main() {
+    v_merc = a_pos;   // dataUV() takes fract(), so the shift need not travel
+    gl_Position = u_matrix * vec4(a_pos.x + u_worldShift, a_pos.y, 0.0, 1.0);
+  }`;
+
+const FIELD_FS = `
+  precision highp float;
+  ${GLSL_DECODE}
+  uniform sampler2D u_now, u_next, u_ramp;
+  uniform float u_blend, u_dlo, u_dhi, u_opacity;
+  varying vec2 v_merc;
+  void main() {
+    vec2 uv = dataUV(v_merc.x, v_merc.y);
+    float a = decodeValue(texture2D(u_now,  uv));
+    float b = decodeValue(texture2D(u_next, uv));
+    float value = mix(a, b, u_blend);
+    float t = clamp((value - u_dlo) / (u_dhi - u_dlo), 0.0, 1.0);
+    vec4 c = texture2D(u_ramp, vec2(t, 0.5));
+    gl_FragColor = vec4(c.rgb, c.a * u_opacity);
+  }`;
+
+// ---------------------------------------------------------------------------
+// Layer 2: wind particles. Positions live in an RGBA8 texture, 16 bits per
+// axis. Each frame one pass advects them into a second texture and the draw
+// pass joins old to new with a line, which is the trail. Ping-pong rather than
+// a screen-sized trail buffer, so trails do not smear when the map is panned.
+// ---------------------------------------------------------------------------
+// v_uv must land on the same texel the fragment writes to, or each update
+// mirrors particle identity across the texture, the old/new pairing in the
+// draw pass breaks, and the trails become long random lines.
+const QUAD_VS = `
+  attribute vec2 a_pos;
+  varying vec2 v_uv;
+  void main() { v_uv = a_pos; gl_Position = vec4(a_pos * 2.0 - 1.0, 0.0, 1.0); }`;
+
+const UPDATE_FS = `
+  precision highp float;
+  ${GLSL_DECODE}
+  uniform sampler2D u_particles, u_now, u_next;
+  uniform float u_blend, u_dt, u_rand, u_drop;
+  varying vec2 v_uv;
+
+  float rand(vec2 co) { return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453); }
+
+  void main() {
+    vec4 px = texture2D(u_particles, v_uv);
+    // 16-bit per axis: high byte in r/b, low byte in g/a
+    vec2 pos = vec2(px.r * 255.0 * 256.0 + px.g * 255.0,
+                    px.b * 255.0 * 256.0 + px.a * 255.0) / 65535.0;
+
+    vec2 uv = dataUV(pos.x, pos.y);
+    vec2 w = mix(decodeVector(texture2D(u_now, uv)), decodeVector(texture2D(u_next, uv)), u_blend);
+
+    float lat = mercToLat(pos.y);
+    float lon = pos.x * 360.0 - 180.0;
+    // metres per degree; the cos(lat) term is what stops particles sprinting
+    // near the poles, and clamping it stops a divide by zero at the pole.
+    float mPerDegLon = 111320.0 * max(cos(radians(lat)), 0.01);
+    lon += w.x * u_dt / mPerDegLon;
+    lat += w.y * u_dt / 110540.0;
+
+    vec2 next = vec2(fract((lon + 180.0) / 360.0), latToMerc(lat));
+
+    // Respawn a slice of the particles each frame, or they all drain into the
+    // convergence zones and the map goes bald.
+    float speed = length(w);
+    float dropChance = u_drop + smoothstep(0.0, 1.5, 1.0 - speed) * 0.02;
+    vec2 seed = v_uv * u_rand;
+    if (rand(seed) < dropChance || next.y < 0.002 || next.y > 0.998) {
+      next = vec2(rand(seed + 1.3), rand(seed + 2.7) * 0.92 + 0.04);
+    }
+
+    vec2 q = floor(next * 65535.0 + 0.5);
+    vec2 hi = floor(q / 256.0), lo = q - hi * 256.0;
+    gl_FragColor = vec4(hi.x / 255.0, lo.x / 255.0, hi.y / 255.0, lo.y / 255.0);
+  }`;
+
+const DRAW_VS = `
+  precision highp float;
+  attribute float a_index, a_end;
+  uniform sampler2D u_old, u_new;
+  uniform mat4 u_matrix;
+  uniform float u_side, u_worldShift, u_jump;
+  varying float v_end;
+
+  vec2 unpack(vec4 px) {
+    return vec2(px.r * 255.0 * 256.0 + px.g * 255.0,
+                px.b * 255.0 * 256.0 + px.a * 255.0) / 65535.0;
+  }
+  void main() {
+    vec2 uv = vec2(fract(a_index / u_side), floor(a_index / u_side) / u_side) + 0.5 / u_side;
+    vec2 oldP = unpack(texture2D(u_old, uv));
+    vec2 newP = unpack(texture2D(u_new, uv));
+
+    // A respawned particle, or one that has just crossed the antimeridian,
+    // moved an impossible distance in one frame. Drawing its trail puts a line
+    // right across the map, which is what a field of these looks like: a mess
+    // of straight lines over the weather. Collapse the segment instead.
+    vec2 delta = newP - oldP;
+    bool teleported = abs(delta.x) > u_jump || abs(delta.y) > u_jump;
+
+    vec2 pos = (a_end > 0.5 && !teleported) ? newP : oldP;
+    v_end = teleported ? 0.0 : a_end;
+    gl_Position = u_matrix * vec4(pos.x + u_worldShift, pos.y, 0.0, 1.0);
+    gl_PointSize = 1.5;
+  }`;
+
+const DRAW_FS = `
+  precision highp float;
+  varying float v_end;
+  uniform float u_opacity;
+  void main() { gl_FragColor = vec4(1.0, 1.0, 1.0, u_opacity * mix(0.05, 0.75, v_end)); }`;
+
+class WeatherLayer {
+  constructor(app) {
+    this.id = "weather";
+    this.type = "custom";
+    this.renderingMode = "2d";
+    this.app = app;
+    this.side = 256;              // 65,536 particles
+  }
+
+  onAdd(map, gl) {
+    this.map = map;
+    this.gl = gl;
+    // The layer is handed the context officially; the app needs it too, for
+    // uploading data textures. Taking it from map.painter.context would be
+    // reaching into MapLibre's internals.
+    this.app.gl = gl;
+    this.field = program(gl, FIELD_VS, FIELD_FS);
+    this.update = program(gl, QUAD_VS, UPDATE_FS);
+    this.draw = program(gl, DRAW_VS, DRAW_FS);
+
+    this.quad = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.quad);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0,0, 1,0, 0,1, 0,1, 1,0, 1,1]), gl.STATIC_DRAW);
+
+    const n = this.side * this.side;
+    const idx = new Float32Array(n * 4);          // two vertices per particle
+    for (let i = 0; i < n; i++) {
+      idx[i*4+0] = i; idx[i*4+1] = 0;
+      idx[i*4+2] = i; idx[i*4+3] = 1;
+    }
+    this.indexBuf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.indexBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, idx, gl.STATIC_DRAW);
+    this.particleCount = n;
+
+    const seed = new Uint8Array(n * 4);
+    for (let i = 0; i < seed.length; i++) seed[i] = Math.floor(Math.random() * 256);
+    this.posA = texture(gl, seed);
+    this.posB = texture(gl, seed);
+    this.fbo = gl.createFramebuffer();
+    this.ramps = {};
+    this.last = performance.now();
+  }
+
+  ramp(name) {
+    if (!this.ramps[name]) {
+      const r = RAMPS[name];
+      this.ramps[name] = rampTexture(this.gl, r.stops, r.display);
+    }
+    return this.ramps[name];
+  }
+
+  bindDecode(loc, spec) {
+    const gl = this.gl;
+    gl.uniform1i(loc.u_encoding, ENCODING_ID[spec.encoding]);
+    gl.uniform1f(loc.u_min, spec.min);
+    gl.uniform1f(loc.u_max, spec.max);
+    gl.uniform1f(loc.u_gamma, spec.gamma || 1.0);
+  }
+
+  // MapLibre 4 passes the matrix itself; MapLibre 5 passes an options object.
+  // Order matters: defaultProjectionData.mainMatrix is the one that takes
+  // spherical mercator 0..1 to clip space. modelViewProjectionMatrix is a
+  // different space and silently puts the quad off screen, which looks exactly
+  // like "the data failed to load".
+  static matrixOf(arg) {
+    if (!arg) return null;
+    if (ArrayBuffer.isView(arg) || Array.isArray(arg)) return arg;
+    return (arg.defaultProjectionData && arg.defaultProjectionData.mainMatrix)
+        || arg.modelViewProjectionMatrix
+        || null;
+  }
+
+  render(gl, arg) {
+    const matrix = WeatherLayer.matrixOf(arg);
+    if (!matrix) {
+      if (!this.warned) { console.error("no projection matrix from MapLibre"); this.warned = true; }
+      return;
+    }
+    const app = this.app;
+    const frame = app.currentFrame();
+    if (!frame) { this.map.triggerRepaint(); return; }
+    const { spec, now, next, blend, name } = frame;
+
+    // --- colour field -----------------------------------------------------
+    const f = this.field;
+    gl.useProgram(f.p);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.quad);
+    gl.enableVertexAttribArray(f.loc.a_pos);
+    gl.vertexAttribPointer(f.loc.a_pos, 2, gl.FLOAT, false, 0, 0);
+    gl.uniformMatrix4fv(f.loc.u_matrix, false, matrix);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, now);
+    gl.uniform1i(f.loc.u_now, 0);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, next);
+    gl.uniform1i(f.loc.u_next, 1);
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, this.ramp(name));
+    gl.uniform1i(f.loc.u_ramp, 2);
+    this.bindDecode(f.loc, spec);
+    gl.uniform1f(f.loc.u_blend, blend);
+    gl.uniform1f(f.loc.u_dlo, RAMPS[name].display[0]);
+    gl.uniform1f(f.loc.u_dhi, RAMPS[name].display[1]);
+    gl.uniform1f(f.loc.u_opacity, name === "wind" ? 0.55 : 0.85);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    const shifts = app.worldShifts();
+    for (const shift of shifts) {
+      gl.uniform1f(f.loc.u_worldShift, shift);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    }
+
+    // --- particles, only where there is a vector field ---------------------
+    const windFrame = app.currentFrame("wind");
+    if (!windFrame) { this.finish(gl); return; }
+
+    const nowMs = performance.now();
+    const dt = Math.min(0.05, (nowMs - this.last) / 1000);
+    this.last = nowMs;
+
+    // advect into posB
+    const u = this.update;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.posB, 0);
+    gl.viewport(0, 0, this.side, this.side);
+    gl.disable(gl.BLEND);
+    gl.useProgram(u.p);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.quad);
+    gl.enableVertexAttribArray(u.loc.a_pos);
+    gl.vertexAttribPointer(u.loc.a_pos, 2, gl.FLOAT, false, 0, 0);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.posA);
+    gl.uniform1i(u.loc.u_particles, 0);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, windFrame.now);
+    gl.uniform1i(u.loc.u_now, 1);
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, windFrame.next);
+    gl.uniform1i(u.loc.u_next, 2);
+    this.bindDecode(u.loc, windFrame.spec);
+    gl.uniform1f(u.loc.u_blend, windFrame.blend);
+
+    // Trail length is a display choice, not a physical one. Pick how many
+    // pixels a reference wind should cover in a frame and work backwards, so
+    // the trails look the same at every zoom instead of vanishing when you
+    // zoom out and streaking when you zoom in.
+    const TRAIL_PX = 2.2, V_REF = 10;             // 10 m/s draws a 2.2px trail
+    const pxPerMercator = 512 * Math.pow(2, this.map.getZoom());
+    const stepMercator = TRAIL_PX / pxPerMercator;
+    const frameFactor = Math.min(3, dt * 60);     // keep real-time speed steady
+    // metres per mercator unit at the equator, so m/s becomes mercator/second
+    gl.uniform1f(u.loc.u_dt, (stepMercator * 4.0075e7 / V_REF) * frameFactor);
+    gl.uniform1f(u.loc.u_rand, Math.random() + 1.0);
+    gl.uniform1f(u.loc.u_drop, 0.004);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    const size = [gl.drawingBufferWidth, gl.drawingBufferHeight];
+    gl.viewport(0, 0, size[0], size[1]);
+
+    // draw trails, repeated across the copies of the world that are on screen
+    const d = this.draw;
+    gl.useProgram(d.p);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.indexBuf);
+    gl.enableVertexAttribArray(d.loc.a_index);
+    gl.vertexAttribPointer(d.loc.a_index, 1, gl.FLOAT, false, 8, 0);
+    gl.enableVertexAttribArray(d.loc.a_end);
+    gl.vertexAttribPointer(d.loc.a_end, 1, gl.FLOAT, false, 8, 4);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.posA);
+    gl.uniform1i(d.loc.u_old, 0);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.posB);
+    gl.uniform1i(d.loc.u_new, 1);
+    gl.uniformMatrix4fv(d.loc.u_matrix, false, matrix);
+    gl.uniform1f(d.loc.u_side, this.side);
+    gl.uniform1f(d.loc.u_opacity, 1.0);
+    // Well above the fastest legitimate step (a 50 m/s wind is 5x the
+    // reference), far below a respawn or a wrap, which are 0.3 or more.
+    gl.uniform1f(d.loc.u_jump, 12 * stepMercator);
+    for (const shift of shifts) {
+      gl.uniform1f(d.loc.u_worldShift, shift);
+      gl.drawArrays(gl.LINES, 0, this.particleCount * 2);
+    }
+
+    const swap = this.posA; this.posA = this.posB; this.posB = swap;
+    this.finish(gl);
+  }
+
+  // Hand the context back roughly as MapLibre expects to find it. Leaving the
+  // active texture unit at 2 will corrupt the next layer's bindings.
+  finish(gl) {
+    gl.activeTexture(gl.TEXTURE0);
+    this.map.triggerRepaint();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// App: manifest, texture cache, time slider, URL state.
+// ---------------------------------------------------------------------------
+class App {
+  constructor() {
+    this.textures = new Map();
+    this.pending = new Map();
+    this.layer = "wind";
+    this.stepIndex = 0;
+    this.playing = false;
+  }
+
+  async boot() {
+    const latest = await this.fetchJSON(`${DATA}/latest.json`);
+    this.manifest = await this.fetchJSON(`${DATA}/${latest.manifest}`);
+    this.runPrefix = `${DATA}/runs/${this.manifest.run}`;
+    this.steps = this.manifest.steps;
+    this.runStart = this.parseRun(this.manifest.run);
+
+    this.readURL();
+    this.buildChrome();
+    this.startMap();
+  }
+
+  async fetchJSON(url) {
+    const res = await fetch(url, { cache: "no-cache" });
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
+    return res.json();
+  }
+
+  parseRun(id) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2})Z$/.exec(id);
+    if (!m) return new Date();
+    return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4]));
+  }
+
+  validAt(index) {
+    return new Date(this.runStart.getTime() + this.steps[index] * 3600e3);
+  }
+
+  // Which copies of the world are visible, so particles repeat when zoomed out.
+  worldShifts() {
+    if (!this.map) return [0];
+    const b = this.map.getBounds();
+    const west = Math.floor((b.getWest() + 180) / 360);
+    const east = Math.floor((b.getEast() + 180) / 360);
+    const out = [];
+    for (let i = west; i <= east && out.length < 5; i++) out.push(i);
+    return out.length ? out : [0];
+  }
+
+  textureFor(layer, index) {
+    const step = this.steps[Math.max(0, Math.min(this.steps.length - 1, index))];
+    const key = `${layer}/${step}`;
+    if (this.textures.has(key)) return this.textures.get(key);
+    if (!this.pending.has(key)) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";          // required: the data is on another origin
+      const p = new Promise((resolve, reject) => {
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error(`failed to load ${key}`));
+      }).then((loaded) => {
+        if (this.gl) {
+          this.textures.set(key, texture(this.gl, loaded, this.gl.REPEAT));
+          this.map && this.map.triggerRepaint();
+        }
+        this.pending.delete(key);
+      }).catch((err) => { console.warn(err); this.pending.delete(key); });
+      img.src = `${this.runPrefix}/${layer}/f${String(step).padStart(3, "0")}.png`;
+      this.pending.set(key, p);
+    }
+    return null;
+  }
+
+  // The frame to draw: two steps and how far between them we are.
+  currentFrame(layerName) {
+    const name = layerName || this.layer;
+    const spec = this.manifest.layers[name];
+    if (!spec) return null;
+    const i = Math.floor(this.stepIndex);
+    const now = this.textureFor(name, i);
+    if (!now) return null;
+    const next = this.textureFor(name, i + 1) || now;
+    return { name, spec, now, next, blend: this.stepIndex - i };
+  }
+
+  buildChrome() {
+    const box = document.getElementById("layers");
+    for (const name of Object.keys(this.manifest.layers)) {
+      const b = document.createElement("button");
+      b.textContent = this.manifest.layers[name].label;
+      b.setAttribute("aria-pressed", String(name === this.layer));
+      b.onclick = () => {
+        this.layer = name;
+        [...box.children].forEach((c, i) =>
+          c.setAttribute("aria-pressed", String(Object.keys(this.manifest.layers)[i] === name)));
+        this.writeURL(); this.paintReadoutLabel(); this.map && this.map.triggerRepaint();
+      };
+      box.appendChild(b);
+    }
+
+    const slider = document.getElementById("slider");
+    slider.max = String(this.steps.length - 1);
+    slider.value = String(this.stepIndex);
+    slider.oninput = () => { this.stepIndex = +slider.value; this.onTimeChange(); };
+
+    const play = document.getElementById("play");
+    play.onclick = () => {
+      this.playing = !this.playing;
+      play.textContent = this.playing ? "❚❚" : "▶";
+      if (this.playing) this.tick();
+    };
+
+    document.getElementById("credit").innerHTML =
+      `${escapeHTML(this.manifest.attribution)} · run ${escapeHTML(this.manifest.run)}`;
+    this.paintReadoutLabel();
+    this.onTimeChange();
+  }
+
+  tick() {
+    if (!this.playing) return;
+    this.stepIndex += 0.08;
+    if (this.stepIndex > this.steps.length - 1) this.stepIndex = 0;
+    document.getElementById("slider").value = String(Math.round(this.stepIndex));
+    this.onTimeChange();
+    requestAnimationFrame(() => this.tick());
+  }
+
+  onTimeChange() {
+    const d = this.validAt(Math.round(this.stepIndex));
+    const hh = String(d.getUTCHours()).padStart(2, "0");
+    const day = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+    document.getElementById("stamp").textContent = `${day} ${hh}:00 UTC`;
+    this.textureFor(this.layer, Math.floor(this.stepIndex) + 1);  // prefetch
+    this.writeURL();
+    this.map && this.map.triggerRepaint();
+  }
+
+  paintReadoutLabel() {
+    const spec = this.manifest.layers[this.layer];
+    document.getElementById("readout-label").textContent = spec ? spec.label : "";
+  }
+
+  readURL() {
+    const h = new URLSearchParams(location.hash.slice(1));
+    if (h.get("layer") && this.manifest.layers[h.get("layer")]) this.layer = h.get("layer");
+    if (h.get("step")) this.stepIndex = Math.max(0, Math.min(this.steps.length - 1, +h.get("step")));
+    this.view = h.get("at") ? h.get("at").split(",").map(Number) : null;
+  }
+
+  writeURL() {
+    if (!this.map) return;
+    const c = this.map.getCenter();
+    const at = `${c.lng.toFixed(2)},${c.lat.toFixed(2)},${this.map.getZoom().toFixed(1)}`;
+    const h = new URLSearchParams({ layer: this.layer, step: String(Math.round(this.stepIndex)), at });
+    history.replaceState(null, "", `#${h}`);
+  }
+
+  startMap() {
+    const [lng, lat, zoom] = this.view && this.view.length === 3 ? this.view : [118, -2, 3.2];
+    this.map = new maplibregl.Map({
+      container: "map",
+      // Keyless basemap so this runs with no accounts. The architecture doc
+      // still has "self-hosted PMTiles basemap" as an unverified decision.
+      style: "https://demotiles.maplibre.org/style.json",
+      center: [lng, lat], zoom, minZoom: 1, maxZoom: 9,
+      attributionControl: { compact: true },
+    });
+    this.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+    this.map.on("load", () => {
+      this.map.addLayer(new WeatherLayer(this));   // sets this.gl via onAdd
+      const boot = document.getElementById("boot");
+      if (boot) boot.remove();
+      // Write the hash once on load. Without this a view is only shareable
+      // after the user happens to pan, which is a confusing way to fail.
+      this.writeURL();
+    });
+    this.map.on("moveend", () => this.writeURL());
+    this.map.on("mousemove", (e) => this.probe(e.lngLat));
+    this.map.on("mouseout", () => { document.getElementById("readout").hidden = true; });
+  }
+
+  // Read the value under the cursor from the PNG itself, on a 2D canvas.
+  // Same bytes the shader sees, so the number and the colour cannot disagree.
+  probe(lngLat) {
+    const spec = this.manifest.layers[this.layer];
+    const step = this.steps[Math.round(this.stepIndex)];
+    const key = `${this.layer}/${step}`;
+    const img = this.probeCache && this.probeCache.key === key ? this.probeCache.img : null;
+    if (!img) {
+      const loading = new Image();
+      loading.crossOrigin = "anonymous";
+      loading.onload = () => { this.probeCache = { key, img: loading }; };
+      loading.src = `${this.runPrefix}/${this.layer}/f${String(step).padStart(3, "0")}.png`;
+      return;
+    }
+    const g = this.manifest.grid;
+    const x = Math.round(((lngLat.lng + 180) / 360) * (g.width - 1));
+    const y = Math.round(((90 - lngLat.lat) / 180) * (g.height - 1));
+    if (!this.probeCanvas) {
+      this.probeCanvas = document.createElement("canvas");
+      this.probeCanvas.width = g.width; this.probeCanvas.height = g.height;
+      this.probeCtx = this.probeCanvas.getContext("2d", { willReadFrequently: true });
+    }
+    if (this.probeCache.drawn !== key) {
+      this.probeCtx.drawImage(img, 0, 0);
+      this.probeCache.drawn = key;
+    }
+    const px = this.probeCtx.getImageData(Math.max(0, x), Math.max(0, y), 1, 1).data;
+    const value = decodeOnCPU(spec, px);
+    const unit = RAMPS[this.layer].unitLabel;
+    const el = document.getElementById("readout");
+    el.hidden = false;
+    document.getElementById("readout-value").textContent =
+      `${value.toFixed(value < 10 ? 1 : 0)} ${unit}`;
+    document.getElementById("readout-pos").textContent =
+      `${lngLat.lat.toFixed(2)}, ${lngLat.lng.toFixed(2)}`;
+  }
+}
+
+// Mirrors decodeValue() in GLSL and decode() in encoding.py.
+function decodeOnCPU(spec, px) {
+  const range = (unit) => Math.pow(Math.min(1, Math.max(0, unit)), spec.gamma || 1) * (spec.max - spec.min) + spec.min;
+  if (spec.encoding === "scalar16") return range((px[0] * 256 + px[1]) / 65535);
+  if (spec.encoding === "vector8") return Math.hypot(range(px[0] / 255), range(px[1] / 255));
+  return range(px[0] / 255);
+}
+
+function escapeHTML(s) {
+  return String(s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+
+new App().boot().catch((err) => {
+  document.getElementById("boot-msg").className = "err";
+  document.getElementById("boot-msg").textContent =
+    `${err.message}. Serve the pipeline's output at ${DATA}, or pass ?data=<url>.`;
+  console.error(err);
+});
+</script>
+</body>
+</html>

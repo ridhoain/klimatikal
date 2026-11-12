@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+out/
+web/data/
+.heartbeat
+.DS_Store
+.venv/

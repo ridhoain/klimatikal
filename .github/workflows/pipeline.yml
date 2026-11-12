@@ -1,0 +1,62 @@
+# Fallback runner, for when Oracle has no capacity or you would rather not
+# own a VM. Free with standard runners on a public repository.
+#
+# Two traps this file works around:
+#   - GitHub disables scheduled workflows after 60 days with no repository
+#     activity, silently. The heartbeat job below commits a timestamp weekly.
+#   - Scheduled runs are delayed under load, worst on the hour. The minutes
+#     below are deliberately odd, and the job polls for the run anyway.
+name: build forecast run
+
+on:
+  schedule:
+    # ECMWF open data lands one to two hours after the nominal run time.
+    - cron: "37 2,8,14,20 * * *"
+  workflow_dispatch:        # always pair this with a schedule: it is how you test
+
+concurrency:
+  group: forecast
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pipeline/requirements.txt
+
+      - run: pip install -r pipeline/requirements.txt
+
+      - name: Build and publish the run
+        working-directory: pipeline
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: python build_run.py
+
+  heartbeat:
+    # Keeps the schedule alive. Without it the pipeline stops after 60 quiet
+    # days and nothing tells you.
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Touch a file once a week
+        run: |
+          if [ "$(date -u +%u)" != "1" ]; then echo "not Monday, skipping"; exit 0; fi
+          date -u +"%Y-%m-%dT%H:%MZ" > .heartbeat
+          git config user.name  "klimatikal-bot"
+          git config user.email "noreply@users.noreply.github.com"
+          git add .heartbeat
+          git diff --staged --quiet || git commit -m "chore: keep scheduled workflows enabled"
+          git push
