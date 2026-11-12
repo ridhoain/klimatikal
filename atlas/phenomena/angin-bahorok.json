@@ -1,0 +1,38 @@
+{
+  "id": "angin-bahorok",
+  "status": "draft",
+
+  "name_id": "Angin Bahorok",
+  "name_local": null,
+  "name_en": "Bahorok wind (foehn wind)",
+
+  "scale": "local",
+  "documentation": "well",
+
+  "place": {
+    "id": "Kec. Bahorok, Kab. Langkat, Sumatera Utara",
+    "en": "Bahorok District, Langkat Regency, North Sumatra"
+  },
+  "lat": 3.6,
+  "lon": 98.1,
+
+  "scientific": {
+    "id": "Angin Bahorok adalah angin jatuh yang hangat dan kering (efek foehn) di sisi timur Pegunungan Bukit Barisan, Sumatera Utara. Udara lembap yang terangkat di lereng barat melepaskan hujan dan kehilangan uap air; ketika menuruni lereng timur, udara itu memanas secara adiabatik kering sehingga tiba di dataran Langkat dan Deli Serdang sebagai angin yang lebih panas, lebih kering, dan berhembus kencang. Angin ini dikenal merusak tanaman perkebunan, terutama tembakau.",
+    "en": "The Bahorok wind is a warm, dry downslope wind (the foehn effect) on the eastern side of the Bukit Barisan range in North Sumatra. Moist air lifted over the western slopes sheds its rain and loses moisture; descending the eastern slopes it warms at the dry adiabatic rate, reaching the Langkat and Deli Serdang lowlands hotter, drier and gusty. It is known for damaging plantation crops, tobacco above all."
+  },
+
+  "local_knowledge": null,
+
+  "photo": null,
+
+  "sources": [],
+
+  "curator_notes": [
+    "Photo: none yet. Add the file to web/atlas-cuaca/photos/ and fill 'photo' (file, alt, credit, licence). The build refuses a photo with no credit or licence.",
+    "Local knowledge: empty. This needs a named community source or a published account; do not paraphrase from memory.",
+    "Local name: unknown. Is there a Karo, Langkat Malay or other name for this wind?",
+    "Sources: none cited. The scientific text is a general foehn explanation written for review, not yet checked against references.",
+    "To verify: the months it occurs, the usual wind direction, typical speeds, and how far inland it is felt. The text avoids stating them.",
+    "Coordinates are approximate (the district, not a measured site). 'documentation: well' is my suggestion; please confirm it."
+  ]
+}

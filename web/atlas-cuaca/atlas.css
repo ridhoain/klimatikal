@@ -1,0 +1,93 @@
+/* Atlas cuaca. Builds on /about-us/about.css (palette, header, footer). */
+
+/* Language: both texts are in the page; the reader's choice hides the other.
+   Scoped under body so the <html lang> attribute itself is never hidden. */
+html[data-lang="id"] body [lang="en"],
+html[data-lang="en"] body [lang="id"] { display: none; }
+
+.atlas-page .site-header,
+.atlas-page .site-footer { padding-inline: max(16px, calc((100% - 1180px) / 2)); }
+main.atlas { max-width: 1180px; }
+
+/* header: language switch */
+.lang { display: inline-flex; margin-left: 4px; border: 1px solid rgba(139, 190, 178, .35); border-radius: 8px; overflow: hidden; }
+.lang button {
+  all: unset; cursor: pointer; padding: 3px 10px; font-size: 12px; letter-spacing: .06em;
+  color: var(--kl-teal);
+}
+.lang button[aria-pressed="true"] { background: var(--kl-lime); color: var(--kl-amethyst); font-weight: 600; }
+.lang button:focus-visible { outline: 2px solid var(--kl-lime); outline-offset: 2px; }
+@media (max-width: 600px) { .site-header nav { gap: 12px; flex-wrap: wrap; justify-content: flex-end; } }
+
+/* locator maps (inline SVG, one shared land shape) */
+.locator { display: block; width: 100%; height: auto; border-radius: 10px;
+  background: rgba(13, 6, 48, .55); border: 1px solid rgba(139, 190, 178, .2); }
+/* No ".locator" ancestor in these two on purpose: the shape is defined once in a
+   hidden <defs> and reused with <use>, and a <use> copy is styled by where the
+   ORIGINAL sits in the page, not by where it is drawn. */
+.land { fill: none; stroke: var(--kl-teal); stroke-width: 1.3; stroke-linejoin: round; stroke-linecap: round; opacity: .9; }
+.land-border { fill: none; stroke: var(--kl-dusk); stroke-width: 1; stroke-dasharray: 4 3; }
+.pin { fill: var(--kl-lime); stroke: var(--kl-amethyst); stroke-width: 2.5; }
+.pin-halo { fill: var(--kl-lime); opacity: .22; }
+.pin-link { cursor: pointer; }
+.pin-link:hover .pin, .pin-link:focus .pin { stroke: var(--kl-lime); stroke-width: 3; fill: #fff; }
+.pin-link.dim { opacity: .18; }
+.overview { margin: 6px 0 26px; }
+.locator.wide { max-height: 360px; }
+
+/* controls */
+.controls { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: center; margin: 4px 0 10px; }
+.controls .group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.glabel { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--kl-teal); margin-right: 4px; }
+.controls button {
+  all: unset; cursor: pointer; padding: 5px 12px; border-radius: 999px; font-size: 14px;
+  color: var(--text); border: 1px solid rgba(139, 190, 178, .4);
+}
+.controls button:hover { border-color: var(--kl-teal); }
+.controls button[aria-pressed="true"] { background: var(--kl-lime); color: var(--kl-amethyst); border-color: var(--kl-lime); font-weight: 600; }
+.controls button:focus-visible { outline: 2px solid var(--kl-lime); outline-offset: 2px; }
+#q {
+  flex: 1 1 220px; min-width: 180px; max-width: 360px; padding: 8px 14px; font: inherit; font-size: 14px;
+  color: var(--text); background: var(--kl-deep); border: 1px solid rgba(139, 190, 178, .3); border-radius: 999px;
+}
+#q:focus { outline: 2px solid var(--kl-lime); outline-offset: 1px; }
+.count { margin: 8px 0 20px; font-size: 14px; color: var(--kl-teal); }
+.count b { color: var(--kl-lime); font-variant-numeric: tabular-nums; }
+.none { color: var(--kl-teal); padding: 30px 0; }
+
+/* cards */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 22px; align-items: start; }
+.card {
+  display: flex; flex-direction: column; overflow: hidden; scroll-margin-top: 20px;
+  background: var(--kl-deep); border: 1px solid rgba(139, 190, 178, .25); border-radius: 16px;
+}
+.card:target { border-color: var(--kl-lime); box-shadow: 0 0 0 2px rgba(230, 249, 175, .35); }
+.card[hidden] { display: none; }
+.photo { margin: 0; }
+.photo img { display: block; width: 100%; aspect-ratio: 16 / 10; max-height: 340px; object-fit: cover; }
+.photo figcaption { padding: 6px 14px; font-size: 12px; color: var(--kl-teal); background: rgba(13, 6, 48, .5); }
+.photo.placeholder {
+  aspect-ratio: 16 / 10; max-height: 340px; display: grid; place-items: center; color: var(--kl-teal); font-size: 14px;
+  background: repeating-linear-gradient(45deg, rgba(13, 6, 48, .35) 0 12px, rgba(13, 6, 48, .5) 12px 24px);
+  border-bottom: 1px dashed rgba(139, 190, 178, .4);
+}
+.body { padding: 16px 18px 20px; }
+.badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.badge { font-size: 11.5px; letter-spacing: .04em; padding: 2px 10px; border-radius: 999px; border: 1px solid rgba(139, 190, 178, .5); color: var(--kl-teal); }
+.badge.doc.well { background: rgba(230, 249, 175, .14); border-color: rgba(230, 249, 175, .55); color: var(--kl-lime); }
+.badge.doc.poor { border-style: dashed; }
+.badge.draft { border: 1px dashed var(--kl-lime); color: var(--kl-lime); }
+.card h3 { font-size: 22px; line-height: 1.2; color: var(--kl-lime); }
+.card h4 { margin: 18px 0 6px; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--kl-teal); font-weight: 600; }
+.card p { margin: 0 0 8px; font-size: 15px; line-height: 1.6; }
+.card .alt { margin: 4px 0 0; color: var(--text); }
+.card .alt small { color: var(--kl-teal); text-transform: uppercase; letter-spacing: .1em; font-size: 10.5px; margin-right: 6px; }
+.card .empty { color: var(--kl-teal); font-style: italic; }
+.place .coords { color: var(--kl-teal); font-size: 13px; white-space: nowrap; }
+.card .locator { margin: 8px 0 10px; }
+.maplink { font-size: 14px; }
+.sources { margin: 0; padding-left: 18px; font-size: 14px; }
+.curator { margin-top: 18px; font-size: 13px; border: 1px dashed rgba(230, 249, 175, .5); border-radius: 10px; padding: 8px 12px; color: var(--kl-lime); }
+.curator summary { cursor: pointer; }
+.curator ul { margin: 8px 0 2px; padding-left: 18px; color: var(--text); }
+.curator li { margin-bottom: 6px; }
