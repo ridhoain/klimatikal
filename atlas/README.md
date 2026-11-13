@@ -139,6 +139,20 @@ and `notes` (date -> `{id, en}` text added to that day's caption; each must name
 source). The index is our own reanalysis estimate, not the published QuikSCAT index, and
 the caption and the entry's `caveat` must say so.
 
+### Basin-fog relief illustration (`"type": "fogbasin"`)
+
+Kabut Bromo: a real SRTM elevation grid (`atlas/diagrams/fetch_grid.py`, public domain via
+OpenTopoData, fetched once and committed) drawn as a plan-view relief map (with the camera
+position and field of view) and four high-oblique "helicopter" slices (cold air draining
+in, thin fog, fog filling the basin, fog thinning). The fog surface is drawn into the scene
+cell by cell from far to near, so peaks and nearer ridges poke through it. Config: `grid`,
+`camera` (lat, lon, alt_m, heading_deg, pitch_deg, fov_deg), `frame.ndc` (a window in the
+camera's field of view), `basin` (ellipse centre and radius in degrees, `floor_seed`),
+`levels_m` (three illustrative fog-top heights), `arrows`, `arrow_start_m`, `marks` (named
+points with `lift`). Terrain colours are an elevation tint, never land cover. Fog level,
+extent, timing and arrows are illustration only, and the entry's caveat must say what its
+sources do and do not support. The build takes about 15 s and the page is about 0.85 MB.
+
 ## Publishing
 
 **Rebuild after editing `atlas.css`, `atlas.js` or `about.css`.** The generated

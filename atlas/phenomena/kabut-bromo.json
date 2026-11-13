@@ -1,0 +1,150 @@
+{
+  "id": "kabut-bromo",
+  "status": "draft",
+  "name_id": "Kabut Bromo",
+  "name_local": null,
+  "name_en": "Bromo fog (Tengger caldera)",
+  "scale": "local",
+  "documentation": "poor",
+  "place": {
+    "id": "Kaldera Tengger, Taman Nasional Bromo Tengger Semeru, Jawa Timur",
+    "en": "Tengger caldera, Bromo Tengger Semeru National Park, East Java"
+  },
+  "lat": -7.9417,
+  "lon": 112.95,
+  "summary": {
+    "id": "Kabut yang menyelimuti kawasan Gunung Bromo dan kaldera Tengger hampir setiap pagi dan sore, membatasi jarak pandang bagi pengunjung.",
+    "en": "Fog that covers the Mount Bromo area and the Tengger caldera almost every morning and afternoon, limiting visibility for visitors."
+  },
+  "scientific": {
+    "id": "Kabut Bromo adalah kabut yang menyelimuti kawasan wisata Gunung Bromo dan kaldera Tengger di Jawa Timur. Studi risiko wisata oleh Meilani dkk. (2018) mencatat bahwa kabut di kawasan itu muncul hampir setiap pagi dan sore, membatasi jarak pandang, dan membuat seluruh area dari gerbang masuk sampai Lautan Pasir dan jalur ke Penanjakan berisiko tinggi bagi pengunjung selama kabut; studi yang sama mencatat suhu udara minimum sekitar 3–5 °C dan maksimum sekitar 20–22 °C di kawasan itu. Menurut Wikipedia, Lautan Pasir berada pada ketinggian sekitar 2.100 m dan dikelilingi dinding kaldera yang curam, dengan Bromo (2.329 m) dan Batok (2.470 m) menjulang dari dasarnya dan Penanjakan (2.770 m) di tepinya. Sumber yang kami baca tidak menjelaskan bagaimana kabut Bromo terbentuk. Rujukan umum NOAA dan NWS menyebut kabut terbentuk ketika udara dekat permukaan didinginkan sampai titik embunnya; kabut radiasi muncul pada langit cerah, angin sangat lemah, dan kelembapan tinggi, terutama pada malam atau dini hari, dan ketika tanah menghangat lapisan udara terbawah menjadi tidak stabil, kabut tercampur dan akhirnya menguap, sering lebih dulu pecah menjadi bercak. Studi embun beku di Kompleks Gunungapi Dieng (Ashari dkk., 2024) menjelaskan bahwa cekungan bekas kawah dapat menjadi tempat udara dingin yang berat menggenang, sedangkan cekungan dengan celah terbuka yang mengalirkan udara dingin kurang cocok; studi itu tentang embun beku, bukan kabut, dan bukan tentang Bromo. Ilustrasi di bawah menggabungkan rujukan-rujukan itu sebagai gambaran mekanisme yang masuk akal bagi kabut yang mengisi kaldera di pagi hari; itu bukan hasil pengamatan di Bromo.",
+    "en": "Bromo fog is the fog that blankets the Mount Bromo tourist area and the Tengger caldera in East Java. A tourism hazard study by Meilani et al. (2018) records that fog in the area occurs almost every morning and afternoon, limits visibility, and makes the whole area from the entrance gate to the Sea of Sand and the trail to Penanjakan high-risk for visitors during fog; the same study records air temperatures there with a minimum of about 3–5 °C and a maximum of about 20–22 °C. According to Wikipedia the Sea of Sand lies at about 2,100 m and is surrounded by a steep caldera wall, with Bromo (2,329 m) and Batok (2,470 m) rising from its floor and Penanjakan (2,770 m) on its rim. The sources we have read do not explain how Bromo's fog forms. General NOAA and NWS references say fog forms when air near the surface is cooled to its dew point; radiation fog appears under clear skies, very light wind and high humidity, mainly at night or in the early morning, and once the ground warms the lowest layer becomes unstable, the fog mixes and eventually evaporates, often breaking into patches first. A frost study in the Dieng Volcanic Complex (Ashari et al., 2024) explains that former crater basins can collect heavy cold air, while basins with open gaps that drain cold air are less suitable; that study is about frost, not fog, and not about Bromo. The illustration below combines these references as a plausible picture of the mechanism for fog filling the caldera in the morning; it is not an observation at Bromo."
+  },
+  "caveat": {
+    "id": "Kami tidak menemukan studi tentang bagaimana kabut Bromo terbentuk. Dari sumber khusus Bromo, hanya ada catatan bahwa kabut terjadi hampir setiap pagi dan sore (studi risiko wisata). Urutan kabut radiasi berasal dari rujukan umum NOAA dan NWS, dan genangan udara dingin di cekungan dari studi embun beku di Dieng; keduanya digabung di sini sebagai skema. Terrain pada gambar nyata (SRTM), tetapi posisi helikopter, kabut, kedalaman, waktu, dan panah udara dingin hanya ilustrasi. Kabut sore hari yang disebut studi wisata tidak dijelaskan oleh urutan malam-pagi ini.",
+    "en": "We found no study of how Bromo's fog forms. From Bromo-specific sources there is only the record that fog occurs almost every morning and afternoon (a tourism risk study). The radiation-fog sequence comes from general NOAA and NWS references, and cold air pooling in basins from a frost study at Dieng; the two are combined here as a schematic. The terrain in the picture is real (SRTM), but the helicopter position, the fog, its depth, timing and the cold-air arrows are only illustration. The afternoon fog the tourism study mentions is not explained by this night-to-morning sequence."
+  },
+  "diagram": {
+    "type": "fogbasin",
+    "grid": "bromo-grid",
+    "camera": {
+      "lat": -7.88,
+      "lon": 112.953,
+      "alt_m": 5600,
+      "heading_deg": 180,
+      "pitch_deg": 30,
+      "fov_deg": 80
+    },
+    "vertical_exaggeration": 1.6,
+    "basin": {
+      "centre": [
+        -7.962,
+        112.962
+      ],
+      "radius_deg": [
+        0.058,
+        0.062
+      ],
+      "floor_seed": [
+        -7.975,
+        112.944
+      ]
+    },
+    "levels_m": [
+      2138,
+      2185,
+      2155
+    ],
+    "arrows": 28,
+    "arrow_start_m": 2420,
+    "marks": [
+      {
+        "id": "Gunung Bromo",
+        "en": "Mount Bromo",
+        "sub_id": "2.329 m",
+        "sub_en": "2,329 m",
+        "lat": -7.9417,
+        "lon": 112.95,
+        "lift": 220
+      },
+      {
+        "id": "Gunung Batok",
+        "en": "Mount Batok",
+        "sub_id": "2.470 m",
+        "sub_en": "2,470 m",
+        "lat": -7.981,
+        "lon": 112.938,
+        "lift": 220
+      },
+      {
+        "id": "Penanjakan",
+        "en": "Penanjakan",
+        "sub_id": "2.770 m",
+        "sub_en": "2,770 m",
+        "lat": -7.903,
+        "lon": 112.953,
+        "lift": 100
+      },
+      {
+        "id": "Lautan Pasir",
+        "en": "Sea of Sand",
+        "sub_id": "± 2.100 m",
+        "sub_en": "about 2,100 m",
+        "lat": -7.99,
+        "lon": 112.972,
+        "lift": 0
+      }
+    ],
+    "frame": {
+      "ndc": {
+        "x": [
+          -0.95,
+          0.95
+        ],
+        "y": [
+          -0.4,
+          0.8
+        ]
+      }
+    }
+  },
+  "local_knowledge": null,
+  "photo": null,
+  "sources": [
+    {
+      "text": "Meilani, R., Muthiah, J. and Muntasib, E. K. S. H. (2018), “Reducing the risk of potential hazard in tourist activities of Mount Bromo”, IOP Conf. Ser.: Earth Environ. Sci. 149, 012021 (CC BY 3.0)",
+      "url": "https://doi.org/10.1088/1755-1315/149/1/012021"
+    },
+    {
+      "text": "NOAA JetStream, Weather Glossary: “Fog” and “Radiation fog” entries",
+      "url": "https://www.noaa.gov/jetstream/appendix/weather-glossary-r"
+    },
+    {
+      "text": "Haby, J., “Fog ingredients”, forecasting-fog training page (weather.gov, NWS Houston/Galveston path; no date shown)",
+      "url": "https://www.weather.gov/source/zhu/ZHU_Training_Page/fog_stuff/forecasting_fog/FORECASTING_FOG.htm"
+    },
+    {
+      "text": "Ashari, A., Ervin, M. and Wardoyo, M. A. I. (2024), “Geomorphological control on the scarce-tropical frost events in the Dieng Volcanic Complex, Indonesia”, Bulletin of Geography. Physical Geography Series 27, 57–69",
+      "url": "https://doi.org/10.12775/bgeo-2024-0010"
+    },
+    {
+      "text": "Wikipedia, “Mount Bromo” and “Bromo Tengger Semeru National Park” (names, coordinates and heights; CC BY-SA, paraphrased)",
+      "url": "https://en.wikipedia.org/wiki/Mount_Bromo"
+    },
+    {
+      "text": "NASA SRTM 30 m elevation (public domain) via OpenTopoData (terrain for the illustration)",
+      "url": "https://www.opentopodata.org/datasets/srtm/"
+    }
+  ],
+  "curator_notes": [
+    "WHAT IS AND ISN'T SOURCED. Bromo-specific: only Meilani, Muthiah & Muntasib (2018), a tourism hazard-risk study: fog 'almost every morning and afternoon' in the Bromo tourist area, limits visibility, high risk for visitors; air temperature minimum about 3-5 C, maximum about 20-22 C. I extracted and read the PDF text myself. It does NOT explain how the fog forms and does not mention a sea of clouds or inversion.",
+    "HOW THE FOG FORMS (mechanism): not from any Bromo source. Radiation-fog conditions (clear sky, little wind, high humidity; mainly night or early morning) and dissipation (ground warms, lowest layer turns unstable, fog mixes and evaporates; NWS: morning sun breaks it into patches) are from NOAA JetStream's glossary and an NWS training page by Jeff Haby, read via a fetch agent's account (it says full text): please skim. Those pages do NOT mention cold-air drainage into basins, valley inversions, hills above the fog, or fog being deepest near sunrise; I did not take those claims from them. Cold air pooling in former-crater basins comes from Ashari et al. (2024), a FROST study at Dieng (I read the full text myself): basins with gentle floors and steep walls can hold heavy still cold air ('cold air puddles'), basins with open gaps drain it. The page says plainly that this is frost, not fog, and not Bromo.",
+    "The 'sea of clouds fills the caldera' picture is therefore a schematic combining those references (plus your description), not an observation. I found no Bromo fog study, BMKG explainer or park advisory. Travel blogs describe fog and cloud inversions in the caldera but are anecdotal and not cited. If you have a BMKG, Balai Besar TNBTS or journal source on how the fog forms, the Note can be replaced with a plain statement.",
+    "AFTERNOON FOG: Meilani says fog also occurs in the afternoon; the night-to-morning sequence does not explain that (upslope fog is a general possibility per NOAA's upslope entry, but no source ties it to Bromo). The caveat says so.",
+    "TERRAIN CHECK against published heights (Wikipedia/GVP and the national-park article, via a fetch agent): SRTM at my 0.003 degree grid gives Bromo cone 2,304 m (published 2,329), Batok 2,473 (2,470), highest point near Penanjakan 2,746 (2,770), floor 2,084-2,112 (Sand Sea about 2,100). Labels show the published numbers; positions are the terrain points. Kursi, Widodaren etc. are not labelled.",
+    "SPILL FINDING (not on the page): from the SRTM grid the flat Sand Sea floor holds only about 40-50 m of fog before the terrain lets it leak out through a gap in the rim near the north-east edge of the grid (about 2,150 m). The deep-fog slice (level 2,185 m, my choice) is drawn deeper than that and clipped to an ellipse around the caldera, so it ignores that spill. Slice levels 2,138 / 2,185 / 2,155 m are illustrative.",
+    "CAMERA: a high oblique view (about 5.6 km altitude) chosen so the whole caldera fits; a real helicopter would not fly that high. The caption says so. The plan map shows the position and field of view.",
+    "Not shown: Mount Semeru (outside the grid). The plan view is softened with a blur; the 330 m cell blockiness still shows in the 3D slices and fog edges. Only 5 of the cold-air arrows are visible (those on walls facing the camera).",
+    "documentation: 'poor' is my reading of your 'somewhat modestly documented' (the atlas only has well/poor). Pin = Bromo's coordinates (7.94167S 112.95E from Wikipedia citing GVP). Photo and local knowledge: none."
+  ]
+}

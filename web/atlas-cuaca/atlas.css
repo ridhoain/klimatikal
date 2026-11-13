@@ -316,3 +316,17 @@ html[data-lang="id"] .dphase span.on [lang="id"], html[data-lang="en"] .dphase s
 @keyframes s-run { to { stroke-dashoffset: -20; } }
 .dkey .sw.flowsw { height: 4px; background: repeating-linear-gradient(90deg, #4a7fc1 0 5px, transparent 5px 10px); }
 @media (prefers-reduced-motion: reduce) { .sframe.on .s-flow { animation: none; } }
+
+/* ---- Kabut Bromo: relief map and helicopter-view fog slices ---- */
+.fogstage { min-width: 560px; background: #bcd0e6; }
+.fogplan .fogstage { max-width: 640px; min-width: 520px; }
+.f-sky { fill: #cfdcec; }
+.f-fog { fill: #f3f6fa; stroke: #f3f6fa; stroke-width: 1.1; stroke-linejoin: round; }
+.f-cold { fill: none; stroke: #1f5fae; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 9 8; animation: f-drain 2.2s linear infinite; }
+.f-coldhead { fill: #1f5fae; stroke: #fff; stroke-width: 1.4; }
+@keyframes f-drain { to { stroke-dashoffset: -34; } }
+.p-fan { stroke: #0D0630; stroke-width: 1.6; stroke-dasharray: 6 5; opacity: .75; }
+.p-heli { fill: #0D0630; stroke: #fff; stroke-width: 1.6; }
+.p-rotor { stroke: #0D0630; stroke-width: 2.4; stroke-linecap: round; }
+.dlabel.pheli { font-weight: 600; color: #0D0630; }
+@media (prefers-reduced-motion: reduce) { .f-cold { animation: none; } }
