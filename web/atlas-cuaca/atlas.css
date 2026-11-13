@@ -302,3 +302,17 @@ html[data-lang="id"] .dphase span.on [lang="id"], html[data-lang="en"] .dphase s
 .c-cur { stroke: #243447; stroke-width: 1.6; }
 .c-dot { fill: #c4452d; stroke: #fff; stroke-width: 2.5; }
 .c-val { font-size: 21px; font-weight: 700; fill: #17324f; }
+
+/* CENS: moving flow lines over the arrows (only the visible day animates) */
+.diagram.cens .s-w { opacity: .85; }
+.diagram.cens .s-w0 { stroke-width: 1.3; }
+.diagram.cens .s-w1 { stroke-width: 1.6; }
+.diagram.cens .s-w2 { stroke-width: 2.1; }
+.s-flow { fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 5 15; opacity: .8; }
+.s-f0 { stroke: #cfe0f3; stroke-width: 2.4; }
+.s-f1 { stroke: #ffffff; stroke-width: 2.6; }
+.s-f2 { stroke: #ffd36b; stroke-width: 3.2; }
+.sframe.on .s-flow { animation: s-run 1.3s linear infinite; }
+@keyframes s-run { to { stroke-dashoffset: -20; } }
+.dkey .sw.flowsw { height: 4px; background: repeating-linear-gradient(90deg, #4a7fc1 0 5px, transparent 5px 10px); }
+@media (prefers-reduced-motion: reduce) { .sframe.on .s-flow { animation: none; } }

@@ -204,6 +204,7 @@ UI = {
     "c_m_ph0": ("Udara di atas Australia bagian utara, sepuluh hari sebelum tiba.", "Air over northern Australia, ten days before arrival."),
     "c_m_ph1": ("Aliran rata-rata dekat permukaan bergerak ke barat laut melintasi Laut Timor dan perairan selatan Nusa Tenggara.", "The mean near-surface flow moves north-west across the Timor Sea and the waters south of Nusa Tenggara."),
     "c_m_ph2": ("Aliran itu tiba di Jawa dari arah tenggara.", "The flow reaches Java from the south-east."),
+    "cn_flow": ("Garis alir bergerak (arah angin)", "Moving flow lines (wind direction)"),
     "cn_hint": ("Geser ke samping untuk melihat seluruh grafik →", "Swipe sideways to see the whole chart →"),
     "cn_box": ("Kotak indeks CENS", "CENS index box"),
     "cn_chart": ("Indeks CENS harian (angin utara rata-rata di kotak, m/s)", "Daily CENS index (box-mean northerly wind, m/s)"),
@@ -1543,26 +1544,72 @@ def cens_figure(e):
                 if cand:
                     c, r = cand[len(cand) // 2]
                     labs += f'<text class="s-il" x="{gx(c):.0f}" y="{gy(r) + 4:.0f}">{lev}</text>'
+        # Dense display field: the 2.5-degree winds interpolated (bicubic) to 1.25 degrees for the
+        # arrows, and to 0.625 degrees for the flow lines. Display only; no new information.
+        UA, VA = _upsample(U, 2), _upsample(V, 2)
         arrows = {0: "", 1: "", 2: ""}
-        for i, la in enumerate(lats):
-            for j, lo in enumerate(lons):
+        nr, nc = len(UA), len(UA[0])
+        for i in range(nr):
+            la = lats[0] + (lats[-1] - lats[0]) * i / (nr - 1)
+            for j in range(nc):
+                lo = lons[0] + (lons[-1] - lons[0]) * j / (nc - 1)
                 if not inview(la, lo):
                     continue
-                u, v = U[i][j], V[i][j]
+                u, v = UA[i][j], VA[i][j]
                 sp = math.hypot(u, v)
                 if sp < 0.5:
                     continue
-                L = 4.0 * sp
+                L = min(3.0 * sp, 44.0)
                 ux, uy = u / sp, -v / sp
                 x0, y0 = px(lo) - ux * L / 2, py(la) - uy * L / 2
                 x1, y1 = x0 + ux * L, y0 + uy * L
-                hh = 6.0
+                hh = 5.0
                 a1 = (x1 - hh * (ux * .85 - uy * .5), y1 - hh * (uy * .85 + ux * .5))
                 a2 = (x1 - hh * (ux * .85 + uy * .5), y1 - hh * (uy * .85 - ux * .5))
                 cls = 0 if sp < 5 else 1 if sp < 10 else 2
                 arrows[cls] += f"M{x0:.0f} {y0:.0f} L{x1:.0f} {y1:.0f} M{a1[0]:.0f} {a1[1]:.0f} L{x1:.0f} {y1:.0f} L{a2[0]:.0f} {a2[1]:.0f}"
+        # flow lines: short streamlines of the same field, drawn as moving dashes
+        UF, VF = _upsample(U, 4), _upsample(V, 4)
+        fr, fc = len(UF), len(UF[0])
+
+        def samp(la, lo):
+            r = (la - lats[0]) / (lats[-1] - lats[0]) * (fr - 1)
+            c = (lo - lons[0]) / (lons[-1] - lons[0]) * (fc - 1)
+            if not (0 <= r <= fr - 1 and 0 <= c <= fc - 1):
+                return None
+            r0, c0 = min(int(r), fr - 2), min(int(c), fc - 2)
+            fy, fx = r - r0, c - c0
+            lerp2 = lambda G: (G[r0][c0] * (1 - fx) + G[r0][c0 + 1] * fx) * (1 - fy) + (G[r0 + 1][c0] * (1 - fx) + G[r0 + 1][c0 + 1] * fx) * fy
+            return lerp2(UF), lerp2(VF)
+
+        flow = {0: "", 1: "", 2: ""}
+        step = cfg.get("flow_spacing", 1.8)
+        la = LAT1 + step / 2
+        k = 0
+        while la < LAT0:
+            lo = LON0 + step / 2 + (step / 2 if (k % 2) else 0)
+            while lo < LON1:
+                pts, sps = [(lo, la)], []
+                cl, cb = lo, la
+                for _ in range(8):
+                    w = samp(cb, cl)
+                    if not w:
+                        break
+                    sp = math.hypot(*w)
+                    if sp < 1.2 or not inview(cb, cl):
+                        break
+                    sps.append(sp)
+                    cl, cb = cl + 0.5 * w[0] / sp, cb + 0.5 * w[1] / sp
+                    pts.append((cl, cb))
+                if len(pts) >= 5:
+                    m = sum(sps) / len(sps)
+                    flow[0 if m < 5 else 1 if m < 10 else 2] += "M" + " L".join(f"{px(x):.0f} {py(y):.0f}" for x, y in pts)
+                lo += step
+            la += step
+            k += 1
         frames += (f'<g class="sframe{" on" if t == key_i else ""}" data-i="{t}"><path class="s-iso" d="{iso["minor"]}"/>'
                    f'<path class="s-iso major" d="{iso["major"]}"/>{labs}'
+                   f'<path class="s-flow s-f0" d="{flow[0]}"/><path class="s-flow s-f1" d="{flow[1]}"/><path class="s-flow s-f2" d="{flow[2]}"/>'
                    f'<path class="s-w s-w0" d="{arrows[0]}"/><path class="s-w s-w1" d="{arrows[1]}"/><path class="s-w s-w2" d="{arrows[2]}"/></g>')
         dt = datetime.date.fromisoformat(day)
         dtxt = (f'{dt.day} {MONTHS[dt.month - 1][0]} {dt.year}', f'{dt.day} {MONTHS[dt.month - 1][1]} {dt.year}')
@@ -1624,19 +1671,20 @@ def cens_figure(e):
 
     y0, y1 = d["dates"][0], d["dates"][-1]
     cap_id = (f"Atas: peta harian dari NCEP/NCAR Reanalysis 1 (NOAA PSL), rata-rata harian {y0} sampai {y1}, kisi 2,5°. Garis kontur: tekanan permukaan laut tiap 2 hPa "
-              f"(angka pada kelipatan 4 hPa). Panah: angin 925 hPa (sekitar 750 m), makin gelap makin kencang. Kotak putus-putus: area indeks CENS "
+              f"(angka pada kelipatan 4 hPa). Panah: angin 925 hPa (sekitar 750 m), makin gelap makin kencang; untuk tampilan, angin kisi 2,5° diinterpolasi (bikubik) ke kisi yang lebih rapat, sehingga tidak menambah informasi. Garis putus-putus yang bergerak menunjukkan arah aliran medan angin hari itu (garis arus pendek), bukan lintasan parsel udara dan bukan kecepatan sebenarnya. Kotak putus-putus: area indeks CENS "
               f"({bx['lon'][0]:g}–{bx['lon'][1]:g}°BT, {abs(bx['lat'][0]):g}°LS–ekuator). Bawah: indeks harian {ix['dates'][0]} sampai {ix['dates'][-1]}, "
               f"yaitu rata-rata angin utara 925 hPa di {ix['box']['grid_points']} titik kisi dalam kotak itu (positif = dari utara). Ini perkiraan sendiri dari reanalisis, "
               f"bukan indeks asli: Hattori dkk. (2011) mendefinisikannya dari angin permukaan laut QuikSCAT, sehingga angkanya tidak sama dan garis {thr:g} m/s "
               f"hanyalah acuan ambang mereka. Pita biru muda menandai hari-hari pada peta; angka di atas penanda adalah nilai hari itu.")
     cap_en = (f"Top: daily maps from the NCEP/NCAR Reanalysis 1 (NOAA PSL), daily means {y0} to {y1}, 2.5° grid. Contours: sea-level pressure every 2 hPa "
-              f"(numbers on multiples of 4 hPa). Arrows: 925 hPa wind (about 750 m up), darker means stronger. Dashed box: the CENS index area "
+              f"(numbers on multiples of 4 hPa). Arrows: 925 hPa wind (about 750 m up), darker means stronger; for display, the 2.5° grid wind is interpolated (bicubic) to a denser grid, which adds no information. The moving dashes show the direction of that day's wind field (short streamlines), not air-parcel paths and not true speed. Dashed box: the CENS index area "
               f"({bx['lon'][0]:g}–{bx['lon'][1]:g}°E, {abs(bx['lat'][0]):g}°S to the equator). Bottom: the daily index {ix['dates'][0]} to {ix['dates'][-1]}, "
               f"the average northerly 925 hPa wind over the {ix['box']['grid_points']} grid points in that box (positive = from the north). This is our own estimate from "
               f"reanalysis, not the original index: Hattori et al. (2011) defined it from QuikSCAT sea-surface wind, so the values differ and the {thr:g} m/s line "
               f"is only their threshold for reference. The light-blue band marks the days on the maps; the number above the marker is that day's value.")
     key = (f'<span><i class="sw" style="background:#9fb0c4"></i>{tt("s_k0")}</span><span><i class="sw" style="background:#4a7fc1"></i>{tt("s_k1")}</span>'
-           f'<span><i class="sw" style="background:#12306b"></i>{tt("s_k2")}</span><span><i class="sw" style="background:#6b7b8e;height:2px"></i>{tt("s_kiso")}</span>')
+           f'<span><i class="sw" style="background:#12306b"></i>{tt("s_k2")}</span><span><i class="sw" style="background:#6b7b8e;height:2px"></i>{tt("s_kiso")}</span>'
+           f'<span><i class="sw flowsw"></i>{tt("cn_flow")}</span>')
     return f"""<figure class="diagram synoptic cens" data-kind="synoptic" data-n="{len(d["dates"])}" data-key="{key_i}">
   <p class="dhint">{tt("s_hint")}</p>
   <div class="dscroll" tabindex="0" role="region" aria-label="{esc(UI['s_region'][0])}" data-focus="{(((bx["lon"][0] + bx["lon"][1]) / 2) - LON0) / (LON1 - LON0) * 100:.0f}">
