@@ -203,6 +203,53 @@
     fig.addEventListener("dshow", function () { p = 0; if (reduce) { p = 1; render(); } else { render(); play(true); } });
     if (reduce) { p = 1; render(); } else { render(); if (!fig.hidden) play(true); }
   });
+  /* One day over the caldera: the slider position t runs 0..K-1 through the keyframes; sky, sun,
+     moon, stars, light tint, arrows and the fog layers are interpolated between the two nearest. */
+  Array.prototype.forEach.call(document.querySelectorAll('figure.fogday'), function (fig) {
+    var keys; try { keys = JSON.parse(fig.getAttribute("data-keys")); } catch (e) { return; }
+    var K = keys.length, ctl = fig.querySelector(".dctl"), btn = ctl.querySelector(".dplay"), scrub = ctl.querySelector(".dscrub");
+    var svg = fig.querySelector(".fd-svg"), W = svg.viewBox.baseVal.width, H = svg.viewBox.baseVal.height;
+    var top = fig.querySelector(".fd-stop-top"), bot = fig.querySelector(".fd-stop-bot"), tintEl = fig.querySelector(".fd-tint");
+    var sun = fig.querySelector(".fd-sun"), glow = fig.querySelector(".fd-glow"), moon = fig.querySelector(".fd-moon");
+    var stars = fig.querySelector(".fd-stars"), arrows = fig.querySelector(".fd-arrows"), clocks = fig.querySelectorAll(".fd-time");
+    var fogs = Array.prototype.slice.call(fig.querySelectorAll(".fd-fog")), items = fig.querySelectorAll(".fd-list li");
+    var t = (+fig.getAttribute("data-start") || 0), raf = null, last = 0;
+    function mix(a, b, f) { return a + (b - a) * f; }
+    function mixv(a, b, f) { return a.map(function (v, i) { return mix(v, b[i], f); }); }
+    function rgb(c) { return "rgb(" + Math.round(c[0]) + "," + Math.round(c[1]) + "," + Math.round(c[2]) + ")"; }
+    function render() {
+      var i = Math.min(K - 2, Math.floor(t)), f = t - i, a = keys[i], b = keys[i + 1];
+      top.setAttribute("stop-color", rgb(mixv(a.top, b.top, f)));
+      bot.setAttribute("stop-color", rgb(mixv(a.bot, b.bot, f)));
+      var m = mixv(a.tint, b.tint, f);
+      tintEl.setAttribute("values", m[0] + " 0 0 0 0  0 " + m[1] + " 0 0 0  0 0 " + m[2] + " 0 0  0 0 0 1 0");
+      var s = mixv(a.sun, b.sun, f), mo = mixv(a.moon, b.moon, f);
+      sun.setAttribute("cx", s[0] * W); sun.setAttribute("cy", s[1] * H); sun.style.opacity = s[2];
+      glow.setAttribute("cx", s[0] * W); glow.setAttribute("cy", s[1] * H); glow.style.opacity = mix(a.glow, b.glow, f);
+      moon.setAttribute("cx", mo[0] * W); moon.setAttribute("cy", mo[1] * H); moon.style.opacity = mo[2];
+      stars.style.opacity = mix(a.stars, b.stars, f); arrows.style.opacity = mix(a.arrows, b.arrows, f);
+      fogs.forEach(function (g) { g.style.opacity = Math.max(0, 1 - Math.abs(t - (+g.getAttribute("data-k")))); });
+      var mins = Math.round(mix(a.min, b.min, f)) % 1440;
+      var txt = (mins < 600 ? "0" : "") + Math.floor(mins / 60) + ":" + (mins % 60 < 10 ? "0" : "") + (mins % 60);
+      Array.prototype.forEach.call(clocks, function (c) { c.textContent = txt; });
+      var near = Math.round(t);
+      Array.prototype.forEach.call(items, function (li, k) { li.classList.toggle("on", k === near); });
+      scrub.value = String(Math.round(t * 100));
+    }
+    function stop() { if (raf) { cancelAnimationFrame(raf); raf = null; } btn.setAttribute("aria-pressed", "false"); }
+    function tick(ts) {
+      if (fig.closest("[hidden]")) { stop(); return; }
+      var dt = last ? Math.min(0.35, (ts - last) / 1000) : 0; last = ts;
+      t += dt * (K - 1) / 18;               /* the whole day in about 18 s */
+      if (t >= K - 1) { t = K - 1; render(); stop(); return; }
+      render(); raf = requestAnimationFrame(tick);
+    }
+    function start() { if (t >= K - 1) t = 0; last = 0; btn.setAttribute("aria-pressed", "true"); raf = requestAnimationFrame(tick); }
+    btn.addEventListener("click", function () { if (raf) stop(); else start(); });
+    scrub.addEventListener("input", function () { stop(); t = +scrub.value / 100; render(); });
+    Array.prototype.forEach.call(items, function (li, k) { li.addEventListener("click", function () { stop(); t = k; render(); }); });
+    ctl.hidden = false; fig.classList.add("animated"); render();
+  });
   Array.prototype.forEach.call(document.querySelectorAll('figure.diagram[data-kind="synoptic"]'), function (fig) {
     var ctl = fig.querySelector(".dctl"), btn = ctl.querySelector(".dplay"), scrub = ctl.querySelector(".dscrub");
     var frames = fig.querySelectorAll(".sframe"), phases = fig.querySelectorAll(".dsynphase span");

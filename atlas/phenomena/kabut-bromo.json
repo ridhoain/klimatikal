@@ -50,11 +50,6 @@
         112.944
       ]
     },
-    "levels_m": [
-      2138,
-      2185,
-      2155
-    ],
     "arrows": 28,
     "arrow_start_m": 2420,
     "marks": [
@@ -96,17 +91,14 @@
       }
     ],
     "frame": {
-      "ndc": {
-        "x": [
-          -0.95,
-          0.95
-        ],
-        "y": [
-          -0.4,
-          0.8
-        ]
-      }
-    }
+      "x": [
+        -0.95,
+        0.95
+      ],
+      "bottom": 0.8,
+      "sky_frac": 0.55
+    },
+    "start_key": 3
   },
   "local_knowledge": null,
   "photo": null,
@@ -142,9 +134,11 @@
     "The 'sea of clouds fills the caldera' picture is therefore a schematic combining those references (plus your description), not an observation. I found no Bromo fog study, BMKG explainer or park advisory. Travel blogs describe fog and cloud inversions in the caldera but are anecdotal and not cited. If you have a BMKG, Balai Besar TNBTS or journal source on how the fog forms, the Note can be replaced with a plain statement.",
     "AFTERNOON FOG: Meilani says fog also occurs in the afternoon; the night-to-morning sequence does not explain that (upslope fog is a general possibility per NOAA's upslope entry, but no source ties it to Bromo). The caveat says so.",
     "TERRAIN CHECK against published heights (Wikipedia/GVP and the national-park article, via a fetch agent): SRTM at my 0.003 degree grid gives Bromo cone 2,304 m (published 2,329), Batok 2,473 (2,470), highest point near Penanjakan 2,746 (2,770), floor 2,084-2,112 (Sand Sea about 2,100). Labels show the published numbers; positions are the terrain points. Kursi, Widodaren etc. are not labelled.",
-    "SPILL FINDING (not on the page): from the SRTM grid the flat Sand Sea floor holds only about 40-50 m of fog before the terrain lets it leak out through a gap in the rim near the north-east edge of the grid (about 2,150 m). The deep-fog slice (level 2,185 m, my choice) is drawn deeper than that and clipped to an ellipse around the caldera, so it ignores that spill. Slice levels 2,138 / 2,185 / 2,155 m are illustrative.",
-    "CAMERA: a high oblique view (about 5.6 km altitude) chosen so the whole caldera fits; a real helicopter would not fly that high. The caption says so. The plan map shows the position and field of view.",
-    "Not shown: Mount Semeru (outside the grid). The plan view is softened with a blur; the 330 m cell blockiness still shows in the 3D slices and fog edges. Only 5 of the cold-air arrows are visible (those on walls facing the camera).",
-    "documentation: 'poor' is my reading of your 'somewhat modestly documented' (the atlas only has well/poor). Pin = Bromo's coordinates (7.94167S 112.95E from Wikipedia citing GVP). Photo and local knowledge: none."
+    "documentation: 'poor' is my reading of your 'somewhat modestly documented' (the atlas only has well/poor). Pin = Bromo's coordinates (7.94167S 112.95E from Wikipedia citing GVP). Photo and local knowledge: none.",
+    "SPILL FINDING (not on the page): from the SRTM grid the flat Sand Sea floor holds only about 40-50 m of fog before the terrain lets it leak out through a gap in the rim near the north-east edge of the grid (about 2,150 m). The deeper fog keyframes (2,185-2,192 m, my choice) are drawn deeper than that and clipped to an ellipse around the caldera, so they ignore that spill. All fog levels and the share of patches are illustrative.",
+    "REWORK (stylised, smooth, time of day): the 330 m SRTM grid is bicubic-interpolated x3 and drawn as layered smooth ridges (one per interpolated row, with distance haze); the plan map has soft relief shading under 50 m contours; the hazy ridges behind the far edge of the data are pure decoration (said in the caption). One scene replaces the four static slices: a time slider and Play button run 17:30 to 10:30 (six keyframes: late afternoon, night, before dawn, sunrise, morning, late morning) and interpolate the sky, sun, moon, stars, light colour, cold-air arrows and fog layer. The clock times, sun and moon positions and fog levels are illustrative, not measured. Without JavaScript the scene shows the sunrise keyframe and the timeline list under it still tells the whole story.",
+    "CAMERA: a high oblique view (about 5.6 km altitude, heading 180 so that rows of latitude are rows of depth) chosen so the whole caldera fits; a real helicopter would not fly that high. The caption says so.",
+    "PERFORMANCE: the page is about 1.1 MB (smooth terrain rows with gradients). I could only test in a throttled preview pane (an empty requestAnimationFrame loop ran at about 4.7 fps there), so smoothness of Play on real phones is untested; the animation is time-based, so its speed does not depend on frame rate.",
+    "Not shown: Mount Semeru (outside the grid)."
   ]
 }

@@ -142,16 +142,21 @@ the caption and the entry's `caveat` must say so.
 ### Basin-fog relief illustration (`"type": "fogbasin"`)
 
 Kabut Bromo: a real SRTM elevation grid (`atlas/diagrams/fetch_grid.py`, public domain via
-OpenTopoData, fetched once and committed) drawn as a plan-view relief map (with the camera
-position and field of view) and four high-oblique "helicopter" slices (cold air draining
-in, thin fog, fog filling the basin, fog thinning). The fog surface is drawn into the scene
-cell by cell from far to near, so peaks and nearer ridges poke through it. Config: `grid`,
-`camera` (lat, lon, alt_m, heading_deg, pitch_deg, fov_deg), `frame.ndc` (a window in the
-camera's field of view), `basin` (ellipse centre and radius in degrees, `floor_seed`),
-`levels_m` (three illustrative fog-top heights), `arrows`, `arrow_start_m`, `marks` (named
-points with `lift`). Terrain colours are an elevation tint, never land cover. Fog level,
-extent, timing and arrows are illustration only, and the entry's caveat must say what its
-sources do and do not support. The build takes about 15 s and the page is about 0.85 MB.
+OpenTopoData, fetched once and committed), smoothed by bicubic interpolation and drawn in a
+stylised way: a plan-view map (soft relief shading under 50 m contours, with the camera
+position and field of view) and ONE high-oblique "helicopter" scene made of layered smooth
+ridges with distance haze and a decorative hazy backdrop. A time slider (and Play) runs
+through six keyframes (`FOG_DAY` in `build_atlas.py`): sky, sun, moon, stars, light tint,
+cold-air arrows and the fog layer are interpolated (`atlas.js`, `figure.fogday`). The fog is
+drawn as its own ridge layer per row, far to near, so nearer ridges and peaks cut across it.
+The camera heading must be 180 (rows of latitude are then rows of depth). Config: `grid`,
+`camera`, `frame` (`x` range and `bottom` in camera field-of-view units, `sky_frac`), `basin`
+(ellipse centre and radius in degrees), optional `fog` (per-keyframe `level` / `patch`
+overrides), `start_key`, `arrows`, `marks` (named points with `lift`). Terrain colours are an
+elevation tint, never land cover. Fog level, extent, clock times and arrows are illustration
+only, and the entry's caveat must say what its sources do and do not support. The build takes
+about 15 s and the page is about 1.1 MB. Without JavaScript the scene shows the start keyframe
+and the timeline list under it still tells the story.
 
 ## Publishing
 

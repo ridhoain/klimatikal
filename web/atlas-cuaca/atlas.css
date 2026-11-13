@@ -333,3 +333,26 @@ html[data-lang="id"] .dphase span.on [lang="id"], html[data-lang="en"] .dphase s
 .p-rotor { stroke: #0D0630; stroke-width: 2.4; stroke-linecap: round; }
 .dlabel.pheli { font-weight: 600; color: #0D0630; }
 @media (prefers-reduced-motion: reduce) { .f-cold { animation: none; } }
+
+/* ---- Kabut Bromo: one day over the caldera ---- */
+.fd-fog { transition: none; }
+.fd-fg0, .fd-fg1, .fd-fg2 { stroke-width: 7; stroke-linejoin: round; stroke-opacity: .2; }
+.fd-fg0 { fill: #f7fafd; stroke: #f7fafd; }
+.fd-fg1 { fill: #f1f6fb; stroke: #f1f6fb; }
+.fd-fg2 { fill: #ebf1f8; stroke: #ebf1f8; }
+.fd-sun { fill: #fff3cf; }
+.fd-moon { fill: #eef1ff; }
+.fd-stars circle { fill: #fff; }
+.fd-clock { position: absolute; left: 12px; top: 10px; padding: 3px 12px; border-radius: 999px; background: rgba(13, 6, 48, .72); color: #fff; font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: .02em; pointer-events: none; }
+.fd-clock .fd-tz { font-size: 11px; font-weight: 600; color: var(--kl-teal); letter-spacing: .08em; }
+.fd-ends { display: flex; justify-content: space-between; flex: 1 1 100%; max-width: 360px; margin-left: 98px; margin-top: -6px; font-size: 11.5px; color: var(--kl-teal); }
+.fd-list { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; max-width: 72ch; counter-reset: fd; }
+.fd-list li { padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(139, 190, 178, .25); font-size: 14px; line-height: 1.55; color: var(--text); cursor: pointer; }
+.fd-list li b { color: var(--kl-lime); font-variant-numeric: tabular-nums; margin-right: 4px; }
+.fd-list li .fd-name { font-weight: 600; }
+.fd-list li.on { border-color: var(--kl-lime); background: rgba(230, 249, 175, .08); }
+.p-cont { fill: none; stroke: rgba(70, 60, 30, .38); stroke-width: .8; stroke-linejoin: round; }
+.p-cont.idx { stroke: rgba(60, 48, 20, .7); stroke-width: 1.6; }
+.diagram.fogday .dstage { overflow: hidden; }
+.fd-clock2 { display: none; font-size: 17px; font-weight: 700; color: var(--kl-lime); font-variant-numeric: tabular-nums; }
+@media (max-width: 600px) { .fd-clock { display: none; } .fd-clock2 { display: inline; } .fd-ends { margin-left: 0; } }

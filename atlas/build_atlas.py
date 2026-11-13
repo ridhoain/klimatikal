@@ -315,7 +315,8 @@ def load_entries():
             need(diag.get("type") in ("foehn", "coldair", "synoptic", "frost", "cens", "fogbasin"), "'diagram.type' must be 'foehn', 'coldair', 'synoptic', 'frost', 'cens' or 'fogbasin'")
             if diag.get("type") == "fogbasin":
                 need((DIAGRAMS / f"{diag.get('grid', '')}.json").exists(), f"diagram grid file atlas/diagrams/{diag.get('grid')}.json does not exist")
-                need(all(diag.get(k_) for k_ in ("camera", "basin", "levels_m", "marks")), "'diagram' needs camera, basin, levels_m and marks")
+                need(all(diag.get(k_) for k_ in ("camera", "basin", "frame", "marks")), "'diagram' needs camera, basin, frame and marks")
+                need(diag["camera"].get("heading_deg") in (180, 180.0), "'camera.heading_deg' must be 180 (rows of latitude are the rows of depth)")
             if diag.get("type") in ("frost", "fogbasin"):
                 pass  # frost: self-contained schematic; fogbasin: checked above
             elif diag.get("type") == "cens":
@@ -1285,12 +1286,14 @@ FROST_UI = {
 
 
 def fogbasin_figure(e):
-    """Basin fog in a volcanic caldera, drawn from a real SRTM elevation grid: a plan-view
-    relief map with the helicopter's position and heading, then four helicopter-view
-    slices (cold air draining in, thin fog, fog filling the basin, fog thinning). The
-    terrain is real (public-domain SRTM); the fog surface, its depth and the arrows are an
-    illustration of a mechanism, never a measurement. The fog is drawn INTO the scene,
-    cell by cell from far to near, so peaks and nearer ridges correctly poke through it."""
+    """Basin fog in a volcanic caldera over one day, drawn from a real SRTM elevation grid that
+    is smoothed by bicubic interpolation: a plan-view contour map with the helicopter's position,
+    and ONE high-oblique scene whose time of day can be played or scrubbed (sky, sun, moon,
+    stars, light colour and the fog layer all change). Terrain is real but stylised: layered
+    smooth ridges with distance haze and a decorative backdrop. The fog, its depth, the
+    arrows and the clock times are an illustration of a mechanism, never a measurement.
+    The fog is drawn as its own ridge layer per row, far to near, so nearer ridges and the
+    peaks correctly cut across it."""
     import math
     cfg = e["diagram"]
     g = json.loads((DIAGRAMS / f"{cfg['grid']}.json").read_text())
@@ -1298,21 +1301,28 @@ def fogbasin_figure(e):
     ny, nx = len(lat), len(lon)
     lat0, lon0 = (lat[0] + lat[-1]) / 2, (lon[0] + lon[-1]) / 2
     kx, ky = 111320.0 * math.cos(math.radians(lat0)), 110570.0
+    tx = lambda la, lo: ((lo - lon0) * kx, (la - lat0) * ky)
     GX = [(lo - lon0) * kx for lo in lon]
     GY = [(la - lat0) * ky for la in lat]
-    dxm = abs(GX[1] - GX[0])
-    dym = abs(GY[1] - GY[0])
-    tx = lambda la, lo: ((lo - lon0) * kx, (la - lat0) * ky)
+    dxm, dym = abs(GX[1] - GX[0]), abs(GY[1] - GY[0])
 
-    # ---- shading and colour (qualitative hypsometric tint, NOT land cover) ----
-    def shade(i, j):
-        i0, i1, j0, j1 = max(i - 1, 0), min(i + 1, ny - 1), max(j - 1, 0), min(j + 1, nx - 1)
-        dzdx = (E[i][j1] - E[i][j0]) / ((j1 - j0) * dxm)
-        dzdy = (E[i0][j] - E[i1][j]) / ((i1 - i0) * dym)           # north is up (row 0)
-        dzdx *= 1.6; dzdy *= 1.6
+    # ---- smooth the terrain: bicubic interpolation (x3) of the real grid ----
+    F = 3
+    U = _upsample([[float(v) for v in row] for row in E], F)
+    nyU, nxU = len(U), len(U[0])
+    latU = [lat[0] + (lat[-1] - lat[0]) * r / (nyU - 1) for r in range(nyU)]
+    lonU = [lon[0] + (lon[-1] - lon[0]) * c / (nxU - 1) for c in range(nxU)]
+    GXu = [(lo - lon0) * kx for lo in lonU]
+    GYu = [(la - lat0) * ky for la in latU]
+    dxu, dyu = dxm / F, dym / F
+
+    def shade(r, c):
+        r0, r1, c0, c1 = max(r - 1, 0), min(r + 1, nyU - 1), max(c - 1, 0), min(c + 1, nxU - 1)
+        dzdx = 1.6 * (U[r][c1] - U[r][c0]) / ((c1 - c0) * dxu)
+        dzdy = 1.6 * (U[r0][c] - U[r1][c]) / ((r1 - r0) * dyu)
         slope = math.atan(math.hypot(dzdx, dzdy))
         asp = math.atan2(dzdy, -dzdx)
-        az, alt = math.radians(315 - 90), math.radians(42)           # light from the north-west
+        az, alt = math.radians(225), math.radians(40)
         return max(0.0, math.sin(alt) * math.cos(slope) + math.cos(alt) * math.sin(slope) * math.cos(az - asp))
 
     ramp = [(1500, (176, 168, 120)), (2080, (214, 200, 160)), (2140, (198, 186, 140)), (2260, (168, 168, 112)),
@@ -1325,45 +1335,28 @@ def fogbasin_figure(e):
                 return tuple(ca[k] + (cb[k] - ca[k]) * f for k in range(3))
         return ramp[-1][1]
 
-    NB = 36
-    palette = {}
-    cls_of = {}
+    hexc = lambda col: "#%02x%02x%02x" % tuple(max(0, min(255, int(v))) for v in col)
+    sky_rgb = (203, 216, 234)
 
-    def tone(i, j):
-        sh = shade(i, j)
-        h = E[i][j]
-        base = tint(h)
-        f = 0.42 + 0.95 * sh
-        col = tuple(max(0, min(255, int(c * f))) for c in base)
-        key = tuple(int(c / 8) * 8 for c in col)
-        if key not in cls_of:
-            cls_of[key] = f"t{len(cls_of)}"
-        return cls_of[key]
-
-    tones = [[tone(i, j) for j in range(nx)] for i in range(ny)]
-
-    # ---- the basin and the fog ----
+    # ---- the basin (an ellipse that keeps the fog inside the caldera) ----
     ctr = cfg["basin"]["centre"]
-    rx, ry = cfg["basin"]["radius_deg"]
-    cx0, cy0 = tx(*ctr)
-    def in_basin(i, j):
-        return ((lon[j] - ctr[1]) / ry) ** 2 + ((lat[i] - ctr[0]) / rx) ** 2 <= 1.0
-    noise = lambda i, j: (((i * 73856093) ^ (j * 19349663)) % 1000) / 1000.0
+    rlat, rlon = cfg["basin"]["radius_deg"]
+    in_basin = lambda la, lo: ((lo - ctr[1]) / rlon) ** 2 + ((la - ctr[0]) / rlat) ** 2 <= 1.0
 
-    # ---- helicopter camera ----
+    # ---- helicopter camera (heading must be 180: rows of latitude are then rows of depth) ----
     cam = cfg["camera"]
     ve = cfg.get("vertical_exaggeration", 1.6)
     base_h = 2000.0
-    H_ = lambda h: (h - base_h) * ve + base_h
+    Hx = lambda h: (h - base_h) * ve + base_h
     ccx, ccy = tx(cam["lat"], cam["lon"])
-    cch = H_(cam["alt_m"])
+    cch = Hx(cam["alt_m"])
     psi, pit = math.radians(cam["heading_deg"]), math.radians(cam["pitch_deg"])
     fx, fy = math.sin(psi), math.cos(psi)
     rx_, ry_ = math.cos(psi), -math.sin(psi)
     FOC = 1.0 / math.tan(math.radians(cam["fov_deg"]) / 2)
 
     def proj(x, y, h):
-        dx_, dy_, dz_ = x - ccx, y - ccy, H_(h) - cch
+        dx_, dy_, dz_ = x - ccx, y - ccy, Hx(h) - cch
         z = (dx_ * fx + dy_ * fy) * math.cos(pit) - dz_ * math.sin(pit)
         if z < 150:
             return None
@@ -1371,101 +1364,129 @@ def fogbasin_figure(e):
         yc = (dx_ * fx + dy_ * fy) * math.sin(pit) + dz_ * math.cos(pit)
         return FOC * xc / z, -FOC * yc / z, z
 
-    nodes = [[proj(GX[j], GY[i], E[i][j]) for j in range(nx)] for i in range(ny)]
-    # frame the picture on the basin (its ellipse, grown a little), not on the whole terrain box
-    grow = cfg.get("frame", {}).get("grow", 1.12)
-    bpts = [(n[0], n[1]) for i in range(ny) for j in range(nx)
-            for n in [nodes[i][j]] if n and (((lon[j] - ctr[1]) / (ry * grow)) ** 2 + ((lat[i] - ctr[0]) / (rx * grow)) ** 2 <= 1.0)]
-    if cfg.get("frame", {}).get("ndc"):
-        # a window in the camera's own field of view: x in [-1, 1] spans the full angle of view
-        (x0, x1), (y0, y1) = cfg["frame"]["ndc"]["x"], cfg["frame"]["ndc"]["y"]
-    else:
-        x0, x1 = min(p[0] for p in bpts), max(p[0] for p in bpts)
-        y0, y1 = min(p[1] for p in bpts), max(p[1] for p in bpts)
-        pad_x, pad_y = (x1 - x0) * cfg.get("frame", {}).get("pad_x", 0.03), (y1 - y0) * cfg.get("frame", {}).get("pad_top", 0.18)
-        x0, x1, y1 = x0 - pad_x, x1 + pad_x, y1 + (y1 - y0) * cfg.get("frame", {}).get("pad_bottom", 0.04)
-        y0 = y0 - pad_y
-    VW = 1000.0
-    sc = VW / (x1 - x0)
-    VH = (y1 - y0) * sc
-    S = lambda n: (round((n[0] - x0) * sc), round((n[1] - y0) * sc))
-    vx0, vx1, vy0, vy1 = 0.0, VW, 0.0, VH
-
-    # cells, far to near
-    order = []
-    for i in range(ny - 1):
-        for j in range(nx - 1):
-            q = (nodes[i][j], nodes[i][j + 1], nodes[i + 1][j + 1], nodes[i + 1][j])
-            if any(v is None for v in q):
-                continue
-            sx = [(v[0] - x0) * sc for v in q]; sy = [(v[1] - y0) * sc for v in q]
-            if max(sx) < -4 or min(sx) > VW + 4 or max(sy) < -4 or min(sy) > VH + 4:
-                continue
-            order.append((-sum(v[2] for v in q) / 4.0, i, j))
-    order.sort()
-
-    zs = [-d for d, _i, _j in order]
+    rows = list(range(nyU - 1, -1, -1))                 # far to near, every interpolated row
+    cols = list(range(0, nxU, 3))
+    if cols[-1] != nxU - 1:
+        cols.append(nxU - 1)
+    raw = {r: [proj(GXu[c], GYu[r], U[r][c]) for c in cols] for r in rows}
+    ys_all = [p[1] for r in rows for p in raw[r] if p]
+    fr = cfg["frame"]
+    x0, x1 = fr["x"]
+    ybot = fr["bottom"]
+    ytop_t = min(ys_all)
+    y0 = ytop_t - fr.get("sky_frac", 0.55) * (ybot - ytop_t)
+    sc = 1000.0 / (x1 - x0)
+    VW, VH = 1000.0, (ybot - y0) * sc
+    S = lambda p: ((p[0] - x0) * sc, (p[1] - y0) * sc)
+    zs = [p[2] for r in rows for p in raw[r] if p]
     zmin, zmax = min(zs), max(zs)
-    sky_rgb = (203, 216, 234)
-    tones3 = {}
-    for d_, i, j in order:
-        sh = shade(i, j)
-        base = tint(E[i][j])
-        f = 0.42 + 0.95 * sh
-        hz = (((-d_) - zmin) / (zmax - zmin or 1.0)) ** 1.15 * cfg.get("haze", 0.45)
-        col = tuple(max(0, min(255, int((base[k] * f) * (1 - hz) + sky_rgb[k] * hz))) for k in range(3))
-        key = tuple(int(c / 8) * 8 for c in col)
-        if key not in cls_of:
-            cls_of[key] = f"t{len(cls_of)}"
-        tones3[(i, j)] = cls_of[key]
+    haze_k = cfg.get("haze", 0.5)
 
-    # flood region (cells connected to the floor below the level, inside the basin ellipse)
-    seed = cfg["basin"]["floor_seed"]
-    si = min(range(ny), key=lambda k: abs(lat[k] - seed[0])); sj = min(range(nx), key=lambda k: abs(lon[k] - seed[1]))
+    def pts_str(pts):
+        return " ".join(f"{a:.0f} {b:.0f}" for a, b in pts)
 
-    def fog_cells(level):
-        seen, stack, out = {(si, sj)}, [(si, sj)], set()
-        while stack:
-            i, j = stack.pop()
-            if E[i][j] >= level or not in_basin(i, j):
-                continue
-            out.add((i, j))
-            for a_, b_ in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                k = (i + a_, j + b_)
-                if 0 <= k[0] < ny and 0 <= k[1] < nx and k not in seen:
-                    seen.add(k); stack.append(k)
+    # ---- terrain rows, each a smooth filled ridge with a horizontal colour gradient ----
+    defs, terr = "", {}
+    Ps = {r: [S(p) for p in raw[r]] for r in rows}
+    def band_bottom(r):
+        # a row only has to cover down to the deepest of the next few nearer ridges, not to the frame bottom
+        out = []
+        for i in range(len(cols)):
+            near = [Ps[r - k][i][1] for k in range(1, 5) if (r - k) in Ps]
+            out.append(min(VH + 30, max(near) + 8) if len(near) == 4 else VH + 30)
         return out
+    for r in rows:
+        P = Ps[r]
+        zrow = sum(p[2] for p in raw[r]) / len(raw[r])
+        hz = ((zrow - zmin) / (zmax - zmin or 1.0)) ** 1.1 * haze_k
+        stops = ""
+        xa, xb = P[0][0], P[-1][0]
+        span = (xb - xa) or 1.0
+        for i in range(0, len(cols), 2):
+            c = cols[i]
+            base = tint(U[r][c])
+            f = 0.42 + 0.95 * shade(r, c)
+            col = tuple((base[k] * f) * (1 - hz) + sky_rgb[k] * hz for k in range(3))
+            stops += f'<stop offset="{max(0.0, min(1.0, (P[i][0] - xa) / span)):.3f}" stop-color="{hexc(col)}"/>'
+        defs += f'<linearGradient id="gr{r}" gradientUnits="userSpaceOnUse" x1="{xa:.0f}" y1="0" x2="{xb:.0f}" y2="0">{stops}</linearGradient>'
+        bb = band_bottom(r)
+        under = [(P[i][0], max(bb[i], P[i][1] + 4)) for i in range(len(cols))]
+        poly = "M" + pts_str(P) + " L" + pts_str(list(reversed(under))) + "z"
+        terr[r] = f'<path fill="url(#gr{r})" d="{poly}"/>'
 
-    def poly(pts):
-        return "M" + "L".join(f"{a} {b}" for a, b in pts) + "z"
+    # ---- the day: keyframes (times, sky, light, sun and moon, fog level) ----
+    keys = [dict(k) for k in FOG_DAY]
+    for i, fk in enumerate(cfg.get("fog", [])):
+        keys[i].update(fk)
+    start = cfg.get("start_key", 3)
+    noise = lambda a, b, k: (math.sin(a * 0.23 + b * 0.15 + k * 1.7) + math.sin(a * 0.12 - b * 0.21 + k * 0.9) + 2) / 4.0
 
-    def cell_path(i, j):
-        q = (nodes[i][j], nodes[i][j + 1], nodes[i + 1][j + 1], nodes[i + 1][j])
-        return poly([S(v) for v in q])
+    fog_polys = {}   # (row, key) -> svg path string
+    for k, kf in enumerate(keys):
+        H = kf.get("level") or 0
+        if not H:
+            continue
+        for r in rows:
+            run, runs = [], []
+            for ci, c in enumerate(cols):
+                ok_ = in_basin(latU[r], lonU[c]) and U[r][c] < H and not (kf.get("patch") and noise(r, c, k) > 1 - kf["patch"])
+                if ok_:
+                    run.append(c)
+                else:
+                    if len(run) >= 3:
+                        runs.append(run)
+                    run = []
+            if len(run) >= 3:
+                runs.append(run)
+            parts = ""
+            rb = max(r - 3, 0)
+            for run in runs:
+                top = [proj(GXu[c], GYu[r], H) for c in run]
+                bot = [proj(GXu[c], GYu[rb], min(U[rb][c], H)) for c in run]
+                if any(v is None for v in top + bot):
+                    continue
+                tp = [S(v) for v in top]
+                bp = [(S(v)[0], max(S(v)[1], tp[i][1] + 3)) for i, v in enumerate(bot)]
+                parts += "M" + pts_str(tp) + " L" + pts_str(list(reversed(bp))) + "z"
+            if parts:
+                fog_polys[(r, k)] = f'<path class="fd-fg{(r // 4) % 3}" d="{parts}"/>'
 
-    def fog_path(i, j, level):
+    band_rows = cfg.get("band_rows", 6)
+    body = ""
+    for b0 in range(0, len(rows), band_rows):
+        band = rows[b0:b0 + band_rows]
+        body += "".join(terr[r] for r in band)
+        for k in range(len(keys)):
+            inner = "".join(fog_polys.get((r, k), "") for r in band)
+            if inner:
+                op = 1 if k == start else 0
+                body += f'<g class="fd-fog" data-k="{k}" style="opacity:{op}">{inner}</g>'
+
+    # decorative backdrop: two hazy ridges behind the far edge of the data (schematic, not real terrain)
+    top_y = ytop_t
+    def ridge(seed, amp, lift, col):
         pts = []
-        for a_, b_ in ((i, j), (i, j + 1), (i + 1, j + 1), (i + 1, j)):
-            pr = proj(GX[b_], GY[a_], level)
-            if pr is None:
-                return None
-            pts.append(S(pr))
-        return poly(pts)
+        for i in range(0, 41):
+            x = VW * i / 40.0
+            yy = (top_y - y0) * sc - lift + amp * (math.sin(i * 0.55 + seed) * 0.6 + math.sin(i * 1.3 + seed * 2) * 0.4)
+            pts.append((x, yy))
+        return f'<path fill="{col}" d="M{pts_str(pts)} L{VW:.0f} {VH + 30:.0f} L0 {VH + 30:.0f}z"/>'
+    backdrop = ridge(1.3, 16, 34, "#9db1cd") + ridge(4.1, 20, 14, "#86a0c2")
 
-    # cold-air drainage arrows: inner-wall starts, only on walls that face the camera
+    # ---- cold-air drainage arrows (far walls only) ----
     def arrows():
         out = ""
-        n_dir = cfg.get("arrows", 16)
+        n_dir = cfg.get("arrows", 24)
         for k in range(n_dir):
             th = 2 * math.pi * k / n_dir
-            r = cfg.get("arrow_scan_from_m", 3200.0)          # start beyond the cones on the floor
+            r = cfg.get("arrow_scan_from_m", 3200.0)
             pos = None
             while r < 9000.0:
                 r += 150.0
                 la = ctr[0] + (r * math.cos(th)) / ky
                 lo = ctr[1] + (r * math.sin(th)) / kx
                 i = min(range(ny), key=lambda q: abs(lat[q] - la)); j = min(range(nx), key=lambda q: abs(lon[q] - lo))
-                if E[i][j] >= cfg.get("arrow_start_m", 2330):
+                if E[i][j] >= cfg.get("arrow_start_m", 2420):
                     pos = (GX[j], GY[i], E[i][j]); break
             if not pos:
                 continue
@@ -1486,7 +1507,6 @@ def fogbasin_figure(e):
                     break
             if len(path) < 3:
                 continue
-            # it must run towards the camera to be seen on the far wall
             if ((path[-1][0] - path[0][0]) * fx + (path[-1][1] - path[0][1]) * fy) > 0:
                 continue
             pr = [proj(a, b, c + 45) for a, b, c in path]
@@ -1497,65 +1517,72 @@ def fogbasin_figure(e):
             L = math.hypot(bx - ax, by - ay) or 1.0
             ux, uy = (bx - ax) / L, (by - ay) / L
             hd = [(bx + 11 * ux, by + 11 * uy), (bx - 6 * ux + 6 * uy, by - 6 * uy - 6 * ux), (bx - 6 * ux - 6 * uy, by - 6 * uy + 6 * ux)]
-            out += (f'<path class="f-cold" d="M{"L".join(f"{a} {b}" for a, b in pts)}"/>'
+            out += (f'<path class="f-cold" d="M{"L".join(f"{a:.0f} {b:.0f}" for a, b in pts)}"/>'
                     f'<polygon class="f-coldhead" points="{" ".join(f"{a:.0f},{b:.0f}" for a, b in hd)}"/>')
         return out
 
-    def stage_svg(level, opacity, patchy, with_arrows, sid):
-        fc = fog_cells(level) if level else set()
+    # ---- sky layer: gradient, stars, glow, sun, moon (all behind the terrain) ----
+    st = keys[start]
+    star_pts = "".join(f'<circle cx="{(37 + 113 * i) % 990 + 5}" cy="{(i * 53) % int(VH * 0.30) + 6}" r="{1.0 + 0.9 * ((i * 7) % 5) / 4:.1f}"/>' for i in range(46))
+    sky = (f'<rect class="fd-skyrect" width="{VW:.0f}" height="{VH:.0f}" fill="url(#fdsky)"/>'
+           f'<g class="fd-stars" style="opacity:{st["stars"]}">{star_pts}</g>'
+           f'<circle class="fd-glow" r="300" cx="{st["sun"][0] * VW:.0f}" cy="{st["sun"][1] * VH:.0f}" fill="url(#fdglow)" style="opacity:{st["glow"]}"/>'
+           f'<circle class="fd-sun" r="26" cx="{st["sun"][0] * VW:.0f}" cy="{st["sun"][1] * VH:.0f}" style="opacity:{st["sun"][2]}"/>'
+           f'<circle class="fd-moon" r="19" cx="{st["moon"][0] * VW:.0f}" cy="{st["moon"][1] * VH:.0f}" style="opacity:{st["moon"][2]}"/>')
 
-        def has_fog(i, j):
-            return ((i, j) in fc and E[i][j] < level and E[i + 1][j] < level and E[i][j + 1] < level and E[i + 1][j + 1] < level
-                    and not (patchy and noise(i, j) > patchy))
+    def tint_values(m):
+        return f"{m[0]:.3f} 0 0 0 0  0 {m[1]:.3f} 0 0 0  0 0 {m[2]:.3f} 0 0  0 0 0 1 0"
 
-        fog = {(i, j) for _d, i, j in order if level and has_fog(i, j)}
-        body = ""
-        bands = cfg.get("fog_bands", 30)
-        size = -(-len(order) // bands)
-        for c0 in range(0, len(order), size):
-            terr, fogp = "", ""
-            for _d, i, j in order[c0:c0 + size]:
-                terr += f'<path class="{tones3[(i, j)]}" d="{cell_path(i, j)}"/>'
-                if (i, j) in fog:
-                    fp = fog_path(i, j, level)
-                    if fp:
-                        edge = any(k not in fog for k in ((i - 1, j), (i + 1, j), (i, j - 1), (i, j + 1)))
-                        tone_i = int(2.999 * ((math.sin(i * 0.63 + j * 0.41) + math.sin(j * 0.87 - i * 0.29) + 2) / 4))
-                        fogp += f'<path class="f-fog f-fg{tone_i}" style="opacity:{opacity * (0.55 if edge else 1):.2f}" d="{fp}"/>'
-            body += terr + (f'<g filter="url(#fogsoft{sid})">{fogp}</g>' if fogp else "")
-        return (f'<svg class="dsvg" viewBox="{vx0:.0f} {vy0:.0f} {vx1 - vx0:.0f} {vy1 - vy0:.0f}" preserveAspectRatio="xMidYMid slice" '
-                f'aria-hidden="true" focusable="false"><defs><filter id="fogsoft{sid}" x="-3%" y="-3%" width="106%" height="106%">'
-                f'<feGaussianBlur stdDeviation="{cfg.get("fog_blur", 3.6)}"/></filter></defs>'
-                f'<rect x="{vx0:.0f}" y="{vy0:.0f}" width="{vx1 - vx0:.0f}" height="{vy1 - vy0:.0f}" class="f-sky"/>'
-                f'{body}{arrows() if with_arrows else ""}</svg>')
+    svg_defs = (f'<defs>{defs}'
+                f'<linearGradient id="fdsky" x1="0" y1="0" x2="0" y2="1"><stop class="fd-stop-top" offset="0" stop-color="{hexc(st["top"])}"/>'
+                f'<stop class="fd-stop-bot" offset="1" stop-color="{hexc(st["bot"])}"/></linearGradient>'
+                f'<radialGradient id="fdglow"><stop offset="0" stop-color="#ffe0a8" stop-opacity=".95"/><stop offset="1" stop-color="#ffe0a8" stop-opacity="0"/></radialGradient>'
+                f'<filter id="fdtint" color-interpolation-filters="sRGB" x="0" y="0" width="1" height="1"><feColorMatrix class="fd-tint" type="matrix" values="{tint_values(st["tint"])}"/></filter>'
+                f'</defs>')
+    scene_svg = (f'<svg class="dsvg fd-svg" viewBox="0 0 {VW:.0f} {VH:.0f}" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">'
+                 f'{svg_defs}{sky}<g filter="url(#fdtint)">{backdrop}{body}</g>'
+                 f'<g class="fd-arrows" style="opacity:{st["arrows"]}">{arrows()}</g></svg>')
 
-    # labels (positions are real terrain points; names and heights are cited)
+    # ---- labels (positions are real terrain points; names and heights are cited) ----
     def label_at(la, lo, text, sub=None, cls="b pill", lift=0):
         i = min(range(ny), key=lambda q: abs(lat[q] - la)); j = min(range(nx), key=lambda q: abs(lon[q] - lo))
         pr = proj(GX[j], GY[i], E[i][j] + lift)
         if pr is None:
             return ""
         a, b = S(pr)
-        fx_, fy_ = (a - vx0) / (vx1 - vx0) * 100, (b - vy0) / (vy1 - vy0) * 100
+        fx_, fy_ = a / VW * 100, b / VH * 100
         if not (2 < fx_ < 98 and 2 < fy_ < 98):
             return ""
         subh = f'<span class="sub">{bi(*sub)}</span>' if sub else ""
         return f'<div class="dlabel {cls}" style="left:{fx_:.2f}%;top:{fy_:.2f}%">{bi(*text)}{subh}</div>'
 
     marks = cfg["marks"]
-    def labels3d():
-        return "".join(label_at(m["lat"], m["lon"], (m["id"], m["en"]), (m["sub_id"], m["sub_en"]) if m.get("sub_id") else None,
+    labels3d = "".join(label_at(m["lat"], m["lon"], (m["id"], m["en"]), (m["sub_id"], m["sub_en"]) if m.get("sub_id") else None,
                                 m.get("cls", "b pill"), m.get("lift", 120)) for m in marks)
 
-    # ---- plan-view relief map ----
+    # ---- plan-view map: soft hypsometric shading under smooth contour lines ----
     PW = 800.0
     mx_ = lambda x: (x - GX[0]) / (GX[-1] - GX[0]) * PW
     PH = PW * (GY[0] - GY[-1]) / (GX[-1] - GX[0])
     my_ = lambda y: (GY[0] - y) / (GY[0] - GY[-1]) * PH
     plan = ""
-    for i in range(ny - 1):
-        for j in range(nx - 1):
-            plan += (f'<path class="{tones[i][j]}" d="M{mx_(GX[j]):.1f} {my_(GY[i]):.1f}H{mx_(GX[j + 1]) + .6:.1f}V{my_(GY[i + 1]) + .6:.1f}H{mx_(GX[j]):.1f}z"/>')
+    for r in range(0, nyU - 1, 1):
+        for c in range(0, nxU - 1, 1):
+            if (r % 2) or (c % 2):
+                continue
+            base = tint(U[r][c])
+            col = tuple(b_ * (0.5 + 0.9 * shade(r, c)) for b_ in base)
+            plan += f'<path fill="{hexc(col)}" d="M{mx_(GXu[c]):.1f} {my_(GYu[r]):.1f}H{mx_(GXu[c + 2] if c + 2 < nxU else GXu[-1]) + .5:.1f}V{my_(GYu[r + 2] if r + 2 < nyU else GYu[-1]) + .5:.1f}H{mx_(GXu[c]):.1f}z"/>'
+    cont_thin, cont_idx = "", ""
+    lvl = 2060
+    while lvl <= 2760:
+        lines = [ln for ln in _contours(U, lvl) if len(ln) > 5]
+        d_ = "".join("M" + " L".join(f"{c / (nxU - 1) * PW:.0f} {r / (nyU - 1) * PH:.0f}" for c, r in ln[::2] + [ln[-1]]) for ln in lines)
+        if lvl % 500 == 0 or lvl % 250 == 0 and lvl >= 2500:
+            cont_idx += d_
+        else:
+            cont_thin += d_
+        lvl += 50 if lvl < 2500 else 50
     cam_x, cam_y = mx_(ccx), my_(ccy)
     half = math.radians(cam["fov_deg"] / 2 + 6)
     fan = ""
@@ -1568,59 +1595,103 @@ def fogbasin_figure(e):
     plan_labels = ""
     for m in marks:
         if m.get("plan", True):
-            px_, py_ = mx_(tx(m["lat"], m["lon"])[0]) / PW * 100, my_(tx(m["lat"], m["lon"])[1]) / PH * 100
-            plan_labels += f'<div class="dlabel {m.get("cls", "b pill")}" style="left:{px_:.2f}%;top:{py_:.2f}%">{bi(m["id"], m["en"])}</div>'
-    ell = ""
+            pxm, pym = tx(m["lat"], m["lon"])
+            plan_labels += f'<div class="dlabel {m.get("cls", "b pill")}" style="left:{mx_(pxm) / PW * 100:.2f}%;top:{my_(pym) / PH * 100:.2f}%">{bi(m["id"], m["en"])}</div>'
     plan_svg = (f'<svg class="dsvg" viewBox="0 0 {PW:.0f} {PH:.0f}" preserveAspectRatio="none" aria-hidden="true" focusable="false">'
-                f'<defs><filter id="softplan" x="0" y="0" width="1" height="1"><feGaussianBlur stdDeviation="3.2"/></filter></defs>'
-                f'<g filter="url(#softplan)">{plan}</g>{fan}{heli}{ell}</svg>')
+                f'<defs><filter id="softplan" x="0" y="0" width="1" height="1"><feGaussianBlur stdDeviation="5"/></filter></defs>'
+                f'<g filter="url(#softplan)">{plan}</g><path class="p-cont" d="{cont_thin}"/><path class="p-cont idx" d="{cont_idx}"/>{fan}{heli}</svg>')
     plan_fig = (f'<figure class="fstep"><p class="ftitle"><b>0</b> {bi(*FOG_UI["plan"])}</p>'
                 f'<div class="dscroll fogplan" tabindex="0" role="region" aria-label="{esc(FOG_UI["plan"][0])}">'
                 f'<div class="dstage fogstage" style="aspect-ratio:{PW:.0f}/{PH:.0f}">{plan_svg}{plan_labels}'
                 f'<div class="dlabel pill pheli" style="left:{cam_x / PW * 100:.2f}%;top:{max(cam_y / PH * 100 - 6, 3):.2f}%">{bi(*FOG_UI["heli"])}</div></div></div></figure>')
 
-    stages = [
-        (1, FOG_UI["s1"], 0, 0, 0, True),
-        (2, FOG_UI["s2"], cfg["levels_m"][0], 0.9, 0, True),
-        (3, FOG_UI["s3"], cfg["levels_m"][1], 0.94, 0, False),
-        (4, FOG_UI["s4"], cfg["levels_m"][2], 0.88, 0.45, False),
-    ]
-    aspect = f"{vx1 - vx0:.0f}/{vy1 - vy0:.0f}"
-    figs = ""
-    for n, title, level, op, patchy, arr in stages:
-        hint = f'<p class="dhint">{t("d_hint")}</p>' if n == 1 else ""
-        figs += (f'<figure class="fstep"><p class="ftitle"><b>{n}</b> {bi(*title)}</p>{hint}'
-                 f'<div class="dscroll" tabindex="0" role="region" aria-label="{esc(FOG_UI["view"][0])}" data-focus="50">'
-                 f'<div class="dstage fogstage" style="aspect-ratio:{aspect}">{stage_svg(level, op, patchy, arr, n)}{labels3d()}</div></div></figure>\n')
+    # ---- the day scene, its controls and the timeline ----
+    def hhmm(m):
+        m = int(round(m)) % 1440
+        return f"{m // 60:02d}.{m % 60:02d}", f"{m // 60:02d}:{m % 60:02d}"
+    data_keys = json.dumps([{k_: kf[k_] for k_ in ("min", "top", "bot", "tint", "sun", "moon", "stars", "glow", "arrows")} for kf in keys])
+    clock = hhmm(st["min"])
+    items = ""
+    for i, kf in enumerate(keys):
+        hid, hen = hhmm(kf["min"])
+        items += (f'<li data-k="{i}"{" class=on" if i == start else ""}><b>{bi(hid, hen)}</b> <span class="fd-name">{bi(*kf["name"])}</span>: '
+                  f'{bi(*kf["text"])}</li>')
+    aspect = f"{VW:.0f}/{VH:.0f}"
+    day_fig = (f'<figure class="fstep diagram fogday" data-kind="fogday" data-start="{start}" data-keys=\'{data_keys}\'>'
+               f'<p class="ftitle">{bi(*FOG_UI["day"])}</p><p class="dhint">{t("d_hint")}</p>'
+               f'<div class="dscroll" tabindex="0" role="region" aria-label="{esc(FOG_UI["view"][0])}" data-focus="50">'
+               f'<div class="dstage fogstage" style="aspect-ratio:{aspect}">{scene_svg}{labels3d}'
+               f'<div class="fd-clock"><span class="fd-time">{clock[1]}</span> <span class="fd-tz">WIB</span></div></div></div>'
+               f'<div class="dctl" hidden><button type="button" class="dplay" aria-pressed="false"><span class="lp">{t("d_play")}</span><span class="lq">{t("d_pause")}</span></button>'
+               f'<input type="range" class="dscrub" min="0" max="{(len(keys) - 1) * 100}" value="{start * 100}" step="1" aria-label="{esc(FOG_UI["slider"][1])}">'
+               f'<span class="fd-clock2"><span class="fd-time">{clock[1]}</span> WIB</span>'
+               f'<span class="fd-ends"><span>{hhmm(keys[0]["min"])[1]}</span><span>{hhmm(keys[-1]["min"])[1]}</span></span></div>'
+               f'<ol class="fd-list">{items}</ol></figure>')
     key = (f'<span><i class="sw" style="background:#fff;border:1.5px solid #8da0b6;height:10px;width:14px;border-radius:50%"></i>{bi(*FOG_UI["k_fog"])}</span>'
-           f'<span><i class="sw" style="background:#2f6fb8"></i>{bi(*FOG_UI["k_cold"])}</span>')
+           f'<span><i class="sw" style="background:#1f5fae"></i>{bi(*FOG_UI["k_cold"])}</span>')
     cap = FOG_UI["caption"]
-    style = "<style>" + "".join(f".{c}{{fill:rgb{k}}}" for k, c in cls_of.items()) + "</style>"
-    return (f'<div class="fsteps fogsteps">{style}{plan_fig}{figs}<div class="dkey">{key}</div>'
+    return (f'<div class="fsteps fogsteps">{plan_fig}{day_fig}<div class="dkey">{key}</div>'
             f'<div class="diagram frostcap"><p class="fcap">{bi(cap[0].format(acc=g["accessed"]), cap[1].format(acc=g["accessed"]))}</p></div></div>')
+
+
+# One day, as keyframes. Times are illustrative (WIB), not measured. Colours are RGB;
+# `tint` multiplies the lit scene, sun/moon are [x, y, opacity] as fractions of the frame,
+# `level` (m) is the illustrative fog-top height (0 = no fog) and `patch` the share of holes.
+FOG_DAY = [
+    {"min": 17 * 60 + 30, "name": ("Sore", "Late afternoon"), "text": (
+        "Matahari rendah di barat. Tanah mulai melepas panas ke langit yang cerah, dan udara dingin mulai mengalir turun di dinding kaldera ke dasarnya.",
+        "The sun is low in the west. The ground starts giving off heat to a clear sky, and cold air starts to drain down the caldera walls onto the floor."),
+     "top": [96, 134, 196], "bot": [246, 196, 140], "tint": [1.0, 0.86, 0.70], "sun": [0.86, 0.20, 1], "moon": [0.72, 0.18, 0],
+     "stars": 0, "glow": 0.75, "arrows": 1, "level": 0},
+    {"min": 21 * 60, "name": ("Malam", "Night"), "text": (
+        "Langit cerah, angin lemah, udara lembap: dasar kaldera mendingin sampai titik embun dan kabut tipis mulai terbentuk.",
+        "Clear sky, light wind, moist air: the caldera floor cools to the dew point and thin fog starts to form."),
+     "top": [8, 16, 40], "bot": [26, 44, 82], "tint": [0.46, 0.54, 0.78], "sun": [0.98, 0.70, 0], "moon": [0.70, 0.16, 1],
+     "stars": 1, "glow": 0, "arrows": 1, "level": 2138, "patch": 0.5},
+    {"min": 4 * 60 + 30, "name": ("Menjelang subuh", "Before dawn"), "text": (
+        "Pendinginan berlanjut. Kabut menebal dan mengisi kaldera, dan puncak-puncak menyembul darinya (kedalaman hanya ilustrasi).",
+        "Cooling continues. The fog deepens and fills the caldera, with the peaks poking out of it (depth is illustrative)."),
+     "top": [14, 28, 62], "bot": [58, 82, 128], "tint": [0.50, 0.58, 0.82], "sun": [0.10, 0.70, 0], "moon": [0.82, 0.26, 0.8],
+     "stars": 0.7, "glow": 0, "arrows": 0.25, "level": 2185},
+    {"min": 5 * 60 + 45, "name": ("Matahari terbit", "Sunrise"), "text": (
+        "Cahaya pertama menyentuh puncak-puncak dan permukaan kabut; kabut masih penuh.",
+        "The first light touches the peaks and the top of the fog; the fog is still full."),
+     "top": [70, 98, 160], "bot": [255, 190, 150], "tint": [1.0, 0.80, 0.72], "sun": [0.11, 0.30, 1], "moon": [0.86, 0.34, 0],
+     "stars": 0.1, "glow": 1, "arrows": 0, "level": 2192},
+    {"min": 8 * 60, "name": ("Pagi", "Morning"), "text": (
+        "Tanah menghangat dan lapisan udara terbawah menjadi tidak stabil: kabut tercampur dan mulai pecah menjadi bercak.",
+        "The ground warms and the lowest air layer becomes unstable: the fog mixes and starts to break into patches."),
+     "top": [110, 160, 220], "bot": [214, 230, 246], "tint": [1.0, 0.98, 0.94], "sun": [0.24, 0.13, 1], "moon": [0.86, 0.34, 0],
+     "stars": 0, "glow": 0.3, "arrows": 0, "level": 2158, "patch": 0.4},
+    {"min": 10 * 60 + 30, "name": ("Menjelang siang", "Late morning"), "text": (
+        "Sebagian besar kabut menguap; sisa bercak menipis dan kaldera terlihat jelas.",
+        "Most of the fog has evaporated; the remaining patches thin out and the caldera is clearly visible."),
+     "top": [100, 154, 218], "bot": [206, 227, 246], "tint": [1.0, 1.0, 1.0], "sun": [0.38, 0.07, 1], "moon": [0.86, 0.34, 0],
+     "stars": 0, "glow": 0.12, "arrows": 0, "level": 2132, "patch": 0.72},
+]
 
 
 FOG_UI = {
     "plan": ("Peta relief dari atas, dengan posisi dan arah pandang helikopter", "Relief map from above, with the helicopter's position and viewing direction"),
     "heli": ("Helikopter", "Helicopter"),
+    "day": ("Satu hari di kaldera: geser atau putar waktu (jam hanya ilustrasi)", "One day in the caldera: scrub or play the time (clock times are illustrative)"),
     "view": ("Pemandangan dari helikopter", "View from the helicopter"),
-    "s1": ("Menjelang malam: udara dingin mulai mengalir turun ke dasar kaldera", "Evening: cold air starts to drain down into the caldera floor"),
-    "s2": ("Malam cerah dan tenang: dasar kaldera mendingin dan kabut tipis terbentuk", "Clear, calm night: the caldera floor cools and thin fog forms"),
-    "s3": ("Dini hari: kabut mengisi kaldera, puncak-puncak menyembul (kedalaman hanya ilustrasi)", "Before dawn: fog fills the caldera and the peaks poke out (depth is illustrative)"),
-    "s4": ("Pagi: tanah menghangat, kabut menipis menjadi bercak lalu menguap", "Morning: the ground warms and the fog thins into patches, then evaporates"),
+    "slider": ("Waktu", "Time of day"),
     "k_fog": ("Kabut (ilustrasi)", "Fog (illustrative)"),
     "k_cold": ("Udara dingin mengalir turun (ilustrasi)", "Cold air draining downslope (illustrative)"),
     "caption": (
-        "Medan dibuat dari data ketinggian nyata: model SRTM 30 m (NASA, domain publik) lewat OpenTopoData, kisi sekitar 330 m (diakses {acc}), "
-        "dengan eksagerasi vertikal; warna hanya pewarnaan ketinggian dan bayangan lereng, bukan tutupan lahan. Posisi dan ketinggian helikopter (kamera sekitar 5,6 km, lebih tinggi dari ketinggian terbang helikopter biasa, agar seluruh kaldera terlihat), sudut pandang, "
-        "kabut, kedalamannya, dan panah udara dingin hanyalah ilustrasi mekanisme, bukan pengukuran, dan tidak menunjukkan kapan atau seberapa tebal kabut Bromo sebenarnya. "
-        "Urutan malam cerah dan tenang, udara lembap, pendinginan sampai titik embun, dan penguapan setelah matahari menghangatkan tanah mengikuti rujukan umum tentang kabut radiasi (NOAA dan NWS); "
+        "Medan berasal dari data ketinggian nyata, model SRTM 30 m (NASA, domain publik) lewat OpenTopoData, kisi sekitar 330 m (diakses {acc}), yang dihaluskan dengan interpolasi bikubik "
+        "dan digambar bergaya skematis (lapisan punggungan, kontur tiap 50 m pada peta, eksagerasi vertikal); warna hanya pewarnaan ketinggian dan bayangan lereng, bukan tutupan lahan, "
+        "dan punggungan kabur di latar belakang hanyalah hiasan. Posisi dan ketinggian helikopter (kamera sekitar 5,6 km, lebih tinggi dari ketinggian terbang helikopter biasa, agar seluruh kaldera terlihat), "
+        "langit, matahari, bulan, jam, kabut, kedalamannya, dan panah udara dingin hanyalah ilustrasi mekanisme, bukan pengukuran, dan tidak menunjukkan kapan atau seberapa tebal kabut Bromo sebenarnya. "
+        "Urutan malam cerah dan tenang, udara lembap, pendinginan sampai titik embun, dan pencampuran serta penguapan setelah matahari menghangatkan tanah mengikuti rujukan umum tentang kabut radiasi (NOAA dan NWS); "
         "udara dingin yang mengalir turun dan menggenang di cekungan berasal dari studi embun beku di Dieng (Ashari dkk., 2024), bukan studi kabut atau studi di Bromo. "
         "Bahwa kabut terjadi hampir setiap pagi dan sore di kawasan wisata Bromo berasal dari Meilani dkk. (2018); sumber itu tidak menjelaskan cara terbentuknya.",
-        "Terrain is drawn from real elevation data: the SRTM 30 m model (NASA, public domain) via OpenTopoData, a grid of about 330 m (accessed {acc}), "
-        "with vertical exaggeration; colours are only elevation tint and slope shading, not land cover. The helicopter position and height (the camera is at about 5.6 km, higher than a helicopter normally flies, so the whole caldera fits), the viewpoint, "
-        "fog, its depth and the cold-air arrows are only an illustration of a mechanism, not measurements, and do not show when or how deep Bromo's fog really is. "
-        "The sequence of a clear calm night, moist air, cooling to the dew point, and evaporation once the sun warms the ground follows general references on radiation fog (NOAA and NWS); "
+        "Terrain comes from real elevation data, the SRTM 30 m model (NASA, public domain) via OpenTopoData, a grid of about 330 m (accessed {acc}), smoothed by bicubic interpolation "
+        "and drawn in a stylised way (layered ridges, 50 m contours on the map, vertical exaggeration); colours are only elevation tint and slope shading, not land cover, "
+        "and the hazy ridges in the background are decoration. The helicopter position and height (the camera is at about 5.6 km, higher than a helicopter normally flies, so the whole caldera fits), "
+        "the sky, sun, moon, clock, fog, its depth and the cold-air arrows are only an illustration of a mechanism, not measurements, and do not show when or how deep Bromo's fog really is. "
+        "The sequence of a clear calm night, moist air, cooling to the dew point, and mixing and evaporation once the sun warms the ground follows general references on radiation fog (NOAA and NWS); "
         "cold air draining down and pooling in basins comes from a frost study at Dieng (Ashari et al., 2024), not a fog study and not a study at Bromo. "
         "That fog occurs almost every morning and afternoon in the Bromo tourist area comes from Meilani et al. (2018); that source does not explain how it forms."),
 }
