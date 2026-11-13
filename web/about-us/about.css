@@ -114,6 +114,22 @@ h3 { margin: 0; font-size: 17px; font-weight: 600; color: var(--text); }
 .about-text { max-width: 62ch; margin: 0 0 14px; line-height: 1.7; }
 .about-sub { font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: var(--kl-teal); margin: 30px 0 10px; font-weight: 600; }
 
+/* ---- services cards (about-us index) ---- */
+.services { list-style: none; margin: 18px 0 8px; padding: 0; display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 640px) { .services { grid-template-columns: 1fr; } }
+.service {
+  padding: 18px 20px 20px; background: var(--kl-deep);
+  border: 1px solid rgba(139, 190, 178, .25); border-radius: 14px;
+}
+.service .num { display: block; font-size: 12px; letter-spacing: .14em; color: var(--kl-teal); font-variant-numeric: tabular-nums; margin-bottom: 6px; }
+.service h3 { color: var(--kl-lime); font-size: 18px; }
+.service p { margin: 6px 0 12px; color: var(--text); font-size: 15px; line-height: 1.55; }
+.tags { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.tags li {
+  font-size: 13px; line-height: 1.3; padding: 4px 10px; color: var(--kl-teal);
+  border: 1px solid rgba(139, 190, 178, .35); border-radius: 999px;
+}
+
 /* ---- contact form ---- */
 .cform { max-width: 560px; margin: 4px 0 8px; display: grid; gap: 6px; }
 .cform label { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--kl-teal); margin-top: 10px; }
