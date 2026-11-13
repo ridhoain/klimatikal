@@ -1315,8 +1315,8 @@ def fogbasin_figure(e):
         az, alt = math.radians(315 - 90), math.radians(42)           # light from the north-west
         return max(0.0, math.sin(alt) * math.cos(slope) + math.cos(alt) * math.sin(slope) * math.cos(az - asp))
 
-    ramp = [(1500, (190, 183, 140)), (2100, (205, 192, 150)), (2300, (168, 172, 120)), (2500, (138, 154, 98)),
-            (2700, (122, 128, 86)), (2800, (110, 106, 82))]
+    ramp = [(1500, (176, 168, 120)), (2080, (214, 200, 160)), (2140, (198, 186, 140)), (2260, (168, 168, 112)),
+            (2400, (124, 148, 82)), (2550, (92, 120, 66)), (2700, (86, 100, 62)), (2800, (104, 92, 70))]
 
     def tint(h):
         for (a_, ca), (b_, cb) in zip(ramp, ramp[1:]):
@@ -1333,7 +1333,7 @@ def fogbasin_figure(e):
         sh = shade(i, j)
         h = E[i][j]
         base = tint(h)
-        f = 0.55 + 0.75 * sh
+        f = 0.42 + 0.95 * sh
         col = tuple(max(0, min(255, int(c * f))) for c in base)
         key = tuple(int(c / 8) * 8 for c in col)
         if key not in cls_of:
@@ -1341,8 +1341,6 @@ def fogbasin_figure(e):
         return cls_of[key]
 
     tones = [[tone(i, j) for j in range(nx)] for i in range(ny)]
-    style = "<style>" + "".join(f".{c}{{fill:rgb{k}}}" for k, c in cls_of.items()) + "</style>"
-    style = style.replace("rgb(", "rgb(")
 
     # ---- the basin and the fog ----
     ctr = cfg["basin"]["centre"]
@@ -1405,6 +1403,21 @@ def fogbasin_figure(e):
                 continue
             order.append((-sum(v[2] for v in q) / 4.0, i, j))
     order.sort()
+
+    zs = [-d for d, _i, _j in order]
+    zmin, zmax = min(zs), max(zs)
+    sky_rgb = (203, 216, 234)
+    tones3 = {}
+    for d_, i, j in order:
+        sh = shade(i, j)
+        base = tint(E[i][j])
+        f = 0.42 + 0.95 * sh
+        hz = (((-d_) - zmin) / (zmax - zmin or 1.0)) ** 1.15 * cfg.get("haze", 0.45)
+        col = tuple(max(0, min(255, int((base[k] * f) * (1 - hz) + sky_rgb[k] * hz))) for k in range(3))
+        key = tuple(int(c / 8) * 8 for c in col)
+        if key not in cls_of:
+            cls_of[key] = f"t{len(cls_of)}"
+        tones3[(i, j)] = cls_of[key]
 
     # flood region (cells connected to the floor below the level, inside the basin ellipse)
     seed = cfg["basin"]["floor_seed"]
@@ -1488,19 +1501,32 @@ def fogbasin_figure(e):
                     f'<polygon class="f-coldhead" points="{" ".join(f"{a:.0f},{b:.0f}" for a, b in hd)}"/>')
         return out
 
-    def stage_svg(level, opacity, patchy, with_arrows):
-        body = ""
+    def stage_svg(level, opacity, patchy, with_arrows, sid):
         fc = fog_cells(level) if level else set()
-        for _d, i, j in order:
-            body += f'<path class="{tones[i][j]}" d="{cell_path(i, j)}"/>'
-            if (i, j) in fc and E[i][j] < level and E[i + 1][j] < level and E[i][j + 1] < level and E[i + 1][j + 1] < level:
-                if patchy and noise(i, j) > patchy:
-                    continue
-                fp = fog_path(i, j, level)
-                if fp:
-                    body += f'<path class="f-fog" style="opacity:{opacity}" d="{fp}"/>'
+
+        def has_fog(i, j):
+            return ((i, j) in fc and E[i][j] < level and E[i + 1][j] < level and E[i][j + 1] < level and E[i + 1][j + 1] < level
+                    and not (patchy and noise(i, j) > patchy))
+
+        fog = {(i, j) for _d, i, j in order if level and has_fog(i, j)}
+        body = ""
+        bands = cfg.get("fog_bands", 30)
+        size = -(-len(order) // bands)
+        for c0 in range(0, len(order), size):
+            terr, fogp = "", ""
+            for _d, i, j in order[c0:c0 + size]:
+                terr += f'<path class="{tones3[(i, j)]}" d="{cell_path(i, j)}"/>'
+                if (i, j) in fog:
+                    fp = fog_path(i, j, level)
+                    if fp:
+                        edge = any(k not in fog for k in ((i - 1, j), (i + 1, j), (i, j - 1), (i, j + 1)))
+                        tone_i = int(2.999 * ((math.sin(i * 0.63 + j * 0.41) + math.sin(j * 0.87 - i * 0.29) + 2) / 4))
+                        fogp += f'<path class="f-fog f-fg{tone_i}" style="opacity:{opacity * (0.55 if edge else 1):.2f}" d="{fp}"/>'
+            body += terr + (f'<g filter="url(#fogsoft{sid})">{fogp}</g>' if fogp else "")
         return (f'<svg class="dsvg" viewBox="{vx0:.0f} {vy0:.0f} {vx1 - vx0:.0f} {vy1 - vy0:.0f}" preserveAspectRatio="xMidYMid slice" '
-                f'aria-hidden="true" focusable="false"><rect x="{vx0:.0f}" y="{vy0:.0f}" width="{vx1 - vx0:.0f}" height="{vy1 - vy0:.0f}" class="f-sky"/>'
+                f'aria-hidden="true" focusable="false"><defs><filter id="fogsoft{sid}" x="-3%" y="-3%" width="106%" height="106%">'
+                f'<feGaussianBlur stdDeviation="{cfg.get("fog_blur", 3.6)}"/></filter></defs>'
+                f'<rect x="{vx0:.0f}" y="{vy0:.0f}" width="{vx1 - vx0:.0f}" height="{vy1 - vy0:.0f}" class="f-sky"/>'
                 f'{body}{arrows() if with_arrows else ""}</svg>')
 
     # labels (positions are real terrain points; names and heights are cited)
@@ -1565,10 +1591,11 @@ def fogbasin_figure(e):
         hint = f'<p class="dhint">{t("d_hint")}</p>' if n == 1 else ""
         figs += (f'<figure class="fstep"><p class="ftitle"><b>{n}</b> {bi(*title)}</p>{hint}'
                  f'<div class="dscroll" tabindex="0" role="region" aria-label="{esc(FOG_UI["view"][0])}" data-focus="50">'
-                 f'<div class="dstage fogstage" style="aspect-ratio:{aspect}">{stage_svg(level, op, patchy, arr)}{labels3d()}</div></div></figure>\n')
+                 f'<div class="dstage fogstage" style="aspect-ratio:{aspect}">{stage_svg(level, op, patchy, arr, n)}{labels3d()}</div></div></figure>\n')
     key = (f'<span><i class="sw" style="background:#fff;border:1.5px solid #8da0b6;height:10px;width:14px;border-radius:50%"></i>{bi(*FOG_UI["k_fog"])}</span>'
            f'<span><i class="sw" style="background:#2f6fb8"></i>{bi(*FOG_UI["k_cold"])}</span>')
     cap = FOG_UI["caption"]
+    style = "<style>" + "".join(f".{c}{{fill:rgb{k}}}" for k, c in cls_of.items()) + "</style>"
     return (f'<div class="fsteps fogsteps">{style}{plan_fig}{figs}<div class="dkey">{key}</div>'
             f'<div class="diagram frostcap"><p class="fcap">{bi(cap[0].format(acc=g["accessed"]), cap[1].format(acc=g["accessed"]))}</p></div></div>')
 

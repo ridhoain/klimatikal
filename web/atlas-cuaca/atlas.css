@@ -321,7 +321,10 @@ html[data-lang="id"] .dphase span.on [lang="id"], html[data-lang="en"] .dphase s
 .fogstage { min-width: 560px; background: #bcd0e6; }
 .fogplan .fogstage { max-width: 640px; min-width: 520px; }
 .f-sky { fill: #cfdcec; }
-.f-fog { fill: #f3f6fa; stroke: #f3f6fa; stroke-width: 1.1; stroke-linejoin: round; }
+.f-fog { stroke-width: 1.4; stroke-linejoin: round; }
+.f-fg0 { fill: #f7fafd; stroke: #f7fafd; }
+.f-fg1 { fill: #e9f0f8; stroke: #e9f0f8; }
+.f-fg2 { fill: #dce6f1; stroke: #dce6f1; }
 .f-cold { fill: none; stroke: #1f5fae; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 9 8; animation: f-drain 2.2s linear infinite; }
 .f-coldhead { fill: #1f5fae; stroke: #fff; stroke-width: 1.4; }
 @keyframes f-drain { to { stroke-dashoffset: -34; } }
