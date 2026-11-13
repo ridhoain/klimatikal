@@ -284,3 +284,21 @@ html[data-lang="id"] .dphase span.on [lang="id"], html[data-lang="en"] .dphase s
 .frostcap { margin: 10px 0 8px; }
 .fcap { max-width: 72ch; margin: 0 0 8px; font-size: 14px; line-height: 1.6; color: var(--text); }
 @media (prefers-reduced-motion: reduce) { .f-lw path { animation: none; } }
+
+/* ---- CENS: daily index time series under the map ---- */
+.diagram.cens .dstage.dsyn { max-width: 760px; }
+.cn-title { margin: 14px 0 6px; font-size: 13px; color: var(--kl-teal); }
+.cn-stage { min-width: 560px; max-width: 760px; border: 1px solid #c8d1dc; border-radius: 12px; background: #fff; }
+.csvg { display: block; width: 100%; height: auto; }
+.c-grid { stroke: #d3dae3; stroke-width: 1; }
+.c-grid.zero { stroke: #7d8da1; stroke-width: 1.4; }
+.c-t { font-size: 19px; fill: #4c5b6e; }
+.c-t.thr { fill: #9a3c2c; font-weight: 600; }
+.c-tick { stroke: #7d8da1; stroke-width: 1.4; }
+.c-win { fill: rgba(120, 170, 225, .22); }
+.c-area { fill: rgba(74, 127, 193, .22); }
+.c-line { fill: none; stroke: #1d4f9f; stroke-width: 2.6; stroke-linejoin: round; stroke-linecap: round; }
+.c-thr { stroke: #c4452d; stroke-width: 1.8; stroke-dasharray: 8 6; }
+.c-cur { stroke: #243447; stroke-width: 1.6; }
+.c-dot { fill: #c4452d; stroke: #fff; stroke-width: 2.5; }
+.c-val { font-size: 21px; font-weight: 700; fill: #17324f; }

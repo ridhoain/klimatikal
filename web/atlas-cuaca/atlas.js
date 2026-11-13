@@ -209,7 +209,7 @@
     var n = +fig.getAttribute("data-n"), cur = +fig.getAttribute("data-key"), timer = null;
     function show(i) {
       cur = i;
-      Array.prototype.forEach.call(frames, function (f, k) { f.classList.toggle("on", k === i); });
+      Array.prototype.forEach.call(frames, function (f) { f.classList.toggle("on", +f.getAttribute("data-i") === i); });
       Array.prototype.forEach.call(phases, function (s) { s.classList.toggle("on", +s.getAttribute("data-ph") === i); });
       scrub.value = String(i);
     }

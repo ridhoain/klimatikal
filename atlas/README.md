@@ -127,6 +127,18 @@ clear night, before dawn, cloudy night for comparison). Config is just
 states that it is not to scale and shows no temperatures. The wording lives in
 `build_atlas.py` (`frost_figure`, `FROST_UI`), so reuse it only for radiation frost.
 
+### Surge map with index chart (`"type": "cens"`)
+
+Cross Equatorial Northerly Surge: the daily weather-map frames of the synoptic type (SLP
+isobars, 925 hPa wind arrows) for a run of days, the index box dashed, and under them a
+daily index time series with a marker that follows the map (one Play button and slider
+drive both). Config: `data` (map frames, from `fetch_daily.py`), `index` (daily series,
+from `fetch_index.py`: the box-mean northerly 925 hPa wind from NCEP/NCAR Reanalysis 1),
+`view`, `box`, `labels`, `key_day`, optional `threshold` (a reference line, default 5 m/s)
+and `notes` (date -> `{id, en}` text added to that day's caption; each must name its
+source). The index is our own reanalysis estimate, not the published QuikSCAT index, and
+the caption and the entry's `caveat` must say so.
+
 ## Publishing
 
 **Rebuild after editing `atlas.css`, `atlas.js` or `about.css`.** The generated

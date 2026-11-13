@@ -204,6 +204,9 @@ UI = {
     "c_m_ph0": ("Udara di atas Australia bagian utara, sepuluh hari sebelum tiba.", "Air over northern Australia, ten days before arrival."),
     "c_m_ph1": ("Aliran rata-rata dekat permukaan bergerak ke barat laut melintasi Laut Timor dan perairan selatan Nusa Tenggara.", "The mean near-surface flow moves north-west across the Timor Sea and the waters south of Nusa Tenggara."),
     "c_m_ph2": ("Aliran itu tiba di Jawa dari arah tenggara.", "The flow reaches Java from the south-east."),
+    "cn_hint": ("Geser ke samping untuk melihat seluruh grafik →", "Swipe sideways to see the whole chart →"),
+    "cn_box": ("Kotak indeks CENS", "CENS index box"),
+    "cn_chart": ("Indeks CENS harian (angin utara rata-rata di kotak, m/s)", "Daily CENS index (box-mean northerly wind, m/s)"),
     "s_box": ("Kotak definisi pusaran Borneo (EUMeTrain)", "Borneo vortex definition box (EUMeTrain)"),
     "s_hint": ("Geser ke samping untuk melihat seluruh peta →", "Swipe sideways to see the whole map →"),
     "s_region": ("Peta cuaca harian", "Daily weather map"),
@@ -308,9 +311,13 @@ def load_entries():
 
         diag = e.get("diagram")
         if diag is not None:
-            need(diag.get("type") in ("foehn", "coldair", "synoptic", "frost"), "'diagram.type' must be 'foehn', 'coldair', 'synoptic' or 'frost'")
+            need(diag.get("type") in ("foehn", "coldair", "synoptic", "frost", "cens"), "'diagram.type' must be 'foehn', 'coldair', 'synoptic', 'frost' or 'cens'")
             if diag.get("type") == "frost":
                 pass  # self-contained schematic: no data file, no labels to configure
+            elif diag.get("type") == "cens":
+                for f_ in ("data", "index"):
+                    need((DIAGRAMS / f"{diag.get(f_, '')}.json").exists(), f"diagram {f_} file atlas/diagrams/{diag.get(f_)}.json does not exist")
+                need(diag.get("view") and diag.get("box") and diag.get("labels"), "'diagram' needs view, box and labels")
             elif diag.get("type") == "synoptic":
                 need((DIAGRAMS / f"{diag.get('data', '')}.json").exists(), f"diagram data file atlas/diagrams/{diag.get('data')}.json does not exist")
                 need(diag.get("view") and diag.get("bv_box") and diag.get("labels"), "'diagram' needs view, bv_box and labels")
@@ -319,11 +326,11 @@ def load_entries():
                 need(tfile.exists(), f"diagram transect file atlas/diagrams/{diag.get('transect')}.json does not exist")
                 vk = diag.get("view_km")
                 need(isinstance(vk, list) and len(vk) == 2 and vk[0] < vk[1], "'diagram.view_km' must be [from_km, to_km]")
-            for key in (() if diag.get("type") in ("synoptic", "frost") else ("sea_left", "sea_right", "range") if diag.get("type") == "coldair"
+            for key in (() if diag.get("type") in ("synoptic", "frost", "cens") else ("sea_left", "sea_right", "range") if diag.get("type") == "coldair"
                         else ("sea_left", "sea_right", "range", "plain", "site")):
                 lab = (diag.get("labels") or {}).get(key) or {}
                 need(lab.get("id") and lab.get("en"), f"'diagram.labels.{key}' needs both 'id' and 'en'")
-            need(diag.get("type") in ("coldair", "synoptic", "frost") or isinstance((diag.get("labels") or {}).get("site", {}).get("km"), (int, float)),
+            need(diag.get("type") in ("coldair", "synoptic", "frost", "cens") or isinstance((diag.get("labels") or {}).get("site", {}).get("km"), (int, float)),
                  "'diagram.labels.site.km' must be a number (where the entry's place lies on the line)")
 
         photo = e.get("photo")
@@ -1479,6 +1486,179 @@ def synoptic_figure(e):
 </figure>"""
 
 
+def cens_figure(e):
+    """Cross-equatorial northerly surge: daily 925 hPa wind-and-pressure maps (NCEP/NCAR
+    Reanalysis 1) with the CENS-index box marked, and under them the daily index over a
+    winter with a marker that follows the map. One control drives both. Drawn here from
+    data committed in atlas/diagrams/; the page never loads data at run time."""
+    import math
+    tt = globals()["t"]
+    cfg = e["diagram"]
+    d = json.loads((DIAGRAMS / f"{cfg['data']}.json").read_text())
+    ix = json.loads((DIAGRAMS / f"{cfg['index']}.json").read_text())
+    LON0, LON1, LAT1, LAT0 = cfg["view"]["lon"][0], cfg["view"]["lon"][1], cfg["view"]["lat"][0], cfg["view"]["lat"][1]
+    W = 1000.0
+    H = W * (LAT0 - LAT1) / (LON1 - LON0)
+    px = lambda lon: (lon - LON0) / (LON1 - LON0) * W
+    py = lambda lat: (LAT0 - lat) / (LAT0 - LAT1) * H
+    lats, lons = d["lat"], d["lon"]
+    F = 3
+    ulat = [lats[0] + (lats[-1] - lats[0]) * r / ((len(lats) - 1) * F) for r in range((len(lats) - 1) * F + 1)]
+    ulon = [lons[0] + (lons[-1] - lons[0]) * c / ((len(lons) - 1) * F) for c in range((len(lons) - 1) * F + 1)]
+    gx = lambda c: px(ulon[0] + (ulon[-1] - ulon[0]) * c / (len(ulon) - 1))
+    gy = lambda r: py(ulat[0] + (ulat[-1] - ulat[0]) * r / (len(ulat) - 1))
+    inview = lambda la, lo: LAT1 <= la <= LAT0 and LON0 <= lo <= LON1
+    land = _coast_paths(px, py, LON0, LON1, LAT1, LAT0)
+    grat = ""
+    for lo in range(int(math.ceil(LON0 / 5) * 5), int(LON1) + 1, 5):
+        grat += f'<line class="s-grat" x1="{px(lo):.1f}" y1="0" x2="{px(lo):.1f}" y2="{H:.0f}"/><text class="s-gt" x="{px(lo) + 4:.1f}" y="{H - 8:.0f}">{lo}°E</text>'
+    for la in range(int(math.ceil(LAT1 / 5) * 5), int(LAT0) + 1, 5):
+        grat += (f'<line class="s-grat" x1="0" y1="{py(la):.1f}" x2="{W:.0f}" y2="{py(la):.1f}"/>'
+                 f'<text class="s-gt" x="6" y="{py(la) - 4:.1f}">{abs(la)}°{"N" if la > 0 else "S" if la < 0 else ""}</text>')
+    bx = cfg["box"]
+    box = (f'<rect class="s-bv" x="{px(bx["lon"][0]):.1f}" y="{py(bx["lat"][1]):.1f}" width="{px(bx["lon"][1]) - px(bx["lon"][0]):.1f}" '
+           f'height="{py(bx["lat"][0]) - py(bx["lat"][1]):.1f}"/>')
+
+    idx_by_date = dict(zip(ix["dates"], ix["northerly_ms"]))
+    notes = cfg.get("notes", {})
+    fmt = lambda v, lang: f"{v:.1f}".replace(".", ",") if lang == "id" else f"{v:.1f}"
+    key_i = cfg.get("key_day", 0)
+    frames, phase_html = "", ""
+    for t, day in enumerate(d["dates"]):
+        S = d["slp_hpa"][t]
+        U, V = d["u925_ms"][t], d["v925_ms"][t]
+        SS = _upsample(S, F)
+        iso = {"minor": "", "major": ""}
+        labs = ""
+        for lev in range(int(min(min(r) for r in S)) // 2 * 2, int(max(max(r) for r in S)) + 3, 2):
+            lines = [ln for ln in _contours(SS, lev) if len(ln) > 3]
+            if not lines:
+                continue
+            kind = "major" if lev % 4 == 0 else "minor"
+            for ln in lines:
+                iso[kind] += "M" + " L".join(f"{gx(c):.0f} {gy(r):.0f}" for c, r in ln)
+            if kind == "major":
+                ln = max(lines, key=len)
+                cand = [(c, r) for c, r in ln[len(ln) // 3: 2 * len(ln) // 3 + 1] if 50 < gx(c) < W - 50 and 40 < gy(r) < H - 40]
+                if cand:
+                    c, r = cand[len(cand) // 2]
+                    labs += f'<text class="s-il" x="{gx(c):.0f}" y="{gy(r) + 4:.0f}">{lev}</text>'
+        arrows = {0: "", 1: "", 2: ""}
+        for i, la in enumerate(lats):
+            for j, lo in enumerate(lons):
+                if not inview(la, lo):
+                    continue
+                u, v = U[i][j], V[i][j]
+                sp = math.hypot(u, v)
+                if sp < 0.5:
+                    continue
+                L = 4.0 * sp
+                ux, uy = u / sp, -v / sp
+                x0, y0 = px(lo) - ux * L / 2, py(la) - uy * L / 2
+                x1, y1 = x0 + ux * L, y0 + uy * L
+                hh = 6.0
+                a1 = (x1 - hh * (ux * .85 - uy * .5), y1 - hh * (uy * .85 + ux * .5))
+                a2 = (x1 - hh * (ux * .85 + uy * .5), y1 - hh * (uy * .85 - ux * .5))
+                cls = 0 if sp < 5 else 1 if sp < 10 else 2
+                arrows[cls] += f"M{x0:.0f} {y0:.0f} L{x1:.0f} {y1:.0f} M{a1[0]:.0f} {a1[1]:.0f} L{x1:.0f} {y1:.0f} L{a2[0]:.0f} {a2[1]:.0f}"
+        frames += (f'<g class="sframe{" on" if t == key_i else ""}" data-i="{t}"><path class="s-iso" d="{iso["minor"]}"/>'
+                   f'<path class="s-iso major" d="{iso["major"]}"/>{labs}'
+                   f'<path class="s-w s-w0" d="{arrows[0]}"/><path class="s-w s-w1" d="{arrows[1]}"/><path class="s-w s-w2" d="{arrows[2]}"/></g>')
+        dt = datetime.date.fromisoformat(day)
+        dtxt = (f'{dt.day} {MONTHS[dt.month - 1][0]} {dt.year}', f'{dt.day} {MONTHS[dt.month - 1][1]} {dt.year}')
+        v_ = idx_by_date[day]
+        thr = cfg.get("threshold", 5.0)
+        side_id, side_en = ("di atas", "above") if v_ >= thr else ("di bawah", "below")
+        note = notes.get(day)
+        extra_id = f' {note["id"]}' if note else ""
+        extra_en = f' {note["en"]}' if note else ""
+        phase_html += (f'<span data-ph="{t}"{" class=on" if t == key_i else ""}>'
+                       + bi(f"{dtxt[0]}: indeks CENS (perkiraan dari angin 925 hPa) {fmt(v_, 'id')} m/s, {side_id} garis {thr:g} m/s.{extra_id}",
+                            f"{dtxt[1]}: CENS index (estimated from 925 hPa wind) {fmt(v_, 'en')} m/s, {side_en} the {thr:g} m/s line.{extra_en}")
+                       + "</span>")
+    lab = lambda lon, lat, text, cls="": (f'<div class="dlabel {cls}" style="left:{px(lon) / W * 100:.2f}%;top:{py(lat) / H * 100:.2f}%">{bi(*text)}</div>')
+    labels = "".join([lab(cfg["labels"][k]["lon"], cfg["labels"][k]["lat"], (cfg["labels"][k]["id"], cfg["labels"][k]["en"]), cls)
+                      for k, cls in (("borneo", "b"), ("scs", "m-sea"), ("sumatra", "b"), ("java", "b"), ("china", "b"))]
+                     + [lab((bx["lon"][0] + bx["lon"][1]) / 2, bx["lat"][1] + 1.6, UI["cn_box"], "s-boxlab")])
+
+    # ---- the index time series (own viewBox; text in SVG, so the box keeps a minimum width) ----
+    CW, CH, ML, MR, MT, MB = 1000.0, 300.0, 62.0, 14.0, 22.0, 40.0
+    vals, dates = ix["northerly_ms"], ix["dates"]
+    n = len(vals)
+    thr = cfg.get("threshold", 5.0)
+    ymin = math.floor(min(vals + [0.0])) - 1
+    ymax = max(math.ceil(max(vals)), math.ceil(thr) + 1) + 1
+    cx = lambda i: ML + (CW - ML - MR) * i / (n - 1)
+    cy = lambda v: MT + (CH - MT - MB) * (ymax - v) / (ymax - ymin)
+    grid = ""
+    for v in range(int(math.ceil(ymin / 2) * 2), ymax + 1, 2):
+        grid += (f'<line class="c-grid{" zero" if v == 0 else ""}" x1="{ML:.0f}" x2="{CW - MR:.0f}" y1="{cy(v):.1f}" y2="{cy(v):.1f}"/>'
+                 f'<text class="c-t" x="{ML - 8:.0f}" y="{cy(v) + 7:.1f}" text-anchor="end">{v}</text>')
+    line = "M" + " L".join(f"{cx(i):.1f} {cy(v):.1f}" for i, v in enumerate(vals))
+    area = f"M{cx(0):.1f} {cy(0):.1f} L" + " L".join(f"{cx(i):.1f} {cy(v):.1f}" for i, v in enumerate(vals)) + f" L{cx(n - 1):.1f} {cy(0):.1f} Z"
+    ticks = ""
+    mon = [("Jan", "Jan"), ("Feb", "Feb"), ("Mar", "Mar"), ("Apr", "Apr"), ("Mei", "May"), ("Jun", "Jun"), ("Jul", "Jul"), ("Agu", "Aug"),
+           ("Sep", "Sep"), ("Okt", "Oct"), ("Nov", "Nov"), ("Des", "Dec")]
+    for i, dd in enumerate(dates):
+        dt = datetime.date.fromisoformat(dd)
+        if dt.day == 1:
+            ticks += (f'<line class="c-tick" x1="{cx(i):.1f}" x2="{cx(i):.1f}" y1="{CH - MB:.0f}" y2="{CH - MB + 7:.0f}"/>'
+                      f'<text class="c-t" lang="id" x="{cx(i) + 5:.1f}" y="{CH - 12:.0f}">{mon[dt.month - 1][0]} {dt.year}</text>'
+                      f'<text class="c-t" lang="en" x="{cx(i) + 5:.1f}" y="{CH - 12:.0f}">{mon[dt.month - 1][1]} {dt.year}</text>')
+    pos = {dd: i for i, dd in enumerate(dates)}
+    w0, w1 = pos[d["dates"][0]], pos[d["dates"][-1]]
+    window = f'<rect class="c-win" x="{cx(w0):.1f}" y="{MT:.0f}" width="{cx(w1) - cx(w0):.1f}" height="{CH - MT - MB:.0f}"/>'
+    thrline = (f'<line class="c-thr" x1="{ML:.0f}" x2="{CW - MR:.0f}" y1="{cy(thr):.1f}" y2="{cy(thr):.1f}"/>'
+               f'<text class="c-t thr" x="{CW - MR - 4:.0f}" y="{cy(thr) - 6:.1f}" text-anchor="end">{thr:g} m/s</text>')
+    marks = ""
+    for t, day in enumerate(d["dates"]):
+        i, v_ = pos[day], idx_by_date[day]
+        tx = min(max(cx(i), ML + 30), CW - MR - 30)
+        marks += (f'<g class="sframe cmark{" on" if t == key_i else ""}" data-i="{t}">'
+                  f'<line class="c-cur" x1="{cx(i):.1f}" x2="{cx(i):.1f}" y1="{MT:.0f}" y2="{CH - MB:.0f}"/>'
+                  f'<circle class="c-dot" cx="{cx(i):.1f}" cy="{cy(v_):.1f}" r="7"/>'
+                  f'<text class="c-val" lang="id" x="{tx:.1f}" y="{MT - 6:.0f}" text-anchor="middle">{fmt(v_, "id")}</text>'
+                  f'<text class="c-val" lang="en" x="{tx:.1f}" y="{MT - 6:.0f}" text-anchor="middle">{fmt(v_, "en")}</text></g>')
+    chart = (f'<svg class="csvg" viewBox="0 0 {CW:.0f} {CH:.0f}" role="img" aria-label="{esc(UI["cn_chart"][0])}" focusable="false">'
+             f'{grid}{window}<path class="c-area" d="{area}"/>{thrline}<path class="c-line" d="{line}"/>{ticks}{marks}</svg>')
+
+    y0, y1 = d["dates"][0], d["dates"][-1]
+    cap_id = (f"Atas: peta harian dari NCEP/NCAR Reanalysis 1 (NOAA PSL), rata-rata harian {y0} sampai {y1}, kisi 2,5°. Garis kontur: tekanan permukaan laut tiap 2 hPa "
+              f"(angka pada kelipatan 4 hPa). Panah: angin 925 hPa (sekitar 750 m), makin gelap makin kencang. Kotak putus-putus: area indeks CENS "
+              f"({bx['lon'][0]:g}–{bx['lon'][1]:g}°BT, {abs(bx['lat'][0]):g}°LS–ekuator). Bawah: indeks harian {ix['dates'][0]} sampai {ix['dates'][-1]}, "
+              f"yaitu rata-rata angin utara 925 hPa di {ix['box']['grid_points']} titik kisi dalam kotak itu (positif = dari utara). Ini perkiraan sendiri dari reanalisis, "
+              f"bukan indeks asli: Hattori dkk. (2011) mendefinisikannya dari angin permukaan laut QuikSCAT, sehingga angkanya tidak sama dan garis {thr:g} m/s "
+              f"hanyalah acuan ambang mereka. Pita biru muda menandai hari-hari pada peta; angka di atas penanda adalah nilai hari itu.")
+    cap_en = (f"Top: daily maps from the NCEP/NCAR Reanalysis 1 (NOAA PSL), daily means {y0} to {y1}, 2.5° grid. Contours: sea-level pressure every 2 hPa "
+              f"(numbers on multiples of 4 hPa). Arrows: 925 hPa wind (about 750 m up), darker means stronger. Dashed box: the CENS index area "
+              f"({bx['lon'][0]:g}–{bx['lon'][1]:g}°E, {abs(bx['lat'][0]):g}°S to the equator). Bottom: the daily index {ix['dates'][0]} to {ix['dates'][-1]}, "
+              f"the average northerly 925 hPa wind over the {ix['box']['grid_points']} grid points in that box (positive = from the north). This is our own estimate from "
+              f"reanalysis, not the original index: Hattori et al. (2011) defined it from QuikSCAT sea-surface wind, so the values differ and the {thr:g} m/s line "
+              f"is only their threshold for reference. The light-blue band marks the days on the maps; the number above the marker is that day's value.")
+    key = (f'<span><i class="sw" style="background:#9fb0c4"></i>{tt("s_k0")}</span><span><i class="sw" style="background:#4a7fc1"></i>{tt("s_k1")}</span>'
+           f'<span><i class="sw" style="background:#12306b"></i>{tt("s_k2")}</span><span><i class="sw" style="background:#6b7b8e;height:2px"></i>{tt("s_kiso")}</span>')
+    return f"""<figure class="diagram synoptic cens" data-kind="synoptic" data-n="{len(d["dates"])}" data-key="{key_i}">
+  <p class="dhint">{tt("s_hint")}</p>
+  <div class="dscroll" tabindex="0" role="region" aria-label="{esc(UI['s_region'][0])}" data-focus="{(((bx["lon"][0] + bx["lon"][1]) / 2) - LON0) / (LON1 - LON0) * 100:.0f}">
+  <div class="dstage dmap dsyn" style="aspect-ratio:1000/{H:.0f}">
+    <svg class="dsvg" viewBox="0 0 {W:.0f} {H:.0f}" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <rect class="d-water" x="0" y="0" width="{W:.0f}" height="{H:.0f}"/>{land}{grat}{box}{frames}</svg>
+    {labels}
+  </div>
+  </div>
+  <p class="cn-title">{tt("cn_chart")}</p>
+  <p class="dhint">{tt("cn_hint")}</p>
+  <div class="dscroll cn-chart" tabindex="0" role="region" aria-label="{esc(UI['cn_chart'][0])}" data-focus="{(cx(w0) + cx(w1)) / 2 / CW * 100:.0f}"><div class="cn-stage">{chart}</div></div>
+  <div class="dctl" hidden>
+    <button type="button" class="dplay" aria-pressed="false"><span class="lp">{tt("d_play")}</span><span class="lq">{tt("d_pause")}</span></button>
+    <input type="range" class="dscrub" min="0" max="{len(d["dates"]) - 1}" value="{key_i}" step="1" aria-label="{esc(UI['s_slider'][1])}">
+  </div>
+  <p class="dphase dsynphase">{phase_html}</p>
+  <div class="dkey">{key}</div>
+  <figcaption><p>{bi(cap_id, cap_en)}</p></figcaption>
+</figure>"""
+
+
 def entry_page(e):
     draft = e["status"] == "draft"
     sci, kl, place, cav = e["scientific"], e.get("local_knowledge"), e["place"], e.get("caveat")
@@ -1534,7 +1714,7 @@ def entry_page(e):
       {photo_block(e)}
       <h2>{t("scientific")}</h2>
       <p>{bi(sci["id"], sci["en"])}</p>
-      {({"coldair": coldair_figure, "synoptic": synoptic_figure, "frost": frost_figure}.get(e["diagram"]["type"], foehn_figure)(e)) if e.get("diagram") else ""}
+      {({"coldair": coldair_figure, "synoptic": synoptic_figure, "frost": frost_figure, "cens": cens_figure}.get(e["diagram"]["type"], foehn_figure)(e)) if e.get("diagram") else ""}
       {caveat}
       <h2>{t("local_knowledge")}</h2>
       {local}
