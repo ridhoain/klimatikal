@@ -27,15 +27,6 @@
   "diagram": {
     "type": "fogbasin",
     "grid": "bromo-grid",
-    "camera": {
-      "lat": -7.88,
-      "lon": 112.953,
-      "alt_m": 5600,
-      "heading_deg": 180,
-      "pitch_deg": 30,
-      "fov_deg": 80
-    },
-    "vertical_exaggeration": 1.6,
     "basin": {
       "centre": [
         -7.962,
@@ -50,7 +41,7 @@
         112.944
       ]
     },
-    "arrows": 28,
+    "arrows": 44,
     "arrow_start_m": 2420,
     "marks": [
       {
@@ -59,8 +50,7 @@
         "sub_id": "2.329 m",
         "sub_en": "2,329 m",
         "lat": -7.9417,
-        "lon": 112.95,
-        "lift": 220
+        "lon": 112.95
       },
       {
         "id": "Gunung Batok",
@@ -68,8 +58,7 @@
         "sub_id": "2.470 m",
         "sub_en": "2,470 m",
         "lat": -7.981,
-        "lon": 112.938,
-        "lift": 220
+        "lon": 112.938
       },
       {
         "id": "Penanjakan",
@@ -77,8 +66,7 @@
         "sub_id": "2.770 m",
         "sub_en": "2,770 m",
         "lat": -7.903,
-        "lon": 112.953,
-        "lift": 100
+        "lon": 112.953
       },
       {
         "id": "Lautan Pasir",
@@ -86,19 +74,64 @@
         "sub_id": "± 2.100 m",
         "sub_en": "about 2,100 m",
         "lat": -7.99,
-        "lon": 112.972,
-        "lift": 0
+        "lon": 112.972
       }
     ],
-    "frame": {
-      "x": [
-        -0.95,
-        0.95
-      ],
-      "bottom": 0.8,
-      "sky_frac": 0.55
-    },
-    "start_key": 3
+    "start_key": 2,
+    "dew_point": 0.55,
+    "callouts": [
+      {
+        "id": "Langit cerah: tanah melepas panas",
+        "en": "Clear sky: the ground loses heat",
+        "lat": -7.915,
+        "lon": 113.0,
+        "show": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "id": "Udara dingin yang padat mengalir turun",
+        "en": "Cold, dense air drains downhill",
+        "lat": -8.018,
+        "lon": 112.915,
+        "show": [
+          0,
+          1
+        ]
+      },
+      {
+        "id": "Udara dingin menggenang di dasar",
+        "en": "Cold air pools on the floor",
+        "lat": -7.952,
+        "lon": 113.008,
+        "show": [
+          1,
+          2
+        ]
+      },
+      {
+        "id": "Didinginkan sampai titik embun: kabut",
+        "en": "Cooled to the dew point: fog",
+        "lat": -7.952,
+        "lon": 113.008,
+        "show": [
+          3
+        ]
+      },
+      {
+        "id": "Matahari menghangatkan: kabut bercampur dan menguap",
+        "en": "Sun warms: the fog mixes and evaporates",
+        "lat": -7.952,
+        "lon": 113.008,
+        "show": [
+          4,
+          5
+        ]
+      }
+    ]
   },
   "local_knowledge": null,
   "photo": null,
@@ -136,9 +169,8 @@
     "TERRAIN CHECK against published heights (Wikipedia/GVP and the national-park article, via a fetch agent): SRTM at my 0.003 degree grid gives Bromo cone 2,304 m (published 2,329), Batok 2,473 (2,470), highest point near Penanjakan 2,746 (2,770), floor 2,084-2,112 (Sand Sea about 2,100). Labels show the published numbers; positions are the terrain points. Kursi, Widodaren etc. are not labelled.",
     "documentation: 'poor' is my reading of your 'somewhat modestly documented' (the atlas only has well/poor). Pin = Bromo's coordinates (7.94167S 112.95E from Wikipedia citing GVP). Photo and local knowledge: none.",
     "SPILL FINDING (not on the page): from the SRTM grid the flat Sand Sea floor holds only about 40-50 m of fog before the terrain lets it leak out through a gap in the rim near the north-east edge of the grid (about 2,150 m). The deeper fog keyframes (2,185-2,192 m, my choice) are drawn deeper than that and clipped to an ellipse around the caldera, so they ignore that spill. All fog levels and the share of patches are illustrative.",
-    "REWORK (stylised, smooth, time of day): the 330 m SRTM grid is bicubic-interpolated x3 and drawn as layered smooth ridges (one per interpolated row, with distance haze); the plan map has soft relief shading under 50 m contours; the hazy ridges behind the far edge of the data are pure decoration (said in the caption). One scene replaces the four static slices: a time slider and Play button run 17:30 to 10:30 (six keyframes: late afternoon, night, before dawn, sunrise, morning, late morning) and interpolate the sky, sun, moon, stars, light colour, cold-air arrows and fog layer. The clock times, sun and moon positions and fog levels are illustrative, not measured. Without JavaScript the scene shows the sunrise keyframe and the timeline list under it still tells the whole story.",
-    "CAMERA: a high oblique view (about 5.6 km altitude, heading 180 so that rows of latitude are rows of depth) chosen so the whole caldera fits; a real helicopter would not fly that high. The caption says so.",
-    "PERFORMANCE: the page is about 1.1 MB (smooth terrain rows with gradients). I could only test in a throttled preview pane (an empty requestAnimationFrame loop ran at about 4.7 fps there), so smoothness of Play on real phones is untested; the animation is time-based, so its speed does not depend on frame rate.",
-    "Not shown: Mount Semeru (outside the grid)."
+    "REDESIGN (physics, not realism; satellite view): on your feedback the helicopter scene is gone. The figure is now a top-down satellite-style relief map (the real SRTM grid, bicubic-smoothed, faint 100 m contours) with the PHYSICS drawn on it as pictograms: red arrows = heat leaving to a clear sky (longwave), blue animated arrows = cold dense air draining downhill (computed from the terrain slope), soft white areas = fog (illustrative extent and depth), yellow rays = sunlight warming the ground; short callouts name each process. Under the map a qualitative graph (no numbers) shows air temperature on the caldera floor and on the rim against a flat dew-point line: the floor falls below the dew point (shaded 'fog zone') while the rim stays above it, then warms back above it after sunrise. One time slider / Play (six keyframes, 17:30 to 10:30, illustrative clock times) drives the map, the graph marker, the sky badge and the timeline list. Without JavaScript the map shows the before-dawn keyframe.",
+    "PHYSICS SOURCING: fog forms when air is cooled to its dew point and radiation fog needs clear sky, light wind, humid air (NOAA glossary, NWS training page); clear-sky longwave loss and weaker cooling under cloud (NWS, BMKG 2021); cooling continuing until sunrise (FAO ch.1: falls slowly all night); denser cold air draining downslope and pooling in basins (Ashari et al. 2024, a frost study at Dieng), hence a warmer rim (my schematic reading of that, not a Bromo measurement); morning warming making the low layer unstable, mixing and evaporating the fog (NOAA/NWS). The graph curves, the flat dew point and the keyframe times are my illustration, not data; the caption says so.",
+    "Not shown: Mount Semeru (outside the grid). Old versions of this entry had a helicopter-view 3D scene; it was dropped."
   ]
 }

@@ -203,32 +203,37 @@
     fig.addEventListener("dshow", function () { p = 0; if (reduce) { p = 1; render(); } else { render(); play(true); } });
     if (reduce) { p = 1; render(); } else { render(); if (!fig.hidden) play(true); }
   });
-  /* One day over the caldera: the slider position t runs 0..K-1 through the keyframes; sky, sun,
-     moon, stars, light tint, arrows and the fog layers are interpolated between the two nearest. */
+  /* One day in the caldera: the slider position t runs 0..K-1 through the keyframes. Anything with
+     data-show="k,k" fades in near those keyframes (fog layers, arrows, icons, callouts); the sky badge,
+     the light tint, the clock and the graph marker are interpolated between the two nearest keyframes. */
   Array.prototype.forEach.call(document.querySelectorAll('figure.fogday'), function (fig) {
     var keys; try { keys = JSON.parse(fig.getAttribute("data-keys")); } catch (e) { return; }
     var K = keys.length, ctl = fig.querySelector(".dctl"), btn = ctl.querySelector(".dplay"), scrub = ctl.querySelector(".dscrub");
-    var svg = fig.querySelector(".fd-svg"), W = svg.viewBox.baseVal.width, H = svg.viewBox.baseVal.height;
-    var top = fig.querySelector(".fd-stop-top"), bot = fig.querySelector(".fd-stop-bot"), tintEl = fig.querySelector(".fd-tint");
-    var sun = fig.querySelector(".fd-sun"), glow = fig.querySelector(".fd-glow"), moon = fig.querySelector(".fd-moon");
-    var stars = fig.querySelector(".fd-stars"), arrows = fig.querySelector(".fd-arrows"), clocks = fig.querySelectorAll(".fd-time");
-    var fogs = Array.prototype.slice.call(fig.querySelectorAll(".fd-fog")), items = fig.querySelectorAll(".fd-list li");
+    var tintEl = fig.querySelector(".fd-tintrect"), badge = fig.querySelector(".fd-badge"), clocks = fig.querySelectorAll(".fd-time");
+    var bsun = fig.querySelector(".fd-bsun"), bmoon = fig.querySelector(".fd-bmoon"), bstars = fig.querySelector(".fd-bstars");
+    var gline = fig.querySelector(".fd-gmark .c-cur"), gf = fig.querySelector(".g-dotf"), gr = fig.querySelector(".g-dotr");
+    var items = fig.querySelectorAll(".fd-list li");
+    var shows = Array.prototype.map.call(fig.querySelectorAll("[data-show]"), function (el) {
+      return { el: el, ks: el.getAttribute("data-show").split(",").map(Number) };
+    });
     var t = (+fig.getAttribute("data-start") || 0), raf = null, last = 0;
     function mix(a, b, f) { return a + (b - a) * f; }
     function mixv(a, b, f) { return a.map(function (v, i) { return mix(v, b[i], f); }); }
     function rgb(c) { return "rgb(" + Math.round(c[0]) + "," + Math.round(c[1]) + "," + Math.round(c[2]) + ")"; }
     function render() {
       var i = Math.min(K - 2, Math.floor(t)), f = t - i, a = keys[i], b = keys[i + 1];
-      top.setAttribute("stop-color", rgb(mixv(a.top, b.top, f)));
-      bot.setAttribute("stop-color", rgb(mixv(a.bot, b.bot, f)));
+      shows.forEach(function (s) {
+        var o = 0; s.ks.forEach(function (k) { o = Math.max(o, 1 - Math.abs(t - k)); });
+        s.el.style.opacity = Math.max(0, o);
+      });
       var m = mixv(a.tint, b.tint, f);
-      tintEl.setAttribute("values", m[0] + " 0 0 0 0  0 " + m[1] + " 0 0 0  0 0 " + m[2] + " 0 0  0 0 0 1 0");
-      var s = mixv(a.sun, b.sun, f), mo = mixv(a.moon, b.moon, f);
-      sun.setAttribute("cx", s[0] * W); sun.setAttribute("cy", s[1] * H); sun.style.opacity = s[2];
-      glow.setAttribute("cx", s[0] * W); glow.setAttribute("cy", s[1] * H); glow.style.opacity = mix(a.glow, b.glow, f);
-      moon.setAttribute("cx", mo[0] * W); moon.setAttribute("cy", mo[1] * H); moon.style.opacity = mo[2];
-      stars.style.opacity = mix(a.stars, b.stars, f); arrows.style.opacity = mix(a.arrows, b.arrows, f);
-      fogs.forEach(function (g) { g.style.opacity = Math.max(0, 1 - Math.abs(t - (+g.getAttribute("data-k")))); });
+      tintEl.style.fill = "rgb(" + Math.round(m[0] * 255) + "," + Math.round(m[1] * 255) + "," + Math.round(m[2] * 255) + ")";
+      badge.style.background = "linear-gradient(" + rgb(mixv(a.top, b.top, f)) + "," + rgb(mixv(a.bot, b.bot, f)) + ")";
+      bsun.style.opacity = mix(a.sun, b.sun, f); bmoon.style.opacity = mix(a.moon, b.moon, f); bstars.style.opacity = mix(a.stars, b.stars, f);
+      var gx = mix(a.gx, b.gx, f);
+      gline.setAttribute("x1", gx); gline.setAttribute("x2", gx);
+      gf.setAttribute("cx", gx); gf.setAttribute("cy", mix(a.gfy, b.gfy, f));
+      gr.setAttribute("cx", gx); gr.setAttribute("cy", mix(a.gry, b.gry, f));
       var mins = Math.round(mix(a.min, b.min, f)) % 1440;
       var txt = (mins < 600 ? "0" : "") + Math.floor(mins / 60) + ":" + (mins % 60 < 10 ? "0" : "") + (mins % 60);
       Array.prototype.forEach.call(clocks, function (c) { c.textContent = txt; });
@@ -240,7 +245,7 @@
     function tick(ts) {
       if (fig.closest("[hidden]")) { stop(); return; }
       var dt = last ? Math.min(0.35, (ts - last) / 1000) : 0; last = ts;
-      t += dt * (K - 1) / 18;               /* the whole day in about 18 s */
+      t += dt * (K - 1) / 20;               /* the whole day in about 20 s */
       if (t >= K - 1) { t = K - 1; render(); stop(); return; }
       render(); raf = requestAnimationFrame(tick);
     }

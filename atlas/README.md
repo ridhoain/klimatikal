@@ -139,23 +139,23 @@ and `notes` (date -> `{id, en}` text added to that day's caption; each must name
 source). The index is our own reanalysis estimate, not the published QuikSCAT index, and
 the caption and the entry's `caveat` must say so.
 
-### Basin-fog relief illustration (`"type": "fogbasin"`)
+### Basin-fog physics view (`"type": "fogbasin"`)
 
-Kabut Bromo: a real SRTM elevation grid (`atlas/diagrams/fetch_grid.py`, public domain via
-OpenTopoData, fetched once and committed), smoothed by bicubic interpolation and drawn in a
-stylised way: a plan-view map (soft relief shading under 50 m contours, with the camera
-position and field of view) and ONE high-oblique "helicopter" scene made of layered smooth
-ridges with distance haze and a decorative hazy backdrop. A time slider (and Play) runs
-through six keyframes (`FOG_DAY` in `build_atlas.py`): sky, sun, moon, stars, light tint,
-cold-air arrows and the fog layer are interpolated (`atlas.js`, `figure.fogday`). The fog is
-drawn as its own ridge layer per row, far to near, so nearer ridges and peaks cut across it.
-The camera heading must be 180 (rows of latitude are then rows of depth). Config: `grid`,
-`camera`, `frame` (`x` range and `bottom` in camera field-of-view units, `sky_frac`), `basin`
-(ellipse centre and radius in degrees), optional `fog` (per-keyframe `level` / `patch`
-overrides), `start_key`, `arrows`, `marks` (named points with `lift`). Terrain colours are an
-elevation tint, never land cover. Fog level, extent, clock times and arrows are illustration
-only, and the entry's caveat must say what its sources do and do not support. The build takes
-about 15 s and the page is about 1.1 MB. Without JavaScript the scene shows the start keyframe
+Kabut Bromo explains WHY basin fog forms; it does not simulate it. A real SRTM elevation grid
+(`atlas/diagrams/fetch_grid.py`, public domain via OpenTopoData, fetched once and committed) is
+smoothed by bicubic interpolation and drawn as a top-down, satellite-style relief map with faint
+contours. The physical processes are drawn on it as pictograms (red arrows: heat leaving to a
+clear sky; blue arrows: cold air draining downhill; soft white areas: fog; yellow rays: sunlight
+warming the ground) with short callouts, and under it a temperature graph (floor air, rim air,
+dew point; qualitative, no numbers) whose marker follows the same slider. A time slider (and Play)
+runs six keyframes (`FOG_DAY` in `build_atlas.py`; `figure.fogday` in `atlas.js`): anything with
+`data-show="k,k"` fades in near those keyframes; the sky badge, light tint, clock and graph marker
+are interpolated. Config: `grid`, `basin` (ellipse centre and radius in degrees), `marks` (named
+places with cited heights), `callouts` (text, position, keyframes where shown), optional `fog`
+(per-keyframe `level` / `patch` / `floorT` / `rimT` overrides), `dew_point`, `start_key`, `arrows`.
+Terrain colours are an elevation tint, never land cover. Fog extent and depth, the graph curves
+and the clock times are illustration only, and the entry's caveat must say what its sources do and
+do not support. The build takes about 15 s. Without JavaScript the map shows the start keyframe
 and the timeline list under it still tells the story.
 
 ## Publishing
