@@ -1,11 +1,6 @@
 # Newest BMKG radar frame per station -> R2.
 #
-# MANUAL ONLY, ON PURPOSE. BMKG has not confirmed in writing that third parties
-# may republish this feed (see pipeline/radar_demo_gen.py, "open items"), so
-# there is no schedule. Once permission is on file, enable the schedule below.
-# The source returns only the newest frame per call, so history exists only
-# while this runs often: 5-minute cadence would be "*/5 * * * *" but GitHub
-# delays and drops scheduled runs, so expect gaps; a host with cron is steadier.
+# MANUAL ONLY, ON PURPOSE. GitHub delays and drops scheduled runs, so expect gaps; a host with cron is steadier.
 name: build radar frames
 
 on:
