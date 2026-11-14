@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Forecast services · Klimatikal</title>
-<meta name="description" content="A guide to 33 weather and climate forecasting approaches, positioned by planning horizon, spatial extent and variable impact proximity, with the supporting evidence for each.">
+<meta name="description" content="A guide to 34 weather and climate forecasting approaches, positioned by planning horizon, spatial extent and variable impact proximity, with the supporting evidence for each.">
 <link rel="canonical" href="https://klimatikal.com/product/forecast-services/">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
@@ -13,7 +13,7 @@
 <meta name="theme-color" content="#0D0630">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Forecast services · Klimatikal">
-<meta property="og:description" content="Which forecast fits your decision? 33 weather and climate approaches, with the evidence behind each.">
+<meta property="og:description" content="Which forecast fits your decision? 34 weather and climate approaches, with the evidence behind each.">
 <meta property="og:url" content="https://klimatikal.com/product/forecast-services/">
 <meta property="og:image" content="https://klimatikal.com/brand/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -108,7 +108,7 @@ aside h2{font-size:16px;margin:0 0 4px;color:var(--kl-lime);font-weight:600}
 <div class="intro">
   <p class="eyebrow">Product · Forecast services</p>
   <h1>Which forecast fits your decision?</h1>
-  <p>33 weather and climate forecasting approaches, positioned by planning horizon, spatial extent and variable impact proximity.</p>
+  <p>34 weather and climate forecasting approaches, positioned by planning horizon, spatial extent and variable impact proximity.</p>
   <details class="how">
     <summary>How to read this guide</summary>
     <ul>
@@ -130,7 +130,7 @@ aside h2{font-size:16px;margin:0 0 4px;color:var(--kl-lime);font-weight:600}
     <div class="grp"><button class="chip" id="zin">+</button><button class="chip" id="zout">−</button><button class="chip" id="reset">Reset</button></div>
   </div>
   <div class="canvaswrap" id="wrap">
-    <canvas id="cv" role="img" aria-label="Three-dimensional chart placing 33 forecasting approaches by planning horizon, spatial extent and impact proximity. The full list of approaches is in the side panel."></canvas>
+    <canvas id="cv" role="img" aria-label="Three-dimensional chart placing 34 forecasting approaches by planning horizon, spatial extent and impact proximity. The full list of approaches is in the side panel."></canvas>
     <div class="tip" id="tip"></div>
     <div class="hint">Drag to rotate · scroll or pinch to zoom · shift+drag to pan · click a sphere</div>
     <div class="legend" id="legend"></div>
@@ -166,8 +166,8 @@ I(4,`Weather regimes`,'d',120,730,`5 d-1 mo`,1000,10000,`1,000-10,000 km`,1,3.5,
 I(5,`Impact-based forecasting`,'p',24,168,`1-7 d`,1,30,`1-30 km`,5,8,`5-8, physical to socioeconomic`,'e','C',`Patchy across the tropics.`,
  `No skill figure found. Sources describe the gap: how well forecast impacts match observed damage is an open question, and verification is limited by fragmented, biased impact data.`,
  [[`UT Twente topic note`,`https://mscresearch.itc.utwente.nl/node/707`],[`Wyatt and Robbins, EMS 2023`,`https://meetingorganizer.copernicus.org/EMS2023/EMS2023-28.html`]]),
-I(6,`MJO, equatorial waves, moisture mode, BSISO`,'d',168,1008,`1-6 wk`,1000,20000,`1,000-20,000 km`,1,3.5,`1-3.5, mathematical to physical`,'e','I',`Skill depends on season and phase.`,
- `In S2S models the OLR-based MJO index stays skilful (correlation above 0.6) for about 15-36 days in boreal winter, 5-10 days less in summer. The RMM index gives about 3 weeks (ACC above 0.5) against potential predictability of 6-7 weeks. The Maritime Continent barrier costs about 10 days. ECMWF reached about 27 days (older study).`,
+I(6,`MJO, moisture mode, BSISO`,'d',168,1008,`1-6 wk`,1000,20000,`1,000-20,000 km`,1,3.5,`1-3.5, mathematical to physical`,'e','I',`Skill depends on season and phase. Grouped as one tropical intraseasonal family; equatorial waves are item 34.`,
+ `In S2S models the OLR-based MJO index stays skilful (correlation above 0.6) for about 15-36 days in boreal winter, 5-10 days less in summer. The RMM index gives about 3 weeks (ACC above 0.5) against potential predictability of 6-7 weeks. The Maritime Continent barrier costs about 10 days. ECMWF reached about 27 days (older study). No skill figure found for BSISO or for moisture-mode forecasts as such.`,
  [[`Kim et al. 2018 (ROMI)`,`https://link.springer.com/doi/10.1007/s00382-018-4492-9`],[`Roy et al. 2026`,`https://wcd.copernicus.org/articles/7/1385/2026/`]]),
 I(7,`Borneo vortex, cold surges`,'d',24,336,`1-14 d`,100,1000,`100-1,000 km`,3,4.5,`3-4.5, physical`,'e','C',`Used by regional services. Southeast Asia context only.`,
  `No forecast-skill figure found. Borneo vortices need model resolution of at least about 65 km to be simulated; CMIP6 models at 100-300 km cannot adequately resolve them. Equatorial waves, which interact with these systems, are relatively well forecast in Southeast Asia (see item 4).`,
@@ -250,6 +250,10 @@ I(32,`Tropical cyclone forecasts (physics)`,'p',6,168,`6 h-7 d`,25,1000,`25-1,00
 I(33,`AI tropical cyclone models`,'p',12,360,`12 h-15 d`,25,1000,`25-1,000 km`,3.5,6,`3.5-6, physical`,'x','G',`Evidence mostly for NHC basins.`,
  `DeepMind WeatherNext Cyclones: about 24 h average lead-time gain on 2023-2025 storms, run alongside NHC in 2025. Limits: a model trained without Category 3-5 storms could not forecast unseen Category 5 storms; AI models tend to underpredict intensity of the strongest storms.`,
  [[`Gray swan study`,`https://climate.uchicago.edu/working-papers/can-ai-weather-models-predict-out-of-distribution-gray-swan-tropical-cyclones-2/`],[`WeatherNext Cyclones coverage`,`https://www.unite.ai/?p=449527`]])
+,
+I(34,`Equatorial waves`,'d',48,336,`2 d-2 wk`,2000,10000,`2,000-10,000 km`,1,3.5,`1-3.5, mathematical to physical`,'x','T',`Wave-phase diagnostics are monitored; forecast use is still maturing.`,
+ `Skill falls quickly with lead time and differs by wave type. In NOAA's UFS tests Kelvin and mixed Rossby-gravity wave skill drops below 0.5 within about 2 days, while equatorial Rossby wave skill lasts about 4-6 days (presentations, not peer reviewed). A 2025 study over Australia put wind-based predictability at about 11 days for equatorial Rossby waves against 18 days for the MJO (conference abstract). Southeast Asia heavy rain is 2-4 times more likely given wave phase, as in item 4. No Indonesia-specific verification found.`,
+ [[`UFS wave skill, UIFCW 2023`,`https://epic.noaa.gov/wp-content/uploads/2023/08/UIFCW-2023-Tue-5.-Gehne_UIFCW2023_CCEWs_in_UFS.pdf`],[`EGU 2025 abstract`,`https://meetingorganizer.copernicus.org/EGU25/EGU25-5407.html`]])
 ];
 var COV={I:{n:`Indonesia / SE Asia evidence`,c:'#E6F9AF'},T:{n:`Other tropics`,c:'#8BBEB2'},G:{n:`Global or mid-latitude only`,c:'#8A9BC4'},C:{n:`Context only, no skill figure`,c:'#E58BB0'}};
 var MAT={e:{n:`Established`,c:'#8BBEB2'},x:{n:`Experimental`,c:'#F2A65A'}};
