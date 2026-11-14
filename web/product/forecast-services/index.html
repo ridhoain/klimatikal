@@ -50,6 +50,9 @@ noscript p{margin:0;padding:12px 16px;color:var(--text)}
 .stage{display:flex;flex-direction:column;min-width:0;min-height:0}
 .bar{display:flex;flex-wrap:wrap;gap:6px 14px;padding:8px 12px;border-bottom:1px solid #d5dde5;align-items:center;background:#fff}
 .grp{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.bar select{font:inherit;font-size:12.5px;color:var(--kl-amethyst);background:#f3f6f9;border:1px solid #c5d0da;border-radius:14px;padding:3px 8px;cursor:pointer}
+.bar select:hover{border-color:#2E9C8A}
+.bar select:focus-visible{outline:2px solid var(--kl-amethyst);outline-offset:2px}
 .grp>span{color:#52667a;font-size:12px;margin-right:2px}
 button.chip{border:1px solid #c5d0da;background:#f3f6f9;color:var(--kl-amethyst);border-radius:14px;padding:3px 10px;font:inherit;font-size:12.5px;cursor:pointer}
 button.chip:hover{border-color:#2E9C8A}
@@ -132,11 +135,11 @@ aside h2{font-size:16px;margin:0 0 4px;color:var(--kl-lime);font-weight:600}
 <div class="app">
 <div class="stage">
   <div class="bar">
-    <div class="grp"><span>View</span><button class="chip on" data-view="2d">2D</button><button class="chip" data-view="3d">3D</button></div>
-    <div class="grp" id="ivgrp"><span>Impact variable</span><button class="chip on" data-iv="all">None</button></div>
-    <div class="grp"><span>Colour</span><button class="chip on" data-color="mat">Maturity</button><button class="chip" data-color="cov">Skill evidence</button></div>
-    <div class="grp"><span>Maturity</span><button class="chip on" data-fm="all">All</button><button class="chip" data-fm="e">Established</button><button class="chip" data-fm="x">Experimental</button></div>
-    <div class="grp"><span>Evidence</span><button class="chip on" data-fc="all">All</button><button class="chip" data-fc="I">Indonesia / SE Asia</button><button class="chip" data-fc="T">Other tropics</button><button class="chip" data-fc="M">Mid-latitude</button><button class="chip" data-fc="G">Global</button><button class="chip" data-fc="N">No skill figure</button><button class="chip" data-fc="P">Not verifiable</button></div>
+    <label class="grp"><span>View</span><select id="selView"><option value="2d">2D</option><option value="3d">3D</option><option value="" hidden>Custom</option></select></label>
+    <label class="grp"><span>Impact variable</span><select id="selIv"><option value="all">None</option></select></label>
+    <label class="grp"><span>Colour by</span><select id="selColor"><option value="mat">Maturity</option><option value="cov">Skill evidence</option></select></label>
+    <label class="grp"><span>Maturity</span><select id="selFm"><option value="all">All</option><option value="e">Established</option><option value="x">Experimental</option></select></label>
+    <label class="grp"><span>Evidence</span><select id="selFc"><option value="all">All</option><option value="I">Indonesia / SE Asia</option><option value="T">Other tropics</option><option value="M">Mid-latitude</option><option value="G">Global</option><option value="N">No skill figure</option><option value="P">Not verifiable</option></select></label>
     <div class="grp"><button class="chip" id="zin">+</button><button class="chip" id="zout">−</button><button class="chip" id="reset">Reset</button></div>
   </div>
   <div class="canvaswrap" id="wrap">
@@ -683,7 +686,7 @@ function loop(){
 }
 function resetView(){ goView(S.iv==='all'?'2d':'3d'); updateHint(); }
 function updateHint(){ document.getElementById('hint').textContent=(S.view==='2d'?'Select an impact variable to add the third axis · ':'Drag to rotate · ')+'scroll or pinch to zoom · shift+drag to pan · click a sphere'; }
-function setViewChip(n){document.querySelectorAll('[data-view]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-view')===n);});}
+function setViewChip(n){document.getElementById('selView').value=n||'';}
 
 /* ---------- UI ---------- */
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -732,29 +735,15 @@ function renderLegend(){
 function setLegend(open){var l=document.getElementById('legend'),b=document.getElementById('lgtoggle');l.classList.toggle('closed',!open);b.setAttribute('aria-expanded',open?'true':'false');b.textContent=open?'Legend ▾':'Legend ▸';}
 document.getElementById('lgtoggle').addEventListener('click',function(){setLegend(document.getElementById('legend').classList.contains('closed'));});
 setLegend(window.innerWidth>=1100);
-document.querySelectorAll('[data-view]').forEach(function(b){b.addEventListener('click',function(){goView(b.getAttribute('data-view'));});});
-document.querySelectorAll('[data-color]').forEach(function(b){b.addEventListener('click',function(){
-  S.color=b.getAttribute('data-color');
-  document.querySelectorAll('[data-color]').forEach(function(x){x.classList.toggle('on',x===b);});
-  renderLegend();renderList();request();
-});});
-function filt(attr,key){
-  document.querySelectorAll('['+attr+']').forEach(function(b){b.addEventListener('click',function(){
-    S[key]=b.getAttribute(attr);
-    document.querySelectorAll('['+attr+']').forEach(function(x){x.classList.toggle('on',x===b);});
-    if(S.sel!==null && !visible(byId(S.sel))) S.sel=null;
-    renderList();renderDetail();request();
-  });});
-}
-filt('data-fm','fm'); filt('data-fc','fc');
+document.getElementById('selView').addEventListener('change',function(){if(this.value)goView(this.value);});
+document.getElementById('selColor').addEventListener('change',function(){S.color=this.value;renderLegend();renderList();request();});
+function filt(id,key){document.getElementById(id).addEventListener('change',function(){S[key]=this.value;if(S.sel!==null&&!visible(byId(S.sel)))S.sel=null;renderList();renderDetail();request();});}
+filt('selFm','fm'); filt('selFc','fc');
 document.getElementById('zin').addEventListener('click',function(){S.zoom=clamp(S.zoom*1.25,0.4,6);request();});
 document.getElementById('zout').addEventListener('click',function(){S.zoom=clamp(S.zoom/1.25,0.4,6);request();});
 document.getElementById('reset').addEventListener('click',resetView);
-(function(){var g=document.getElementById('ivgrp');Object.keys(IV).forEach(function(k){var b=document.createElement('button');b.className='chip';b.setAttribute('data-iv',k);b.textContent=IV[k];g.appendChild(b);});
-  g.addEventListener('click',function(e){var b=e.target.closest('button[data-iv]');if(!b)return;var k=b.getAttribute('data-iv');if(k===S.iv&&k!=='all')k='all';S.iv=k;
-    g.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x.getAttribute('data-iv')===k);});
-    if(S.sel!==null&&!visible(byId(S.sel)))S.sel=null;
-    renderList();renderDetail();goView(k==='all'?'2d':'3d');});})();
+(function(){var g=document.getElementById('selIv');Object.keys(IV).forEach(function(k){var o=document.createElement('option');o.value=k;o.textContent=IV[k];g.appendChild(o);});
+  g.addEventListener('change',function(){var k=this.value;S.iv=k;if(S.sel!==null&&!visible(byId(S.sel)))S.sel=null;renderList();renderDetail();goView(k==='all'?'2d':'3d');});})();
 window.addEventListener('resize',size);
 if(window.ResizeObserver){new ResizeObserver(size).observe(wrap);}
 renderLegend();renderList();renderDetail();updateHint();size();
