@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<script>(function(){var l;try{l=localStorage.getItem("kl-lang");}catch(e){}if(l!=="id"&&l!=="en"){l=((navigator.language||"").toLowerCase().indexOf("id")===0)?"id":"en";}var h=document.documentElement;h.setAttribute("data-lang",l);h.setAttribute("lang",l);})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Forecast services · Klimatikal</title>
-<meta name="description" content="A guide to weather and climate forecasting approaches, positioned by planning horizon, spatial extent and variable impact proximity, with the supporting evidence for each.">
+<title data-id="Layanan prakiraan cuaca dan iklim · Klimatikal">Forecast services · Klimatikal</title>
+<meta name="description" data-id="Panduan pendekatan prakiraan cuaca dan iklim, diposisikan menurut horizon perencanaan, cakupan spasial, dan kedekatan dampak variabel, beserta bukti pendukung masing-masing." content="A guide to weather and climate forecasting approaches, positioned by planning horizon, spatial extent and variable impact proximity, with the supporting evidence for each.">
 <link rel="canonical" href="https://klimatikal.com/product/forecast-services/">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
@@ -97,6 +98,10 @@ aside h2{font-size:16px;margin:0 0 4px;color:var(--kl-lime);font-weight:600}
   aside{border-left:0;border-top:1px solid var(--line)}
   .hint{display:none}
 }
+.lang{display:inline-flex;margin-left:4px;border:1px solid rgba(139,190,178,.35);border-radius:8px;overflow:hidden}
+.lang button{font:inherit;font-size:12px;background:none;border:0;color:var(--kl-teal);padding:2px 8px;cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--kl-lime);color:var(--kl-amethyst);font-weight:600}
+.site-header nav{align-items:center}
 </style>
 </head>
 <body>
@@ -108,52 +113,53 @@ aside h2{font-size:16px;margin:0 0 4px;color:var(--kl-lime);font-weight:600}
     </picture>
   </a>
   <nav aria-label="Main">
-    <a href="/">Weather map</a>
+    <a href="/" data-id="Peta cuaca">Weather map</a>
     <a href="/atlas-cuaca/">Atlas Cuaca</a>
-    <a href="/product/forecast-services/" aria-current="page">Forecast services</a>
-    <a href="/about-us/">About us</a>
-    <a href="/contact-us/">Contact us</a>
+    <a href="/product/forecast-services/" aria-current="page" data-id="Layanan prakiraan cuaca dan iklim">Forecast services</a>
+    <a href="/about-us/" data-id="Tentang kami">About us</a>
+    <a href="/contact-us/" data-id="Kontak">Contact us</a>
+    <span class="lang" role="group" aria-label="Language"><button type="button" data-set-lang="id" aria-pressed="false">ID</button><button type="button" data-set-lang="en" aria-pressed="true">EN</button></span>
   </nav>
 </header>
 <div class="intro">
-  <p class="eyebrow">Product · Forecast services</p>
-  <h1>Which forecast fits your decision?</h1>
-  <p>Many activities and assets depend on the weather and climate, and decisions must be made to keep them running into the future. Many meteorological forecasts and services exist, but finding the one that fits a given need is not always easy. Use this guide to find a suitable forecast service and to develop your use case.</p>
+  <p class="eyebrow" data-id="Produk · Layanan prakiraan cuaca dan iklim">Product · Forecast services</p>
+  <h1 data-id="Prakiraan mana yang sesuai dengan keputusan Anda?">Which forecast fits your decision?</h1>
+  <p data-id="Banyak kegiatan dan aset bergantung pada cuaca dan iklim, dan keputusan harus diambil agar kegiatan itu tetap berjalan ke depan. Banyak prakiraan dan layanan meteorologi tersedia, tetapi menemukan yang sesuai dengan suatu kebutuhan tidak selalu mudah. Gunakan panduan ini untuk menemukan layanan prakiraan yang sesuai dan mengembangkan kasus penggunaan Anda.">Many activities and assets depend on the weather and climate, and decisions must be made to keep them running into the future. Many meteorological forecasts and services exist, but finding the one that fits a given need is not always easy. Use this guide to find a suitable forecast service and to develop your use case.</p>
   <details class="how">
-    <summary>How to read this guide</summary>
+    <summary data-id="Cara membaca panduan ini">How to read this guide</summary>
     <ul>
-      <li><b>Position.</b> The default view is two-dimensional: planning horizon across and spatial extent upward, both logarithmic, with items numbered along the diagonal from small and short-range to large and long-range. Selecting an impact variable filters the items that forecast it and opens the three-dimensional view, where each sphere is also stretched to the impact proximity that approach typically covers.</li>
-      <li><b>Symbols.</b> Each item has a weather symbol, coloured by the main variable group it forecasts. Sphere colour still shows maturity or skill evidence. Numbers are shown in the list and on hover.</li>
-      <li><b>Variables, use cases and products.</b> Each entry lists the variables the approach can forecast, examples of use by other institutions or companies, and existing products where one is available. Examples are described as the sources report them; vendor and research examples are labelled as such.</li>
-      <li><b>Placement and maturity.</b> These are Klimatikal's assessments as of 14 November 2026 and will change as evidence does. Established means routine in operational use; experimental means early, limited or still being verified.</li>
-      <li><b>Skill evidence.</b> The tags show where the cited skill was measured: Indonesia or Southeast Asia, other tropical regions, mid-latitude regions, or global studies. An item can carry several. Items with no figure are marked either as having none found or as not verifiable, because they are projections or loss models. Figures are quoted from the cited sources for the metric, region and period each used. They are not comparable across approaches. Where a source is a poster, preprint or vendor material, the entry says so, and where nothing was found for Indonesia, it says that too.</li>
-      <li><b>Scope.</b> This is a guide to choosing an approach, not a forecast, and not a recommendation for any specific decision.</li>
+      <li data-id="<b>Posisi.</b> Tampilan bawaan dua dimensi: horizon perencanaan ke samping dan cakupan spasial ke atas, keduanya logaritmik, dengan item bernomor sepanjang diagonal dari skala kecil dan jangka pendek hingga skala besar dan jangka panjang. Memilih variabel dampak menyaring item yang memprakirakannya dan membuka tampilan tiga dimensi, tempat setiap bola juga direntangkan sesuai kedekatan dampak yang umumnya dicakup pendekatan itu."><b>Position.</b> The default view is two-dimensional: planning horizon across and spatial extent upward, both logarithmic, with items numbered along the diagonal from small and short-range to large and long-range. Selecting an impact variable filters the items that forecast it and opens the three-dimensional view, where each sphere is also stretched to the impact proximity that approach typically covers.</li>
+      <li data-id="<b>Simbol.</b> Setiap item memiliki simbol cuaca, diwarnai menurut kelompok variabel utama yang diprakirakannya. Warna bola tetap menunjukkan kematangan atau bukti skill. Nomor ditampilkan pada daftar dan saat kursor diarahkan."><b>Symbols.</b> Each item has a weather symbol, coloured by the main variable group it forecasts. Sphere colour still shows maturity or skill evidence. Numbers are shown in the list and on hover.</li>
+      <li data-id="<b>Variabel, contoh penggunaan, dan produk.</b> Setiap entri mencantumkan variabel yang dapat diprakirakan pendekatan tersebut, contoh penggunaan oleh institusi atau perusahaan lain, dan produk yang tersedia bila ada. Contoh dijelaskan sebagaimana dilaporkan sumbernya; contoh vendor dan riset diberi label."><b>Variables, use cases and products.</b> Each entry lists the variables the approach can forecast, examples of use by other institutions or companies, and existing products where one is available. Examples are described as the sources report them; vendor and research examples are labelled as such.</li>
+      <li data-id="<b>Penempatan dan kematangan.</b> Ini adalah penilaian Klimatikal per 14 November 2026 dan akan berubah seiring bukti. Mapan berarti rutin dipakai secara operasional; eksperimental berarti masih awal, terbatas, atau sedang diverifikasi."><b>Placement and maturity.</b> These are Klimatikal's assessments as of 14 November 2026 and will change as evidence does. Established means routine in operational use; experimental means early, limited or still being verified.</li>
+      <li data-id="<b>Bukti skill.</b> Tag menunjukkan di mana skill yang dikutip diukur: Indonesia atau Asia Tenggara, wilayah tropis lain, wilayah lintang tengah, atau studi global. Satu item dapat memiliki beberapa tag. Item tanpa angka ditandai sebagai tidak ditemukan atau tidak dapat diverifikasi karena berupa proyeksi atau model kerugian. Angka dikutip dari sumber untuk metrik, wilayah, dan periode yang digunakan masing-masing; angka tidak dapat dibandingkan antar pendekatan. Bila sumber berupa poster, preprint, atau materi vendor, entri menyebutkannya, dan bila tidak ada temuan untuk Indonesia, entri juga menyebutkannya."><b>Skill evidence.</b> The tags show where the cited skill was measured: Indonesia or Southeast Asia, other tropical regions, mid-latitude regions, or global studies. An item can carry several. Items with no figure are marked either as having none found or as not verifiable, because they are projections or loss models. Figures are quoted from the cited sources for the metric, region and period each used. They are not comparable across approaches. Where a source is a poster, preprint or vendor material, the entry says so, and where nothing was found for Indonesia, it says that too.</li>
+      <li data-id="<b>Lingkup.</b> Ini panduan memilih pendekatan, bukan prakiraan, dan bukan rekomendasi untuk keputusan tertentu."><b>Scope.</b> This is a guide to choosing an approach, not a forecast, and not a recommendation for any specific decision.</li>
     </ul>
   </details>
 </div>
-<noscript><p>This guide is interactive and needs JavaScript. Without it, contact us at <a href="/contact-us/">our contact page</a> and we will help you choose an approach.</p></noscript>
+<noscript><p data-id="Panduan ini interaktif dan memerlukan JavaScript. Tanpa itu, hubungi kami melalui <a href=&quot;/contact-us/&quot;>halaman kontak</a> dan kami akan membantu Anda memilih pendekatan.">This guide is interactive and needs JavaScript. Without it, contact us at <a href="/contact-us/">our contact page</a> and we will help you choose an approach.</p></noscript>
 <div class="app">
 <div class="stage">
   <div class="bar">
-    <label class="grp"><span>View</span><select id="selView"><option value="2d">2D</option><option value="3d">3D</option><option value="" hidden>Custom</option></select></label>
-    <label class="grp"><span>Impact variable</span><select id="selIv"><option value="all">None</option></select></label>
-    <label class="grp"><span>Colour by</span><select id="selColor"><option value="mat">Maturity</option><option value="cov">Skill evidence</option></select></label>
-    <label class="grp"><span>Maturity</span><select id="selFm"><option value="all">All</option><option value="e">Established</option><option value="x">Experimental</option></select></label>
-    <label class="grp"><span>Evidence</span><select id="selFc"><option value="all">All</option><option value="I">Indonesia / SE Asia</option><option value="T">Other tropics</option><option value="M">Mid-latitude</option><option value="G">Global</option><option value="N">No skill figure</option><option value="P">Not verifiable</option></select></label>
-    <div class="grp"><button class="chip" id="zin">+</button><button class="chip" id="zout">−</button><button class="chip" id="reset">Reset</button></div>
+    <label class="grp"><span data-id="Tampilan">View</span><select id="selView"><option value="2d">2D</option><option value="3d">3D</option><option value="" hidden data-id="Kustom">Custom</option></select></label>
+    <label class="grp"><span data-id="Variabel dampak">Impact variable</span><select id="selIv"><option value="all" data-id="Tidak ada">None</option></select></label>
+    <label class="grp"><span data-id="Warna menurut">Colour by</span><select id="selColor"><option value="mat" data-id="Kematangan">Maturity</option><option value="cov" data-id="Bukti skill">Skill evidence</option></select></label>
+    <label class="grp"><span data-id="Kematangan">Maturity</span><select id="selFm"><option value="all" data-id="Semua">All</option><option value="e" data-id="Mapan">Established</option><option value="x" data-id="Eksperimental">Experimental</option></select></label>
+    <label class="grp"><span data-id="Bukti">Evidence</span><select id="selFc"><option value="all" data-id="Semua">All</option><option value="I" data-id="Indonesia / Asia Tenggara">Indonesia / SE Asia</option><option value="T" data-id="Tropis lain">Other tropics</option><option value="M" data-id="Lintang tengah">Mid-latitude</option><option value="G" data-id="Global">Global</option><option value="N" data-id="Tanpa angka skill">No skill figure</option><option value="P" data-id="Tidak dapat diverifikasi">Not verifiable</option></select></label>
+    <div class="grp"><button class="chip" id="zin">+</button><button class="chip" id="zout">−</button><button class="chip" id="reset" data-id="Atur ulang">Reset</button></div>
   </div>
   <div class="canvaswrap" id="wrap">
-    <canvas id="cv" role="img" aria-label="Three-dimensional chart placing forecasting approaches by planning horizon and spatial extent, and by impact proximity in the three-dimensional view. The full list of approaches is in the side panel."></canvas>
+    <canvas id="cv" role="img" data-idlabel="Bagan tiga dimensi yang menempatkan pendekatan prakiraan menurut horizon perencanaan dan cakupan spasial, serta menurut kedekatan dampak pada tampilan tiga dimensi. Daftar lengkap pendekatan ada di panel samping." aria-label="Three-dimensional chart placing forecasting approaches by planning horizon and spatial extent, and by impact proximity in the three-dimensional view. The full list of approaches is in the side panel."></canvas>
     <div class="tip" id="tip"></div>
     <div class="hint" id="hint"></div>
     <div class="legend" id="legend"><button type="button" id="lgtoggle" aria-expanded="true" aria-controls="lgbody">Legend ▾</button><div class="lgbody" id="lgbody"></div></div>
   </div>
 </div>
 <aside>
-  <div id="detail"><p class="empty">Select a sphere on the map or an item in the list to see its skill and evidence. The ? marks a zone with no forecast product; select it to see why.</p></div>
-  <div class="list"><h3>All items</h3><div id="list"></div></div>
-  <div class="cta">Not sure which approach fits your decision? <a href="/contact-us/">Talk to us</a></div>
-  <div class="foot">© 2026 Klimatikal · Weather and Climate Intelligence · <a href="/privacy/">Privacy</a></div>
+  <div id="detail"><p class="empty"></p></div>
+  <div class="list"><h3 data-id="Semua item">All items</h3><div id="list"></div></div>
+  <div class="cta" data-id="Belum yakin pendekatan mana yang sesuai dengan keputusan Anda? <a href=&quot;/contact-us/&quot;>Hubungi kami</a>">Not sure which approach fits your decision? <a href="/contact-us/">Talk to us</a></div>
+  <div class="foot" data-id="© 2026 Klimatikal · Weather and Climate Intelligence · <a href=&quot;/privacy/&quot;>Privasi</a>">© 2026 Klimatikal · Weather and Climate Intelligence · <a href="/privacy/">Privacy</a></div>
 </aside>
 </div>
 <script>
@@ -387,6 +393,329 @@ var COVLEG={I:`Indonesia or Southeast Asia`,T:`Other tropics (no Indonesian evid
 function covOf(it){return ['I','T','M','G','N','P'].filter(function(k){return it.c.indexOf(k)>=0;})[0];}
 var IV={R:`Rainfall`,T:`Temperature and heat`,W:`Wind and storms`,H:`Water and land`,O:`Ocean`,F:`Fire`,C:`Modes and indices`,I:`Losses and exposure`};
 var MAT={e:{n:`Established`,c:'#2E9C8A'},x:{n:`Experimental`,c:'#E8832A'}};
+/* ---------- language: Indonesian text by English key; anything without an entry stays English ---------- */
+var LANG=document.documentElement.getAttribute('data-lang')==='id'?'id':'en';
+var ID={
+"Nowcasting (radar, satellite)": "Nowcasting (radar, satelit)",
+"Extrapolation routine; ML versions newer.": "Ekstrapolasi sudah rutin; versi ML lebih baru.",
+"Forecasters judged a deep generative radar model more useful than older methods at 0-2 h (UK radar, not tropics). Extrapolation is useful for about 1-4 h for convective rain. In Zambia an ML satellite product beat two alternatives for rain occurrence, but all lose skill for extreme rain. A 2026 preprint says skill at 2-6 h decays fast.": "Forecaster menilai model radar generatif dalam lebih berguna daripada metode lama pada 0-2 jam (radar Inggris, bukan wilayah tropis). Ekstrapolasi berguna sekitar 1-4 jam untuk hujan konvektif. Di Zambia, produk satelit ML mengungguli dua alternatif untuk kejadian hujan, tetapi semuanya kehilangan skill untuk hujan ekstrem. Sebuah preprint 2026 menyebut skill pada 2-6 jam menurun cepat.",
+"Rain rate and rain occurrence on a radar grid, 0-6 h": "Laju hujan dan kejadian hujan pada grid radar, 0-6 jam",
+"Rain-cell position and movement": "Posisi dan pergerakan sel hujan",
+"The Meteorological Service Singapore issues a 2-hour weather nowcast for 42 sectors of the island and operates its own S-band and C-band radars.": "Meteorological Service Singapore menerbitkan nowcast cuaca 2 jam untuk 42 sektor di pulau itu dan mengoperasikan radar S-band dan C-band sendiri.",
+"Convection-permitting models": "Model convection-permitting",
+"Not at all tropical services.": "Belum ada layanan tropis.",
+"Met Office convection-permitting ensembles over Malaysia, Indonesia and the Philippines: skilful for 3-hour rain at scales above 200 km during the first day; skill falls with lead time and is largest in the daytime over land. Convection representation mattered more than grid spacing. A Maritime Continent system (SINGV_NG MPAS) beat global ECMWF rain forecasts, especially for intense rain (initial evaluation).": "Ensemble convection-permitting Met Office di atas Malaysia, Indonesia, dan Filipina: memiliki skill untuk hujan 3 jam pada skala di atas 200 km selama hari pertama; skill menurun seiring lead time dan terbesar pada siang hari di daratan. Representasi konveksi lebih berpengaruh daripada jarak grid. Sistem Maritime Continent (SINGV_NG MPAS) mengungguli prakiraan hujan ECMWF global, terutama untuk hujan lebat (evaluasi awal).",
+"Hourly and 3-hourly rainfall": "Hujan per jam dan per 3 jam",
+"Convective wind gusts": "Hembusan angin konvektif",
+"Heavy-rain probability at kilometre scale": "Probabilitas hujan lebat pada skala kilometer",
+"Germany's DWD runs ICON-D2, a 20-member ensemble at 2 km; the Baden-Wuerttemberg flood forecasting centre tested its products for hourly river discharge forecasts with the LARSIM model.": "DWD Jerman menjalankan ICON-D2, ensemble 20 anggota pada resolusi 2 km; pusat prakiraan banjir Baden-Wuerttemberg menguji produknya untuk prakiraan debit sungai per jam dengan model LARSIM.",
+"Ensemble post-processing": "Post-processing ensemble",
+"Routine.": "Rutin.",
+"EMOS on UK MOGREPS-UK temperature improved probabilistic skill about 20% and deterministic skill about 10%. For global ECMWF 2 m temperature it cut CRPS at most stations at all lead times, with gains shrinking as lead time grows. No tropical or Indonesian verification found.": "EMOS pada suhu MOGREPS-UK Inggris meningkatkan skill probabilistik sekitar 20% dan skill deterministik sekitar 10%. Untuk suhu 2 m ECMWF global, CRPS turun di sebagian besar stasiun pada semua lead time, dengan manfaat yang menyusut seiring lead time. Verifikasi untuk wilayah tropis atau Indonesia tidak ditemukan.",
+"Calibrated 2 m temperature at stations, as probabilities": "Suhu 2 m terkalibrasi di stasiun, sebagai probabilitas",
+"Calibrated 10 m wind speed at stations": "Kecepatan angin 10 m terkalibrasi di stasiun",
+"Probability of precipitation at stations": "Probabilitas presipitasi di stasiun",
+"The UK Met Office calibrates site forecasts of temperature and wind with ensemble model output statistics in its IMPROVER system, which produces its operational public forecasts.": "Met Office Inggris mengkalibrasi prakiraan lokasi untuk suhu dan angin dengan ensemble model output statistics dalam sistem IMPROVER, yang menghasilkan prakiraan publik operasionalnya.",
+"Flood forecasting (hydrological)": "Prakiraan banjir (hidrologi)",
+"Needs gauges and models.": "Memerlukan stasiun pengukur dan model.",
+"GloFAS ensemble: skilful (CRPSS vs persistence) in over 93% of catchments at days 1-15 and over 80% out to day 30, but no or negative skill at longer leads in tropical Africa and the west coast of South America. Global median CRPSS is 0.78 at 3 days, falling to 0.47 at 10 days. No Indonesia-specific number found.": "Ensemble GloFAS: memiliki skill (CRPSS terhadap persistensi) di lebih dari 93% daerah tangkapan air pada hari ke-1 hingga 15 dan di lebih dari 80% hingga hari ke-30, tetapi tanpa skill atau skill negatif pada lead time lebih panjang di Afrika tropis dan pesisir barat Amerika Selatan. Median CRPSS global adalah 0,78 pada 3 hari, turun menjadi 0,47 pada 10 hari. Angka khusus Indonesia tidak ditemukan.",
+"River discharge": "Debit sungai",
+"Probability of exceeding flood-threshold discharge": "Probabilitas debit melampaui ambang banjir",
+"River water level (where local models exist)": "Tinggi muka air sungai (jika ada model lokal)",
+"In July 2020 a GloFAS forecast of more than 50% chance of severe flooding on the Jamuna River triggered a US$5.2 million release from the UN Central Emergency Response Fund in Bangladesh; a second trigger used the national Flood Forecasting and Warning Centre forecast.": "Pada Juli 2020, prakiraan GloFAS dengan peluang lebih dari 50% banjir parah di Sungai Jamuna memicu pencairan US$5,2 juta dari UN Central Emergency Response Fund di Bangladesh; pemicu kedua menggunakan prakiraan Flood Forecasting and Warning Centre nasional.",
+"Heat stress forecasts": "Prakiraan cekaman panas",
+"Tropical WBGT less settled.": "WBGT untuk wilayah tropis belum mapan.",
+"Post-processed WBGT from ECMWF extended-range forecasts beat climatology up to 15-20 days over Europe; WBGT skill matched or beat its component variables. A US WBGT forecast was close to observations on average but gave more false alarms for the most dangerous conditions. No tropical or Indonesian verification found.": "WBGT hasil post-processing dari prakiraan extended-range ECMWF mengungguli klimatologi hingga 15-20 hari di Eropa; skill WBGT setara atau lebih baik daripada variabel penyusunnya. Prakiraan WBGT AS dekat dengan pengamatan secara rata-rata tetapi memberi lebih banyak alarm palsu untuk kondisi paling berbahaya. Verifikasi untuk wilayah tropis atau Indonesia tidak ditemukan.",
+"Heat index": "Indeks panas",
+"Heat-stress category": "Kategori cekaman panas",
+"The Meteorological Service Singapore publishes a national heat stress advisory based on WBGT, with high at 33 degrees C or above, moderate from 31 to below 33 and low below 31.": "Meteorological Service Singapore menerbitkan peringatan cekaman panas nasional berbasis WBGT, dengan kategori tinggi pada 33 derajat C atau lebih, sedang dari 31 hingga di bawah 33, dan rendah di bawah 31.",
+"Impact-based forecasting": "Prakiraan berbasis dampak",
+"Patchy across the tropics.": "Tidak merata di wilayah tropis.",
+"No skill figure found. Sources describe the gap: how well forecast impacts match observed damage is an open question, and verification is limited by fragmented, biased impact data.": "Angka skill tidak ditemukan. Sumber menggambarkan celahnya: seberapa baik dampak yang diprakirakan sesuai dengan kerusakan teramati masih merupakan pertanyaan terbuka, dan verifikasi dibatasi oleh data dampak yang terfragmentasi dan bias.",
+"Expected damage to housing and infrastructure": "Perkiraan kerusakan rumah dan infrastruktur",
+"Population exposed to the hazard": "Penduduk yang terpapar bahaya",
+"Impact level for each area (warning category)": "Tingkat dampak untuk setiap wilayah (kategori peringatan)",
+"The Philippine Red Cross and UN OCHA built typhoon protocols that trigger early actions, such as house-strengthening kits, 120 to 72 hours before landfall, using an impact model from the Netherlands Red Cross (510).": "Palang Merah Filipina dan UN OCHA menyusun protokol topan yang memicu tindakan dini, seperti kit penguatan rumah, 120 hingga 72 jam sebelum landfall, menggunakan model dampak dari Palang Merah Belanda (510).",
+"Drought index and yield outlook": "Indeks kekeringan dan prospek hasil panen",
+"Indices routine; yield outlooks vary.": "Indeks sudah rutin; prospek hasil panen bervariasi.",
+"SPI forecast skill declines with lead time; SPEI shows more coherent skill than SPI in Europe. In the US, persistence gives most seasonal skill and dynamical models add little. Australian indicators driven by ACCESS-S2: antecedent conditions raise skill for crop yield and pasture. No tropical or Indonesian yield-outlook verification found.": "Skill prakiraan SPI menurun seiring lead time; SPEI menunjukkan skill yang lebih koheren daripada SPI di Eropa. Di AS, persistensi memberi sebagian besar skill musiman dan model dinamis menambah sedikit. Indikator Australia berbasis ACCESS-S2: kondisi antecedent meningkatkan skill untuk hasil panen dan padang rumput. Verifikasi prospek hasil panen untuk wilayah tropis atau Indonesia tidak ditemukan.",
+"Soil moisture anomaly": "Anomali kelembapan tanah",
+"Crop water stress (water requirement satisfaction index)": "Cekaman air tanaman (water requirement satisfaction index)",
+"Crop yield or pasture outlook": "Prospek hasil panen atau padang rumput",
+"FEWS NET couples seasonal climate forecasts with a hydrological model and the water requirement satisfaction index to estimate crop stress; in December 2025 it linked a possible below-average March to May season to worsening food insecurity in Somalia, Ethiopia and Kenya.": "FEWS NET memadukan prakiraan iklim musiman dengan model hidrologi dan water requirement satisfaction index untuk memperkirakan cekaman tanaman; pada Desember 2025 FEWS NET mengaitkan kemungkinan musim Maret-Mei di bawah normal dengan memburuknya kerawanan pangan di Somalia, Ethiopia, dan Kenya.",
+"ML weather models": "Model cuaca ML",
+"Operational at ECMWF since 2025; tropical rain and extremes still being verified.": "Operasional di ECMWF sejak 2025; hujan tropis dan kejadian ekstrem masih diverifikasi.",
+"GraphCast beat ECMWF HRES on 90% of 1,380 verification targets (global, scored against reanalysis, medium range). In Ecuador (station data) ML models had better broad-scale scores and physical models were better for extreme rain. For record-breaking heat, cold and wind, HRES still beat GraphCast, Pangu and FuXi.": "GraphCast mengungguli ECMWF HRES pada 90% dari 1.380 target verifikasi (global, dinilai terhadap reanalisis, jangka menengah). Di Ekuador (data stasiun), model ML memiliki skor skala luas yang lebih baik, sedangkan model fisika lebih baik untuk hujan ekstrem. Untuk panas, dingin, dan angin pemecah rekor, HRES masih mengungguli GraphCast, Pangu, dan FuXi.",
+"2 m temperature": "Suhu 2 m",
+"10 m wind speed and direction": "Kecepatan dan arah angin 10 m",
+"Accumulated precipitation": "Presipitasi akumulasi",
+"Mean sea-level pressure and 500 hPa geopotential height": "Tekanan permukaan laut rata-rata dan ketinggian geopotensial 500 hPa",
+"ECMWF made its AI ensemble (AIFS ENS, 51 members) operational on 1 July 2025, running alongside its physics-based forecast.": "ECMWF mengoperasikan ensemble AI-nya (AIFS ENS, 51 anggota) pada 1 Juli 2025, berjalan berdampingan dengan prakiraan berbasis fisikanya.",
+"Fire danger rating": "Peringkat bahaya kebakaran",
+"FWI-based systems.": "Sistem berbasis FWI.",
+"ECMWF ensemble FWI forecasts beat mean climate for more than 10 days, but accurate FWI does not translate into accurate fire activity. An earlier assessment found skill peaking in boreal forests, the Mediterranean, the Amazon and Southeast Asia. Seasonal FWI anomalies are predictable about 1 month ahead, sometimes 2.": "Prakiraan FWI ensemble ECMWF mengungguli iklim rata-rata hingga lebih dari 10 hari, tetapi FWI yang akurat tidak otomatis berarti aktivitas kebakaran yang akurat. Penilaian sebelumnya menemukan skill puncak di hutan boreal, Mediterania, Amazon, dan Asia Tenggara. Anomali FWI musiman dapat diprediksi sekitar 1 bulan ke depan, kadang 2.",
+"Fire Weather Index and its moisture-code components": "Fire Weather Index dan komponen kode kelembapannya",
+"Fire danger class for each area": "Kelas bahaya kebakaran untuk setiap wilayah",
+"Indonesia's BMKG publishes Fire Weather Index forecasts for the country up to 7 days ahead, based on the Canadian Fire Weather Index system adapted to local conditions.": "BMKG Indonesia menerbitkan prakiraan Fire Weather Index untuk seluruh negeri hingga 7 hari ke depan, berdasarkan sistem Canadian Fire Weather Index yang disesuaikan dengan kondisi lokal.",
+"Tropical cyclone forecasts (physics)": "Prakiraan siklon tropis (fisika)",
+"Track good, intensity harder.": "Lintasan baik, intensitas lebih sulit.",
+"US National Hurricane Center (Atlantic): 2024 track errors at all lead times were records low; intensity errors keep falling slowly and rapid intensification stays hard. Older averages for scale: track about 160 km at 24 h and 370 km at 72 h. Atlantic evidence only; not verified for Indonesia's surrounding basins.": "US National Hurricane Center (Atlantik): galat lintasan 2024 pada semua lead time mencapai rekor terendah; galat intensitas terus menurun perlahan dan penguatan cepat tetap sulit. Rata-rata lama sebagai pembanding: lintasan sekitar 160 km pada 24 jam dan 370 km pada 72 jam. Bukti hanya untuk Atlantik; belum diverifikasi untuk cekungan di sekitar Indonesia.",
+"Cyclone track": "Lintasan siklon",
+"Cyclone intensity (maximum wind)": "Intensitas siklon (angin maksimum)",
+"Size (radius of winds)": "Ukuran (radius angin)",
+"Storm rainfall": "Curah hujan akibat badai",
+"The Hong Kong Observatory verifies its tropical cyclone track forecasts each year; in 2024 its average error was about 63 km at 24 h and about 307 km at 120 h.": "Hong Kong Observatory memverifikasi prakiraan lintasan siklon tropisnya setiap tahun; pada 2024 galat rata-ratanya sekitar 63 km pada 24 jam dan sekitar 307 km pada 120 jam.",
+"AI tropical cyclone models": "Model siklon tropis berbasis AI",
+"Evidence mostly for NHC basins.": "Bukti sebagian besar untuk cekungan NHC.",
+"DeepMind WeatherNext Cyclones: about 24 h average lead-time gain on 2023-2025 storms, run alongside NHC in 2025. Limits: a model trained without Category 3-5 storms could not forecast unseen Category 5 storms; AI models tend to underpredict intensity of the strongest storms.": "DeepMind WeatherNext Cyclones: keunggulan lead time rata-rata sekitar 24 jam pada badai 2023-2025, dijalankan berdampingan dengan NHC pada 2025. Keterbatasan: model yang dilatih tanpa badai Kategori 3-5 tidak dapat memprakirakan badai Kategori 5 yang belum pernah dilihat; model AI cenderung meremehkan intensitas badai terkuat.",
+"Cyclone intensity": "Intensitas siklon",
+"Size and shape of the storm": "Ukuran dan bentuk badai",
+"Google DeepMind worked with the US National Hurricane Center in the 2025 season, and says its cyclone model helped the Center anticipate Hurricane Melissa's rapid intensification before the Jamaica landfall (company claim).": "Google DeepMind bekerja sama dengan US National Hurricane Center pada musim 2025, dan menyatakan model siklonnya membantu Center mengantisipasi penguatan cepat Badai Melissa sebelum landfall di Jamaika (klaim perusahaan).",
+"Onset, cessation, dry spells": "Awal dan akhir musim, dry spell",
+"Skill varies by region.": "Skill bervariasi menurut wilayah.",
+"Indonesian study (Indramayu, Bone): ensemble seasonal rainfall and dry-spell frequency verified with ROC; using an optimal probability threshold raised skill 5-17% (first dry-season planting) and 3-24% (second). It covers seasonal rain amount and long dry spells, not onset dates directly.": "Studi Indonesia (Indramayu, Bone): curah hujan musiman ensemble dan frekuensi dry spell diverifikasi dengan ROC; penggunaan ambang probabilitas optimal meningkatkan skill 5-17% (tanam pertama musim kemarau) dan 3-24% (tanam kedua). Studi ini mencakup jumlah hujan musiman dan dry spell panjang, bukan tanggal awal musim secara langsung.",
+"Rainy-season onset date": "Tanggal awal musim hujan",
+"Rainy-season end (cessation) date": "Tanggal akhir musim hujan",
+"Dry-spell length and frequency": "Panjang dan frekuensi dry spell",
+"Seasonal rainfall amount": "Jumlah curah hujan musiman",
+"Closest example found: Ethiopia's Digital AgroClimate Advisory Platform (EDACaP) combines seasonal climate forecasts and crop modelling and delivers advisories to farmers by phone and web. The sources seen do not confirm onset or cessation advisories specifically.": "Contoh terdekat yang ditemukan: Digital AgroClimate Advisory Platform (EDACaP) Ethiopia memadukan prakiraan iklim musiman dan pemodelan tanaman, dan menyampaikan advisori kepada petani melalui telepon dan web. Sumber yang dilihat tidak mengonfirmasi advisori awal atau akhir musim secara khusus.",
+"S2S hazard products": "Produk bahaya S2S",
+"Few services, no common standard.": "Sedikit layanan, tanpa standar bersama.",
+"S2S models give probabilities of some large-scale extremes weeks ahead: for the 2010 Russian heat wave, skill up to 3 weeks. European summer warm extremes were more predictable at 3-4 weeks than average conditions. Extreme rain skill over Europe is higher in winter than summer. No Indonesia-specific hazard verification found.": "Model S2S memberikan probabilitas beberapa ekstrem skala besar beberapa minggu sebelumnya: untuk gelombang panas Rusia 2010, skill hingga 3 minggu. Ekstrem hangat musim panas Eropa lebih dapat diprediksi pada 3-4 minggu dibanding kondisi rata-rata. Skill hujan ekstrem di Eropa lebih tinggi pada musim dingin daripada musim panas. Verifikasi bahaya khusus Indonesia tidak ditemukan.",
+"Probability of heatwave conditions (weekly mean temperature)": "Probabilitas kondisi gelombang panas (suhu rata-rata mingguan)",
+"Probability of extreme weekly rainfall": "Probabilitas curah hujan mingguan ekstrem",
+"Probability of a cold spell": "Probabilitas periode dingin",
+"Research example, not an operational service: Korhonen and Gregow (EGU 2026) are building forecast and alert logic for extended-range heatwaves from ECMWF ensembles, using 5-day mean temperature thresholds.": "Contoh riset, bukan layanan operasional: Korhonen dan Gregow (EGU 2026) sedang menyusun logika prakiraan dan peringatan untuk gelombang panas extended-range dari ensemble ECMWF, menggunakan ambang suhu rata-rata 5 hari.",
+"Catastrophe modelling": "Pemodelan katastrofe",
+"Probability of loss, not a forecast for a date; climate-conditioned versions not mature.": "Probabilitas kerugian, bukan prakiraan untuk suatu tanggal; versi berbasis kondisi iklim belum matang.",
+"Validation is thin and public evidence shows wide disagreement. In a Chile case three vendor models gave 250-year loss estimates differing by up to 60%. For US flood, Verisk, Moody's RMS and KatRisk were within 4% of historical NFIP losses while Karen Clark was about 13 times lower and First Street about twice as high. No tropical Asia validation found.": "Validasi masih tipis dan bukti publik menunjukkan perbedaan lebar. Pada kasus Chili, tiga model vendor memberi estimasi kerugian 250 tahunan yang berbeda hingga 60%. Untuk banjir AS, Verisk, Moody's RMS, dan KatRisk berada dalam 4% dari kerugian NFIP historis, sedangkan Karen Clark sekitar 13 kali lebih rendah dan First Street sekitar dua kali lebih tinggi. Validasi untuk Asia tropis tidak ditemukan.",
+"Average annual loss": "Kerugian tahunan rata-rata",
+"Loss for a given return period (for example 1-in-250 years)": "Kerugian untuk periode ulang tertentu (misalnya 1 dalam 250 tahun)",
+"Event loss estimate": "Estimasi kerugian kejadian",
+"Verisk estimated insured industry losses from Hurricane Milton (2024) at US$30 billion to US$50 billion for onshore property.": "Verisk memperkirakan kerugian industri yang diasuransikan akibat Badai Milton (2024) sebesar US$30 miliar hingga US$50 miliar untuk properti di darat.",
+"Research example: Eberenz, Luethi and Bresch (2021) calibrated tropical cyclone impact functions in the open-source CLIMADA platform at 10 km worldwide and used the Philippines as an event-level case study; a single function calibrated for the USA biased simulated damages by up to a factor of 36 in the north-west Pacific.": "Contoh riset: Eberenz, Luethi, dan Bresch (2021) mengkalibrasi fungsi dampak siklon tropis pada platform sumber terbuka CLIMADA pada 10 km di seluruh dunia dan menggunakan Filipina sebagai studi kasus tingkat kejadian; satu fungsi yang dikalibrasi untuk AS membiaskan simulasi kerusakan hingga faktor 36 di Pasifik barat laut.",
+"Borneo vortex, cold surges": "Vorteks Borneo, seruakan dingin",
+"Used by regional services. Southeast Asia context only.": "Digunakan layanan regional. Hanya konteks Asia Tenggara.",
+"No forecast-skill figure found. Borneo vortices need model resolution of at least about 65 km to be simulated; CMIP6 models at 100-300 km cannot adequately resolve them. Equatorial waves, which interact with these systems, are relatively well forecast in Southeast Asia (see item 30).": "Angka skill prakiraan tidak ditemukan. Vorteks Borneo memerlukan resolusi model setidaknya sekitar 65 km untuk disimulasikan; model CMIP6 pada 100-300 km tidak dapat meresolusinya dengan memadai. Gelombang ekuator, yang berinteraksi dengan sistem ini, relatif baik diprakirakan di Asia Tenggara (lihat item 30).",
+"Cold-surge strength (lower-level northerly wind)": "Kekuatan seruakan dingin (angin utara lapisan bawah)",
+"Heavy-rain probability over Borneo, Peninsular Malaysia and the South China Sea coast": "Probabilitas hujan lebat di atas Borneo, Semenanjung Malaysia, dan pesisir Laut Cina Selatan",
+"Presence and position of a Borneo vortex (low-level circulation)": "Keberadaan dan posisi vorteks Borneo (sirkulasi lapisan bawah)",
+"After MetMalaysia forecast a monsoon surge in December 2021 and January 2022, Malaysia's disaster agency NADMA ordered its disaster control centres in Sabah and Sarawak to prepare for floods.": "Setelah MetMalaysia memprakirakan seruakan monsun pada Desember 2021 dan Januari 2022, badan penanggulangan bencana Malaysia NADMA memerintahkan pusat pengendalian bencananya di Sabah dan Sarawak bersiap menghadapi banjir.",
+"S2S rain and temperature terciles": "Tercile curah hujan dan suhu S2S",
+"Skill modest in the tropics.": "Skill sedang di wilayah tropis.",
+"A multimodel week 3-4 system showed moderate rain skill over many tropical land regions including Southeast Asia, with gains over single models over Indonesia. ECMWF reforecasts for East Nusa Tenggara: anomaly correlation peaks at weeks 2-3 in Jan-Feb, week 6 not significant (conference poster, not peer reviewed). Treat Indonesia rain skill as modest.": "Sistem multimodel minggu ke-3-4 menunjukkan skill hujan sedang di banyak daratan tropis termasuk Asia Tenggara, dengan peningkatan dibanding model tunggal di Indonesia. Reforecast ECMWF untuk Nusa Tenggara Timur: korelasi anomali memuncak pada minggu ke-2-3 pada Januari-Februari, minggu ke-6 tidak signifikan (poster konferensi, belum ditelaah sejawat). Skill hujan Indonesia perlu dipandang sedang.",
+"Weekly rainfall anomaly, tercile probabilities": "Anomali curah hujan mingguan, probabilitas tercile",
+"Weekly 2 m temperature anomaly, tercile probabilities": "Anomali suhu 2 m mingguan, probabilitas tercile",
+"The US NOAA Climate Prediction Center issues operational week 3-4 temperature and precipitation outlooks, which began as experimental products in 2015.": "US NOAA Climate Prediction Center menerbitkan outlook suhu dan presipitasi minggu ke-3-4 secara operasional, yang dimulai sebagai produk eksperimental pada 2015.",
+"Soil moisture and land surface": "Kelembapan tanah dan permukaan lahan",
+"Monitoring routine; tropical S2S predictor use still tested.": "Pemantauan rutin; penggunaan sebagai prediktor S2S tropis masih diuji.",
+"CESM2 sub-seasonal experiments (US): land initialisation gives 91 ± 3% of root-zone soil moisture forecast skill, mostly from soil moisture memory. Sri Lanka: soil moisture initialisation adds streamflow skill at monthly timescale, up to 2 months.": "Eksperimen sub-musiman CESM2 (AS): inisialisasi lahan memberi 91 ± 3% skill prakiraan kelembapan tanah zona akar, terutama dari memori kelembapan tanah. Sri Lanka: inisialisasi kelembapan tanah menambah skill aliran sungai pada skala bulanan, hingga 2 bulan.",
+"Root-zone soil moisture": "Kelembapan tanah zona akar",
+"Evapotranspiration": "Evapotranspirasi",
+"Monthly streamflow": "Aliran sungai bulanan",
+"NOAA runs the North American Land Data Assimilation System (NLDAS), whose land surface model soil moisture is among the datasets used to inform the US Drought Monitor.": "NOAA menjalankan North American Land Data Assimilation System (NLDAS), yang kelembapan tanah model permukaan lahannya termasuk dataset untuk menyusun US Drought Monitor.",
+"Seasonal models plus downscaling": "Model musiman dengan downscaling",
+"Dynamical downscaling less common.": "Downscaling dinamis lebih jarang.",
+"NMME over Indonesia: good skill in the monsoonal region, modest in the equatorial region, very low in the third; skill drops after about 4 months lead, and the dry season is better than the rainy season. SEAS5 in Java: bias correction improved scores mainly for the first 2 lead months.": "NMME di Indonesia: skill baik di wilayah monsun, sedang di wilayah ekuator, dan sangat rendah di wilayah ketiga; skill turun setelah lead time sekitar 4 bulan, dan musim kemarau lebih baik daripada musim hujan. SEAS5 di Jawa: koreksi bias meningkatkan skor terutama pada 2 bulan lead pertama.",
+"Monthly and seasonal rainfall, tercile probabilities": "Curah hujan bulanan dan musiman, probabilitas tercile",
+"Seasonal mean temperature anomaly": "Anomali suhu rata-rata musiman",
+"Rainy-season rainfall total": "Total curah hujan musim hujan",
+"The IGAD Climate Prediction and Applications Centre (ICPAC) offers a seasonal rainfall forecast Maproom where a user selects a grid cell to see downscaled forecast information for that location; the system was launched in 2019 with CCAFS and IRI.": "IGAD Climate Prediction and Applications Centre (ICPAC) menyediakan Maproom prakiraan curah hujan musiman tempat pengguna memilih sel grid untuk melihat informasi prakiraan downscaled bagi lokasi tersebut; sistem ini diluncurkan pada 2019 bersama CCAFS dan IRI.",
+"Warm-conditioned catastrophe models": "Model katastrofe bersyarat kondisi hangat",
+"Few validated examples.": "Sedikit contoh tervalidasi.",
+"No independent skill figure. Vendor and industry material only: a climate-conditioned hurricane model raised US average annual loss about 20% versus historical rates (conference abstract); a Reask/LGT backtest of seasonally conditioned event sets over 1985-2024 beat a static benchmark in simulated reinsurance pricing (industry write-up). No tropical Asia example.": "Tidak ada angka skill independen. Hanya materi vendor dan industri: model badai berbasis kondisi iklim menaikkan kerugian tahunan rata-rata AS sekitar 20% dibanding laju historis (abstrak konferensi); backtest Reask/LGT atas event set bersyarat musiman 1985-2024 mengungguli tolok ukur statis dalam simulasi penetapan harga reasuransi (tulisan industri). Tidak ada contoh Asia tropis.",
+"Tropical cyclone landfall rate over the next 5 years": "Laju landfall siklon tropis dalam 5 tahun ke depan",
+"Expected loss conditioned on warm sea-surface temperature": "Kerugian yang diharapkan bersyarat suhu permukaan laut hangat",
+"Hazard event frequency for risk pricing": "Frekuensi kejadian bahaya untuk penetapan harga risiko",
+"Risk Management Solutions (now part of Moody's) has offered a medium-term rate since 2006, a rolling 5-year hurricane frequency forecast from 13 statistical models that use sea-surface temperature and other inputs.": "Risk Management Solutions (kini bagian dari Moody's) menawarkan medium-term rate sejak 2006, prakiraan frekuensi badai bergulir 5 tahun dari 13 model statistik yang menggunakan suhu permukaan laut dan masukan lain.",
+"Marine heatwave and ocean-state forecasts": "Prakiraan gelombang panas laut dan kondisi laut",
+"Few centres; not routine for Indonesia.": "Sedikit pusat; belum rutin untuk Indonesia.",
+"Six seasonal systems, 1991-2020: significant skill everywhere out to about 2 months; at 3-6 months in large areas; at 10.5 months only in parts of the eastern tropical Pacific, Indian Ocean and Indo-Pacific. Skill is highest in the tropics and poor in the Southern Ocean and western boundary currents.": "Enam sistem musiman, 1991-2020: skill signifikan di mana-mana hingga sekitar 2 bulan; pada 3-6 bulan di wilayah luas; pada 10,5 bulan hanya di sebagian Pasifik tropis timur, Samudra Hindia, dan Indo-Pasifik. Skill tertinggi di wilayah tropis dan buruk di Samudra Selatan dan arus batas barat.",
+"Sea-surface and subsurface temperature anomaly": "Anomali suhu permukaan dan bawah permukaan laut",
+"Marine heatwave occurrence and category": "Kejadian dan kategori gelombang panas laut",
+"Probability of exceeding the 90th-percentile temperature": "Probabilitas melampaui suhu persentil ke-90",
+"Australia's Bureau of Meteorology and CSIRO run operational marine heatwave category and probability forecasts from the ACCESS-S2 seasonal model, updated three times weekly.": "Bureau of Meteorology dan CSIRO Australia menjalankan prakiraan kategori dan probabilitas gelombang panas laut operasional dari model musiman ACCESS-S2, diperbarui tiga kali seminggu.",
+"Updated baselines, trend-adjusted climatology": "Baseline terbarukan, klimatologi terkoreksi tren",
+"Simple; rarely used in the tropics.": "Sederhana; jarang digunakan di wilayah tropis.",
+"The US Climate Prediction Center says trend can beat ENSO as a seasonal temperature predictor. Scoring week 3-4 forecasts against the fixed 30-year normal can inflate skill; against a sliding 20-year climate, much of the apparent skill is the trend. All US evidence; no tropical or Indonesian test found.": "US Climate Prediction Center menyatakan tren dapat mengalahkan ENSO sebagai prediktor suhu musiman. Menilai prakiraan minggu ke-3-4 terhadap normal 30 tahun yang tetap dapat menggelembungkan skill; terhadap iklim bergeser 20 tahun, sebagian besar skill yang tampak adalah tren. Semua bukti AS; uji tropis atau Indonesia tidak ditemukan.",
+"Trend-adjusted expected temperature": "Suhu yang diharapkan terkoreksi tren",
+"Updated rainfall normals": "Normal curah hujan terbarukan",
+"Probability of exceeding the updated normal": "Probabilitas melampaui normal terbarukan",
+"Research example: ETH Zurich researchers (Kapphan and colleagues, 2012) showed that weather insurance contracts priced on unadjusted historical data can leave insurers with smaller profits or substantial losses when the weather distribution has shifted.": "Contoh riset: peneliti ETH Zurich (Kapphan dan rekan, 2012) menunjukkan bahwa kontrak asuransi cuaca yang dihargai berdasarkan data historis tanpa penyesuaian dapat membuat penanggung memperoleh laba lebih kecil atau rugi besar ketika distribusi cuaca telah bergeser.",
+"AI-based S2S forecasts": "Prakiraan S2S berbasis AI",
+"Early trials, limited verification.": "Uji coba awal, verifikasi terbatas.",
+"FuXi-S2S beat the ECMWF S2S model for total rain and OLR, was slightly worse for 2 m temperature, and extended skilful MJO prediction from 30 to 36 days (global, scored against ERA5). In the 2025-26 AI Weather Quest, ECMWF IFS was best for temperature at weeks 3-4 and FuXi-S2S had the highest central rain score (preprint). None verified for Indonesia.": "FuXi-S2S mengungguli model S2S ECMWF untuk total hujan dan OLR, sedikit lebih buruk untuk suhu 2 m, dan memperpanjang prediksi MJO yang berskill dari 30 menjadi 36 hari (global, dinilai terhadap ERA5). Pada AI Weather Quest 2025-26, ECMWF IFS terbaik untuk suhu minggu ke-3-4 dan FuXi-S2S memiliki skor pusat hujan tertinggi (preprint). Tidak ada yang diverifikasi untuk Indonesia.",
+"Weekly rainfall": "Curah hujan mingguan",
+"Weekly mean 2 m temperature": "Suhu 2 m rata-rata mingguan",
+"MJO index": "Indeks MJO",
+"ECMWF developed an AI sub-seasonal system, AIFS-SUBS, and runs the AI Weather Quest; a preprint reports it matching ECMWF's physics-based system in probabilistic skill for weeks 2-6. This is a trial, not routine service.": "ECMWF mengembangkan sistem sub-musiman AI, AIFS-SUBS, dan menjalankan AI Weather Quest; sebuah preprint melaporkan sistem ini menyamai sistem berbasis fisika ECMWF dalam skill probabilistik untuk minggu ke-2-6. Ini uji coba, bukan layanan rutin.",
+"Near-term projections, downscaled": "Proyeksi jangka dekat, downscaled",
+"Signal small against variability.": "Sinyal kecil dibanding variabilitas.",
+"No skill figure; the evidence is about signal against noise. Downscaled 2026-2035 rainfall for Hawai'i: natural variability will keep masking the forced signal. For monsoon regions, internal variability dominates uncertainty before about 2050.": "Tidak ada angka skill; buktinya tentang sinyal terhadap derau. Curah hujan downscaled 2026-2035 untuk Hawai'i: variabilitas alami akan terus menutupi sinyal terpaksa. Untuk wilayah monsun, variabilitas internal mendominasi ketidakpastian sebelum sekitar 2050.",
+"Temperature change, 5-20 years": "Perubahan suhu, 5-20 tahun",
+"Rainfall change, 5-20 years": "Perubahan curah hujan, 5-20 tahun",
+"Frequency of hot days": "Frekuensi hari panas",
+"Closest example found: the NGFS five-year-horizon short-term scenarios for central banks and supervisors model compound hazards and cross-border supply-chain effects. They are not downscaled.": "Contoh terdekat yang ditemukan: skenario jangka pendek NGFS dengan horizon lima tahun untuk bank sentral dan pengawas memodelkan bahaya majemuk dan dampak rantai pasok lintas batas. Skenario ini tidak di-downscale.",
+"Projected risk with exposure": "Risiko terproyeksi dengan eksposur",
+"Methods and data not standardised.": "Metode dan data belum terstandar.",
+"No skill figure found. Risk combines hazard, exposure and vulnerability, each with its own uncertainty; commercial climate risk metrics under-represent uncertainty, and one analysis (Aon) calls address-level financial decisions almost always misguided; exposure data is often coarser than hazard grids.": "Angka skill tidak ditemukan. Risiko menggabungkan bahaya, eksposur, dan kerentanan, masing-masing dengan ketidakpastiannya; metrik risiko iklim komersial kurang mencerminkan ketidakpastian, dan satu analisis (Aon) menyebut keputusan keuangan tingkat alamat hampir selalu keliru; data eksposur sering lebih kasar daripada grid bahaya.",
+"Expected annual loss": "Kerugian tahunan yang diharapkan",
+"Assets and population exposed to each hazard": "Aset dan penduduk yang terpapar setiap bahaya",
+"Combined hazard, exposure and vulnerability risk score": "Skor risiko gabungan bahaya, eksposur, dan kerentanan",
+"CLIMADA, the open-source risk platform from ETH Zurich, combines hazard, exposure and vulnerability. Bresch and Aznar-Siguan (2021) describe it, including its cost-benefit method for adaptation measures, and apply it to a tropical cyclone case study in the Caribbean.": "CLIMADA, platform risiko sumber terbuka dari ETH Zurich, menggabungkan bahaya, eksposur, dan kerentanan. Bresch dan Aznar-Siguan (2021) menjelaskannya, termasuk metode biaya-manfaat untuk langkah adaptasi, dan menerapkannya pada studi kasus siklon tropis di Karibia.",
+"Vendor document: Jupiter Intelligence describes a major US bank that added physical climate risk data to its enterprise risk models and to TCFD-aligned disclosure. The bank is not named.": "Dokumen vendor: Jupiter Intelligence menjelaskan sebuah bank besar AS yang menambahkan data risiko iklim fisik ke model risiko perusahaannya dan ke pengungkapan selaras TCFD. Nama bank tidak disebutkan.",
+"Downscaled projections": "Proyeksi downscaled",
+"Methods differ; bias persists.": "Metode berbeda; bias bertahan.",
+"CORDEX-Southeast Asia (21 members): reasonable rain pattern but substantial wet bias; members from the same regional model share bias structure. Sumatra: raw CMIP6 underestimates rain, especially Dec-Feb and Sep-Nov; bias correction is needed.": "CORDEX-Southeast Asia (21 anggota): pola hujan cukup wajar tetapi bias basah substansial; anggota dari model regional yang sama memiliki struktur bias yang sama. Sumatra: CMIP6 mentah meremehkan hujan, terutama Des-Feb dan Sep-Nov; koreksi bias diperlukan.",
+"Change in daily maximum and minimum temperature": "Perubahan suhu maksimum dan minimum harian",
+"Change in daily rainfall": "Perubahan curah hujan harian",
+"Change in rainfall seasonality": "Perubahan pola musiman curah hujan",
+"The City of London Corporation used UK Climate Projections (UKCP18) in its climate risk assessment and built adaptation pathways for six priority risks.": "City of London Corporation menggunakan UK Climate Projections (UKCP18) dalam penilaian risiko iklimnya dan menyusun jalur adaptasi untuk enam risiko prioritas.",
+"Projected hazard indices": "Indeks bahaya terproyeksi",
+"ETCCDI-type indices. Southeast Asia context only.": "Tipe indeks ETCCDI. Hanya konteks Asia Tenggara.",
+"No skill figure possible (projections cannot be verified against the future). Ensemble medians characterised historical precipitation extremes in Southeast Asia better than individual models; extremes are projected to increase over Indochina and the Maritime Continent. For compound wind and rain extremes, model uncertainty in rain falls from 73.9% to 42.7% over the century while scenario uncertainty rises from 20.3% to 55.0%.": "Angka skill tidak mungkin (proyeksi tidak dapat diverifikasi terhadap masa depan). Median ensemble menggambarkan ekstrem presipitasi historis di Asia Tenggara lebih baik daripada model individual; ekstrem diproyeksikan meningkat di Indochina dan Maritime Continent. Untuk ekstrem majemuk angin dan hujan, ketidakpastian model untuk hujan turun dari 73,9% menjadi 42,7% sepanjang abad, sementara ketidakpastian skenario naik dari 20,3% menjadi 55,0%.",
+"Number of hot days and heatwave days": "Jumlah hari panas dan hari gelombang panas",
+"Maximum 1-day and 5-day rainfall": "Hujan maksimum 1 hari dan 5 hari",
+"Consecutive dry days": "Hari kering berturut-turut",
+"The World Bank Climate Change Knowledge Portal provides CMIP6-based projections of heat waves, droughts and floods at country and subnational level, and World Bank country climate and development reports map each hazard to indices such as maximum 5-day precipitation.": "World Bank Climate Change Knowledge Portal menyediakan proyeksi berbasis CMIP6 untuk gelombang panas, kekeringan, dan banjir di tingkat negara dan subnasional, dan laporan country climate and development World Bank memetakan setiap bahaya ke indeks seperti presipitasi maksimum 5 hari.",
+"Equatorial waves": "Gelombang ekuator",
+"Wave-phase diagnostics are monitored; forecast use is still maturing.": "Diagnostik fase gelombang dipantau; penggunaan untuk prakiraan masih berkembang.",
+"Skill falls quickly with lead time and differs by wave type. In NOAA's UFS tests Kelvin and mixed Rossby-gravity wave skill drops below 0.5 within about 2 days, while equatorial Rossby wave skill lasts about 4-6 days (presentations, not peer reviewed). A 2025 study over Australia put wind-based predictability at about 11 days for equatorial Rossby waves against 18 days for the MJO (conference abstract). Southeast Asia heavy rain is 2-4 times more likely given wave phase, as in item 30. No Indonesia-specific verification found.": "Skill turun cepat seiring lead time dan berbeda menurut jenis gelombang. Pada uji UFS NOAA, skill gelombang Kelvin dan Rossby-gravitasi campuran turun di bawah 0,5 dalam sekitar 2 hari, sedangkan skill gelombang Rossby ekuator bertahan sekitar 4-6 hari (presentasi, belum ditelaah sejawat). Studi 2025 di Australia menetapkan prediktabilitas berbasis angin sekitar 11 hari untuk gelombang Rossby ekuator dibanding 18 hari untuk MJO (abstrak konferensi). Hujan lebat di Asia Tenggara 2-4 kali lebih mungkin pada fase gelombang tertentu, seperti pada item 30. Verifikasi khusus Indonesia tidak ditemukan.",
+"Phase and amplitude of Kelvin, equatorial Rossby and mixed Rossby-gravity waves": "Fase dan amplitudo gelombang Kelvin, Rossby ekuator, dan Rossby-gravitasi campuran",
+"Rainfall probability conditioned on wave phase": "Probabilitas hujan bersyarat fase gelombang",
+"Lower-level wind (850 hPa zonal wind)": "Angin lapisan bawah (angin zonal 850 hPa)",
+"BMKG's late August 2024 weekly outlook cited active Kelvin waves and equatorial Rossby waves, together with the MJO, as reasons for higher rainfall potential in Indonesia.": "Outlook mingguan BMKG akhir Agustus 2024 menyebut gelombang Kelvin dan Rossby ekuator yang aktif, bersama MJO, sebagai alasan potensi hujan lebih tinggi di Indonesia.",
+"Weather regimes": "Rezim cuaca",
+"Standard in Europe; less tested for Indonesian rain.": "Standar di Eropa; kurang diuji untuk hujan Indonesia.",
+"Southeast Asia weather patterns (Met Office GloSea5): pattern-conditioned forecasts of high-impact weather gave a small but significant gain over direct forecasts (conference abstract). Heavy rain is 2-4 times more likely in Indonesia, Malaysia, Vietnam and the Philippines when conditioned on equatorial wave phase. The gain is modest.": "Pola cuaca Asia Tenggara (Met Office GloSea5): prakiraan cuaca berdampak tinggi bersyarat pola memberi peningkatan kecil tetapi signifikan dibanding prakiraan langsung (abstrak konferensi). Hujan lebat 2-4 kali lebih mungkin di Indonesia, Malaysia, Vietnam, dan Filipina bila dikondisikan pada fase gelombang ekuator. Peningkatannya sederhana.",
+"Probability of each regime (large-scale circulation pattern)": "Probabilitas setiap rezim (pola sirkulasi skala besar)",
+"Heavy-rain probability conditioned on regime or wave phase": "Probabilitas hujan lebat bersyarat rezim atau fase gelombang",
+"Warm or cold spell likelihood conditioned on regime": "Kemungkinan periode hangat atau dingin bersyarat rezim",
+"The UK Met Office assigns ensemble members to 30 weather patterns in its Decider tool. Coastal Decider is used by the Flood Forecasting Centre to support decisions on coastal flood risk.": "Met Office Inggris menetapkan anggota ensemble ke 30 pola cuaca dalam alat Decider-nya. Coastal Decider digunakan Flood Forecasting Centre untuk mendukung keputusan risiko banjir pesisir.",
+"Phase-conditioned multi-year risk": "Risiko multitahun bersyarat fase",
+"Rain skill weak.": "Skill hujan lemah.",
+"Multi-year predictions started from El Niño or La Niña show higher skill for temperature and precipitation than those from neutral years. In idealised experiments over 80% of the area has significant temperature skill for years 2-3 after El Niño against about 50% from neutral years; real hindcasts show the effect to a lesser extent. No fine-scale or Indonesian rain verification found.": "Prediksi multitahun yang dimulai dari El Niño atau La Niña menunjukkan skill suhu dan presipitasi lebih tinggi daripada yang dimulai dari tahun netral. Pada eksperimen ideal, lebih dari 80% wilayah memiliki skill suhu signifikan untuk tahun ke-2-3 setelah El Niño dibanding sekitar 50% dari tahun netral; hindcast nyata menunjukkan efek yang lebih kecil. Verifikasi hujan skala halus atau Indonesia tidak ditemukan.",
+"Multi-year temperature anomaly probability by ENSO phase": "Probabilitas anomali suhu multitahun menurut fase ENSO",
+"Multi-year rainfall anomaly probability by ENSO phase": "Probabilitas anomali curah hujan multitahun menurut fase ENSO",
+"Skill depends on season and phase. Grouped as one tropical intraseasonal family; equatorial waves are item 29.": "Skill bergantung pada musim dan fase. Dikelompokkan sebagai satu keluarga intramusiman tropis; gelombang ekuator adalah item 29.",
+"In S2S models the OLR-based MJO index stays skilful (correlation above 0.6) for about 15-36 days in boreal winter, 5-10 days less in summer. The RMM index gives about 3 weeks (ACC above 0.5) against potential predictability of 6-7 weeks. The Maritime Continent barrier costs about 10 days. ECMWF reached about 27 days (older study). No skill figure found for BSISO or for moisture-mode forecasts as such. Moisture modes are a way of classifying systems, not a forecast product: in 1984-2016 observations they are associated with about 45-75% of extreme 3-hourly rainfall events at 15-20 degrees N/S, where extreme means above the local 99th percentile and association means within 1,000 km of the system centre (diagnostic study, no forecast skill).": "Pada model S2S, indeks MJO berbasis OLR tetap berskill (korelasi di atas 0,6) selama sekitar 15-36 hari pada musim dingin boreal, 5-10 hari lebih sedikit pada musim panas. Indeks RMM memberi sekitar 3 minggu (ACC di atas 0,5) dibanding prediktabilitas potensial 6-7 minggu. Maritime Continent barrier memakan sekitar 10 hari. ECMWF mencapai sekitar 27 hari (studi lama). Angka skill untuk BSISO atau untuk prakiraan moisture mode tidak ditemukan. Moisture mode adalah cara mengklasifikasikan sistem, bukan produk prakiraan: pada pengamatan 1984-2016, moisture mode berkaitan dengan sekitar 45-75% kejadian hujan 3 jam ekstrem pada 15-20 derajat LU/LS, dengan ekstrem berarti di atas persentil ke-99 lokal dan keterkaitan berarti dalam 1.000 km dari pusat sistem (studi diagnostik, tanpa skill prakiraan).",
+"MJO phase and amplitude (RMM and OLR-based indices)": "Fase dan amplitudo MJO (indeks RMM dan berbasis OLR)",
+"BSISO phase and amplitude (boreal summer)": "Fase dan amplitudo BSISO (musim panas boreal)",
+"Weekly rainfall anomaly linked to MJO phase": "Anomali curah hujan mingguan terkait fase MJO",
+"Indonesia's BMKG tied the rise in rainfall potential in its late August 2024 weekly outlook to the MJO, expected in phase 3 over the Indian Ocean and phase 4 over Indonesia.": "BMKG Indonesia mengaitkan kenaikan potensi hujan dalam outlook mingguan akhir Agustus 2024 dengan MJO, yang diperkirakan berada di fase 3 di Samudra Hindia dan fase 4 di Indonesia.",
+"Stratosphere and extratropical links": "Stratosfer dan keterkaitan ekstratropis",
+"Little skill gain for Indonesia.": "Peningkatan skill kecil untuk Indonesia.",
+"Skill for stratospheric events is generally limited to 1-2 weeks; weak and strong polar vortex events add surface skill 3-4 weeks later over the US, Russia and the Middle East but not Europe. For Indonesia the link runs through the QBO-MJO connection: MJO skill is higher in easterly QBO phases (see item 32).": "Skill untuk kejadian stratosfer umumnya terbatas pada 1-2 minggu; kejadian vorteks kutub lemah dan kuat menambah skill permukaan 3-4 minggu kemudian di AS, Rusia, dan Timur Tengah tetapi tidak di Eropa. Untuk Indonesia, kaitannya melalui hubungan QBO-MJO: skill MJO lebih tinggi pada fase QBO timuran (lihat item 32).",
+"Polar vortex strength and sudden stratospheric warming occurrence": "Kekuatan vorteks kutub dan kejadian pemanasan stratosfer mendadak",
+"Cold-spell likelihood in mid-latitudes": "Kemungkinan periode dingin di lintang tengah",
+"QBO phase": "Fase QBO",
+"The weather consultancy MetDesk gave Argus Media a 75% probability of a sudden stratospheric warming in a winter outlook, which it linked to temperatures 1-2 degrees C below normal in north-west Europe for energy markets.": "Konsultan cuaca MetDesk memberi Argus Media probabilitas 75% pemanasan stratosfer mendadak dalam outlook musim dingin, yang dikaitkannya dengan suhu 1-2 derajat C di bawah normal di Eropa barat laut untuk pasar energi.",
+"CMIP6 climate models": "Model iklim CMIP6",
+"Standard reference.": "Acuan standar.",
+"27 CMIP6 models over Southeast Asia: most overestimate rain in Thailand, Cambodia and the maritime countries and underestimate it in Indonesia and Laos; the ensemble mean has limited skill. A benchmark found wet biases over Maritime Continent terrain; 19 of 32 models passed minimum rainfall criteria.": "27 model CMIP6 di Asia Tenggara: sebagian besar melebihkan hujan di Thailand, Kamboja, dan negara maritim serta meremehkannya di Indonesia dan Laos; rata-rata ensemble memiliki skill terbatas. Sebuah benchmark menemukan bias basah di atas medan Maritime Continent; 19 dari 32 model lolos kriteria hujan minimum.",
+"Change in mean temperature": "Perubahan suhu rata-rata",
+"Change in mean rainfall": "Perubahan curah hujan rata-rata",
+"Change in sea-surface temperature": "Perubahan suhu permukaan laut",
+"The Network for Greening the Financial System (NGFS) moved its Climate Impact Explorer, which covers 43 physical-risk indicators for central banks and supervisors, to ISIMIP3 and CMIP6 data.": "Network for Greening the Financial System (NGFS) memindahkan Climate Impact Explorer-nya, yang mencakup 43 indikator risiko fisik untuk bank sentral dan pengawas, ke data ISIMIP3 dan CMIP6.",
+"ENSO and IOD outlooks": "Outlook ENSO dan IOD",
+"Long-running.": "Sudah lama berjalan.",
+"ENSO: skill of 12-17 months in recent studies (one coupled model had ACC above 0.7 at 12 months, older study). IOD: skill historically about one season; in four seasonal systems ACC of 0.6 or more held to 3-4 months, and the hit rate for events fell below 50% after about 2 months.": "ENSO: skill 12-17 bulan pada studi terbaru (satu model terkopel memiliki ACC di atas 0,7 pada 12 bulan, studi lama). IOD: skill secara historis sekitar satu musim; pada empat sistem musiman, ACC 0,6 atau lebih bertahan hingga 3-4 bulan, dan hit rate untuk kejadian turun di bawah 50% setelah sekitar 2 bulan.",
+"Nino 3.4 sea-surface temperature anomaly (ENSO)": "Anomali suhu permukaan laut Nino 3.4 (ENSO)",
+"Dipole Mode Index (IOD)": "Dipole Mode Index (IOD)",
+"Seasonal rainfall tendency linked to ENSO and IOD": "Kecenderungan curah hujan musiman terkait ENSO dan IOD",
+"BMKG's ten-day (dasarian) climate analysis reports ENSO and IOD indices next to its rainfall outlook; the early September 2026 issue gave an IOD index of +0.394 and a strongly positive ENSO trend.": "Analisis iklim dasarian BMKG melaporkan indeks ENSO dan IOD di samping outlook curah hujannya; edisi awal September 2026 mencantumkan indeks IOD +0,394 dan tren ENSO positif kuat.",
+"Decadal predictions": "Prediksi dekadal",
+"Skill limited to large regions.": "Skill terbatas pada wilayah luas.",
+"High skill for surface temperature; with a larger ensemble, also significant skill for land rain and circulation (forecast years 2-9, mostly large scale). Regional rain skill at fine scale is not shown.": "Skill tinggi untuk suhu permukaan; dengan ensemble lebih besar, juga skill signifikan untuk hujan daratan dan sirkulasi (tahun prakiraan 2-9, sebagian besar skala besar). Skill hujan regional skala halus tidak ditunjukkan.",
+"Annual mean temperature": "Suhu rata-rata tahunan",
+"Multi-year rainfall anomaly (large regions)": "Anomali curah hujan multitahun (wilayah luas)",
+"Probability that a year exceeds the previous record": "Probabilitas suatu tahun melampaui rekor sebelumnya",
+"The WMO Global Annual to Decadal Climate Update, led by the UK Met Office as WMO Lead Centre, reported in its 2026-2035 edition an 86% chance that one year in 2026-2030 will exceed 2024 as the warmest on record.": "WMO Global Annual to Decadal Climate Update, dipimpin Met Office Inggris sebagai WMO Lead Centre, melaporkan dalam edisi 2026-2035 peluang 86% bahwa satu tahun pada 2026-2030 akan melampaui 2024 sebagai tahun terhangat yang tercatat.",
+"Regional NWP (limited-area, WRF)": "Regional NWP (area terbatas, WRF)",
+"Routine; depends on domain and boundary data.": "Rutin; bergantung pada domain dan data batas.",
+"Indonesia (BMKG, 34 stations, 24-hour rain, 2017-2020): WRF was the best reference model in 21% of monthly comparisons, behind IFS (37%) and GFS (22%), and the paper reports the best standard-deviation value for WRF. The figure counts how often a model ranked best, not an error value. WRF takes global model data as boundary conditions, so it inherits their errors; no verification of the gain from regional over global models for Indonesia was found in the sources seen.": "Indonesia (BMKG, 34 stasiun, hujan 24 jam, 2017-2020): WRF menjadi model referensi terbaik pada 21% perbandingan bulanan, di belakang IFS (37%) dan GFS (22%), dan makalah tersebut melaporkan nilai simpangan baku terbaik untuk WRF. Angka itu menghitung seberapa sering model berada di peringkat terbaik, bukan nilai galat. WRF memakai data model global sebagai kondisi batas sehingga mewarisi galatnya; verifikasi keuntungan model regional dibanding global untuk Indonesia tidak ditemukan pada sumber yang dilihat.",
+"2 m temperature and humidity": "Suhu dan kelembapan 2 m",
+"Indonesia's BMKG runs limited-area WRF models on global NWP data: WRF-DY (without assimilation), INANWP (with assimilation of its surface, upper-air and remote-sensing observations) and INACAWO (atmosphere-ocean coupled); its WRF 0.3 SEA forecast runs to +120 h at 3-hour resolution.": "BMKG Indonesia menjalankan model WRF area terbatas di atas data NWP global: WRF-DY (tanpa asimilasi), INANWP (dengan asimilasi pengamatan permukaan, udara atas, dan penginderaan jauh miliknya), dan INACAWO (kopel atmosfer-laut); prakiraan WRF 0.3 SEA-nya berjalan hingga +120 jam dengan resolusi 3 jam.",
+"Global NWP (medium-range, ensemble)": "Global NWP (jangka menengah, ensemble)",
+"Routine; weakest for tropical rain.": "Rutin; paling lemah untuk hujan tropis.",
+"ECMWF's 2024 evaluation: for upper-air variables ECMWF has a clear lead among global centres; for surface variables some centres have overtaken it at shorter ranges. In the tropics ECMWF has the smallest wind error when verified against observations, but not always against each centre's own analysis. Indonesia (BMKG, 34 stations, 24-hour rain, 2017-2020): IFS was the best reference model most often (37% of monthly comparisons), ahead of GFS (22%), WRF (21%) and ARPEGE (20%); the figure counts how often a model ranked best, not an error value. Global models are known to miss Maritime Continent rainfall (convection-permitting ensembles do better there, see item 2).": "Evaluasi ECMWF 2024: untuk variabel lapisan atas, ECMWF unggul jelas di antara pusat global; untuk variabel permukaan, beberapa pusat telah melampauinya pada rentang lebih pendek. Di wilayah tropis, ECMWF memiliki galat angin terkecil bila diverifikasi terhadap pengamatan, tetapi tidak selalu terhadap analisis masing-masing pusat. Indonesia (BMKG, 34 stasiun, hujan 24 jam, 2017-2020): IFS paling sering menjadi model referensi terbaik (37% perbandingan bulanan), di depan GFS (22%), WRF (21%), dan ARPEGE (20%); angka itu menghitung seberapa sering model berada di peringkat terbaik, bukan nilai galat. Model global dikenal gagal menangkap hujan Maritime Continent (ensemble convection-permitting lebih baik di sana, lihat item 2).",
+"2 m temperature and 10 m wind speed and direction": "Suhu 2 m serta kecepatan dan arah angin 10 m",
+"Ensemble probabilities of extremes": "Probabilitas ekstrem dari ensemble",
+"Indonesia's BMKG uses global NWP from ECMWF (IFS HRES to +240 h, ENS to +360 h), NOAA/NCEP (GFS and GEFS to +384 h) and other centres, issued every 12 hours, to initialise and analyse its National Digital Forecast, and runs WRF limited-area models on top of them.": "BMKG Indonesia menggunakan NWP global dari ECMWF (IFS HRES hingga +240 jam, ENS hingga +360 jam), NOAA/NCEP (GFS dan GEFS hingga +384 jam), dan pusat lain, diterbitkan setiap 12 jam, untuk inisialisasi dan analisis National Digital Forecast-nya, serta menjalankan model area terbatas WRF di atasnya.",
+"Established": "Mapan",
+"Experimental": "Eksperimental",
+"Experimental (dashed)": "Eksperimental (putus-putus)",
+"Evidence from Indonesia or Southeast Asia": "Bukti dari Indonesia atau Asia Tenggara",
+"Evidence from other tropical regions": "Bukti dari wilayah tropis lain",
+"Evidence from mid-latitude regions": "Bukti dari wilayah lintang tengah",
+"Evidence from global studies": "Bukti dari studi global",
+"No skill figure found": "Angka skill tidak ditemukan",
+"Not verifiable: projection or loss model": "Tidak dapat diverifikasi: proyeksi atau model kerugian",
+"Indonesia or Southeast Asia": "Indonesia atau Asia Tenggara",
+"Other tropics (no Indonesian evidence)": "Tropis lain (tanpa bukti Indonesia)",
+"Mid-latitude regions only": "Hanya wilayah lintang tengah",
+"Global studies only": "Hanya studi global",
+"Not verifiable (projection or loss model)": "Tidak dapat diverifikasi (proyeksi atau model kerugian)",
+"Rainfall": "Curah hujan",
+"Temperature and heat": "Suhu dan panas",
+"Wind and storms": "Angin dan badai",
+"Water and land": "Air dan lahan",
+"Ocean": "Laut",
+"Fire": "Kebakaran",
+"Modes and indices": "Moda dan indeks",
+"Losses and exposure": "Kerugian dan eksposur",
+"Driver or method": "Pendorong atau metode",
+"Product": "Produk",
+"Planning horizon": "Horizon perencanaan",
+"Spatial extent": "Cakupan spasial",
+"Impact proximity": "Kedekatan dampak",
+"Note": "Catatan",
+"Variables it can forecast": "Variabel yang dapat diprakirakan",
+"Reported skill and evidence": "Skill dan bukti yang dilaporkan",
+"Real-world use": "Penggunaan nyata",
+"Existing products": "Produk yang ada",
+"Sources": "Sumber",
+"No use by another institution or company was found for this approach.": "Tidak ditemukan penggunaan oleh institusi atau perusahaan lain untuk pendekatan ini.",
+"Skill is quoted for the metric, region and period each source used. It is not comparable across items, and it is not a maturity call. Posters, preprints and vendor material are included where noted.": "Skill dikutip untuk metrik, wilayah, dan periode yang digunakan masing-masing sumber. Skill tidak dapat dibandingkan antar item dan bukan penilaian kematangan. Poster, preprint, dan materi vendor disertakan bila dinyatakan.",
+"No items match these filters.": "Tidak ada item yang sesuai dengan filter ini.",
+"Select a sphere on the map or an item in the list to see its skill and evidence. The ? marks a zone with no forecast product; select it to see why.": "Pilih sebuah bola pada peta atau item pada daftar untuk melihat skill dan buktinya. Tanda ? menandai zona tanpa produk prakiraan; pilih untuk melihat alasannya.",
+"Sphere colour": "Warna bola",
+"Shape": "Bentuk",
+"● product": "● produk",
+"◆ driver or method": "◆ pendorong atau metode",
+"? zone with no product": "? zona tanpa produk",
+"Symbol colour, main variable": "Warna simbol, variabel utama",
+"Legend ▾": "Legenda ▾",
+"Legend ▸": "Legenda ▸",
+"Planning horizon (log)": "Horizon perencanaan (log)",
+"Spatial extent (log)": "Cakupan spasial (log)",
+"1 h": "1 jam",
+"1 d": "1 hari",
+"1 wk": "1 mgg",
+"1 mo": "1 bln",
+"1 yr": "1 thn",
+"10 yr": "10 thn",
+"100 yr": "100 thn",
+"1,000": "1.000",
+"10,000 km": "10.000 km",
+"Weather and hazards": "Cuaca dan bahaya",
+"Socioeconomic": "Sosioekonomi",
+"Impact": "Dampak",
+"Select an impact variable to add the third axis · ": "Pilih variabel dampak untuk menambah sumbu ketiga · ",
+"Drag to rotate · ": "Seret untuk memutar · ",
+"scroll or pinch to zoom · shift+drag to pan · click a sphere": "gulir atau cubit untuk zoom · shift+seret untuk menggeser · klik sebuah bola",
+"None": "Tidak ada",
+"Why is there no forecast for 10 days to 1 month below about 10 km?": "Mengapa tidak ada prakiraan untuk 10 hari hingga 1 bulan di bawah sekitar 10 km?",
+"Why is there no forecast product for 10 days to 1 month at scales below about 10 km?": "Mengapa tidak ada produk prakiraan untuk 10 hari hingga 1 bulan pada skala di bawah sekitar 10 km?",
+"Small features are the least predictable. In cloud-resolving simulations, small errors roughly double every 4 hours at storm scale, against about 40 hours at synoptic scale [1]. A storm-scale forecast therefore loses its detail within hours to a day or two.": "Fitur kecil adalah yang paling sulit diprediksi. Pada simulasi yang meresolusi awan, galat kecil kira-kira menjadi dua kali lipat setiap 4 jam pada skala badai, dibanding sekitar 40 jam pada skala sinoptik [1]. Prakiraan skala badai karena itu kehilangan detailnya dalam hitungan jam hingga satu-dua hari.",
+"Errors then spread upward to larger scales, which sets an intrinsic limit of about two weeks on forecasting individual weather systems, however fine the model [2].": "Galat kemudian merambat ke skala yang lebih besar, yang menetapkan batas intrinsik sekitar dua minggu untuk memprakirakan sistem cuaca individual, sehalus apa pun modelnya [2].",
+"Beyond that, the skill that remains is found mainly in averaged quantities. A 2025 study of ECMWF sub-seasonal forecasts found that forecasts are often more precise than accurate when the grid is finer than the scales they can predict, and that spatial aggregation raises accuracy and extends predictable lead times [3]. Skill also falls from week 3 to week 4, and rainfall is the hardest variable [4].": "Selebihnya, skill yang tersisa terutama ada pada besaran rata-rata. Studi 2025 tentang prakiraan sub-musiman ECMWF menemukan bahwa prakiraan sering lebih presisi daripada akurat bila grid lebih halus daripada skala yang dapat diprediksinya, dan bahwa agregasi spasial meningkatkan akurasi serta memperpanjang lead time yang dapat diprediksi [3]. Skill juga turun dari minggu ke-3 ke minggu ke-4, dan hujan adalah variabel tersulit [4].",
+"Products do exist in this window at coarser scales: S2S hazard products and S2S rain and temperature terciles are gridded at 25-100 km, but their published skill is mostly for regional or large-area averages. A product for single sites or storms below about 10 km would have more precision than accuracy.": "Produk memang ada pada rentang ini pada skala yang lebih kasar: produk bahaya S2S dan tercile curah hujan dan suhu S2S disajikan pada grid 25-100 km, tetapi skill yang dipublikasikan sebagian besar untuk rata-rata wilayah atau area luas. Produk untuk lokasi tunggal atau badai di bawah sekitar 10 km akan lebih presisi daripada akurat.",
+"This is Klimatikal's reading of the cited sources. It is not a proof that no skill exists for any local quantity at these lead times.": "Ini adalah pembacaan Klimatikal atas sumber yang dikutip. Ini bukan bukti bahwa tidak ada skill sama sekali untuk besaran lokal pada lead time ini."
+};
+function tr(s){return (LANG==='id'&&Object.prototype.hasOwnProperty.call(ID,s))?ID[s]:s;}
+// planning horizon, spatial extent and impact proximity labels: units, decimal and thousands separators
+function tl(s){if(LANG!=='id')return s;return String(s).replace(/(\d)\.(\d)/g,'$1,$2').replace(/(\d),(\d{3})/g,'$1.$2').replace(/\bh\b/g,'jam').replace(/\bd\b/g,'hari').replace(/\bwk\b/g,'mgg').replace(/\bmo\b/g,'bln').replace(/\byr\b/g,'thn').replace(/\bstation\b/g,'stasiun').replace(/\bmathematical\b/g,'matematis').replace(/\bphysical\b/g,'fisik').replace(/\bsocioeconomic\b/g,'sosioekonomi').replace(/ to /g,' hingga ');}
 
 
 /* ---------- gaps: zones of the chart with no product, explained on click ---------- */
@@ -554,20 +883,20 @@ function draw(){
   // horizon axis: nearer of two floor edges
   var zE=(pr([0,fy,hz])[2]>=pr([0,fy,-hz])[2])?hz:-hz;
   if(slen([-hx,fy,zE],[hx,fy,zE])>40){
-  hT.forEach(function(t){if(flat&&t[0]===1)return;var x=(nh(t[0])-0.5)*DIM.x,p=away(pr([x,fy,zE]),12);txt(t[1],p[0],p[1],P.mute,'center',10.5);});
-  var tm=away(pr([0,fy,zE]),36);txt('Planning horizon (log)',tm[0],tm[1],P.fg,'center',11.5,true);}
+  hT.forEach(function(t){if(flat&&t[0]===1)return;var x=(nh(t[0])-0.5)*DIM.x,p=away(pr([x,fy,zE]),12);txt(tr(t[1]),p[0],p[1],P.mute,'center',10.5);});
+  var tm=away(pr([0,fy,zE]),36);txt(tr('Planning horizon (log)'),tm[0],tm[1],P.fg,'center',11.5,true);}
   // scale axis
   var xE=(pr([hx,fy,0])[0]<=pr([-hx,fy,0])[0])?hx:-hx; // left-most floor edge on screen
   if(slen([xE,fy,-hz],[xE,fy,hz])>40){
-  sT.forEach(function(t){var z=-(ns(t[0])-0.5)*DIM.z,p=away(pr([xE,fy,z]),12);txt(t[1],p[0],p[1],P.mute,'center',10.5);});
-  var sm=away(pr([xE,fy,0]),42);vtxt('Spatial extent (log)',sm[0],sm[1],P.fg,11.5,true);}
+  sT.forEach(function(t){var z=-(ns(t[0])-0.5)*DIM.z,p=away(pr([xE,fy,z]),12);txt(tr(t[1]),p[0],p[1],P.mute,'center',10.5);});
+  var sm=away(pr([xE,fy,0]),42);vtxt(tr('Spatial extent (log)'),sm[0],sm[1],P.fg,11.5,true);}
   // abstraction axis: leftmost vertical edge
   var ve=[[-hx,-hz],[-hx,hz],[hx,-hz],[hx,hz]], best=ve[0], bx=1e9;
   ve.forEach(function(e){var s=pr([e[0],fy,e[1]])[0]; if(s<bx){bx=s;best=e;}});
   if(slen([best[0],-hy,best[1]],[best[0],hy,best[1]])>40){
-  [[0,'0'],[3,'3'],[7,'7'],[10,'10']].forEach(function(t){var y=(t[0]/10-0.5)*DIM.y,p=away(pr([best[0],y,best[1]]),12);txt(t[1],p[0],p[1],P.mute,'right',10.5);});
-  [[1.5,'Modes and indices'],[5,'Weather and hazards'],[8.5,'Socioeconomic']].forEach(function(t){var y=(t[0]/10-0.5)*DIM.y,p=away(pr([best[0],y,best[1]]),W<600?30:44);txt(t[1],p[0],p[1],P.mute,'right',10.5);});
-  var at=away(pr([best[0],hy,best[1]]),26);txt(nar?'Impact':'Impact proximity',at[0]-4,at[1]-10,P.fg,'right',11.5,true);}
+  [[0,'0'],[3,'3'],[7,'7'],[10,'10']].forEach(function(t){var y=(t[0]/10-0.5)*DIM.y,p=away(pr([best[0],y,best[1]]),12);txt(tr(t[1]),p[0],p[1],P.mute,'right',10.5);});
+  [[1.5,'Modes and indices'],[5,'Weather and hazards'],[8.5,'Socioeconomic']].forEach(function(t){var y=(t[0]/10-0.5)*DIM.y,p=away(pr([best[0],y,best[1]]),W<600?30:44);txt(tr(t[1]),p[0],p[1],P.mute,'right',10.5);});
+  var at=away(pr([best[0],hy,best[1]]),26);txt(tr(nar?'Impact':'Impact proximity'),at[0]-4,at[1]-10,P.fg,'right',11.5,true);}
 
   // boxes
   var list=ITEMS.filter(visible).map(function(it){var c=pr(it.ctr);return {it:it,c:c};});
@@ -664,7 +993,7 @@ cv.addEventListener('pointermove',function(e){
   if(!p){ // hover
     var id=pick(lx,ly);
     if(id!==S.hov){S.hov=id;request();}
-    if(id!==null){var it=byId(id);tip.textContent=it.gap?it.tip:it.id+'. '+it.name;tip.style.display='block';tip.style.left=Math.max(4,Math.min(lx+12,W-250))+'px';tip.style.top=(ly+14)+'px';}
+    if(id!==null){var it=byId(id);tip.textContent=it.gap?tr(it.tip):it.id+'. '+tr(it.name);tip.style.display='block';tip.style.left=Math.max(4,Math.min(lx+12,W-250))+'px';tip.style.top=(ly+14)+'px';}
     else tip.style.display='none';
     return;
   }
@@ -725,7 +1054,7 @@ function loop(){
   requestAnimationFrame(step);
 }
 function resetView(){ goView(S.iv==='all'?'2d':'3d'); updateHint(); }
-function updateHint(){ document.getElementById('hint').textContent=(S.view==='2d'?'Select an impact variable to add the third axis · ':'Drag to rotate · ')+'scroll or pinch to zoom · shift+drag to pan · click a sphere'; }
+function updateHint(){ document.getElementById('hint').textContent=tr(S.view==='2d'?'Select an impact variable to add the third axis · ':'Drag to rotate · ')+tr('scroll or pinch to zoom · shift+drag to pan · click a sphere'); }
 function setViewChip(n){document.getElementById('selView').value=n||'';}
 
 /* ---------- UI ---------- */
@@ -736,28 +1065,28 @@ function select(id,fromList){
 }
 function renderDetail(){
   var d=document.getElementById('detail');
-  if(S.sel===null){d.innerHTML='<p class="empty">Select a sphere on the map or an item in the list to see its skill and evidence.</p>';return;}
+  if(S.sel===null){d.innerHTML='<p class="empty">'+esc(tr('Select a sphere on the map or an item in the list to see its skill and evidence. The ? marks a zone with no forecast product; select it to see why.'))+'</p>';return;}
   var it=byId(S.sel);
-  if(it.gap){var gh='<h2>'+esc(it.title)+'</h2>';it.paras.forEach(function(p){gh+='<p>'+esc(p)+'</p>';});gh+='<div class="sec srcs"><h3>Sources</h3>'+it.src.map(function(x){return '<a href="'+esc(x[1])+'" target="_blank" rel="noopener">'+esc(x[0])+'</a>';}).join('')+'</div><div class="warn">'+esc(it.note)+'</div>';d.innerHTML=gh;return;}
+  if(it.gap){var gh='<h2>'+esc(tr(it.title))+'</h2>';it.paras.forEach(function(p){gh+='<p>'+esc(tr(p))+'</p>';});gh+='<div class="sec srcs"><h3>'+tr('Sources')+'</h3>'+it.src.map(function(x){return '<a href="'+esc(x[1])+'" target="_blank" rel="noopener">'+esc(x[0])+'</a>';}).join('')+'</div><div class="warn">'+esc(tr(it.note))+'</div>';d.innerHTML=gh;return;}
   var m=MAT[it.m];
-  var h='<h2>'+it.id+'. '+esc(it.name)+'</h2>';
-  h+='<div class="tags"><span class="tag" style="background:'+m.c+'">'+m.n+'</span>'+it.c.split('').map(function(k){return '<span class="tag" style="background:'+COV[k].c+'">'+esc(COV[k].n)+'</span>';}).join('')+'<span class="tag" style="background:#9fb7c9">'+(it.type==='d'?'Driver or method':'Product')+'</span></div>';
-  h+='<div class="kv"><b>Planning horizon</b><span>'+esc(it.hl)+'</span><b>Spatial extent</b><span>'+esc(it.sl)+'</span><b>Impact proximity</b><span>'+esc(it.al)+'</span></div>';
-  h+='<div class="sec"><h3>Note</h3><div>'+esc(it.note)+'</div></div>';
-  h+='<div class="sec"><h3>Variables it can forecast</h3><ul>'+it.vars.map(function(v){return '<li><b>'+esc(IV[v[0]])+'</b> '+esc(v[1])+'</li>';}).join('')+'</ul></div>';
-  h+='<div class="sec"><h3>Reported skill and evidence</h3><div>'+esc(it.skill)+'</div></div>';
-  h+='<div class="sec uc"><h3>Real-world use</h3>'+(it.uc.length?it.uc.map(function(u){return '<div>'+esc(u[0])+' <a href="'+esc(u[2])+'" target="_blank" rel="noopener">'+esc(u[1])+'</a></div>';}).join(''):'<div>No use by another institution or company was found for this approach.</div>')+'</div>';
-  if(it.prod.length) h+='<div class="sec"><h3>Existing products</h3><ul>'+it.prod.map(function(p){return '<li><a href="'+esc(p[2])+'" target="_blank" rel="noopener">'+esc(p[0])+'</a>, '+esc(p[1])+'</li>';}).join('')+'</ul></div>';
-  h+='<div class="sec srcs"><h3>Sources</h3>'+it.src.map(function(s){return '<a href="'+esc(s[1])+'" target="_blank" rel="noopener">'+esc(s[0])+'</a>';}).join('')+'</div>';
-  h+='<div class="warn">Skill is quoted for the metric, region and period each source used. It is not comparable across items, and it is not a maturity call. Posters, preprints and vendor material are included where noted.</div>';
+  var h='<h2>'+it.id+'. '+esc(tr(it.name))+'</h2>';
+  h+='<div class="tags"><span class="tag" style="background:'+m.c+'">'+tr(m.n)+'</span>'+it.c.split('').map(function(k){return '<span class="tag" style="background:'+COV[k].c+'">'+esc(tr(COV[k].n))+'</span>';}).join('')+'<span class="tag" style="background:#9fb7c9">'+tr(it.type==='d'?'Driver or method':'Product')+'</span></div>';
+  h+='<div class="kv"><b>'+tr('Planning horizon')+'</b><span>'+esc(tl(it.hl))+'</span><b>'+tr('Spatial extent')+'</b><span>'+esc(tl(it.sl))+'</span><b>'+tr('Impact proximity')+'</b><span>'+esc(tl(it.al))+'</span></div>';
+  h+='<div class="sec"><h3>'+tr('Note')+'</h3><div>'+esc(tr(it.note))+'</div></div>';
+  h+='<div class="sec"><h3>'+tr('Variables it can forecast')+'</h3><ul>'+it.vars.map(function(v){return '<li><b>'+esc(tr(IV[v[0]]))+'</b> '+esc(tr(v[1]))+'</li>';}).join('')+'</ul></div>';
+  h+='<div class="sec"><h3>'+tr('Reported skill and evidence')+'</h3><div>'+esc(tr(it.skill))+'</div></div>';
+  h+='<div class="sec uc"><h3>'+tr('Real-world use')+'</h3>'+(it.uc.length?it.uc.map(function(u){return '<div>'+esc(tr(u[0]))+' <a href="'+esc(u[2])+'" target="_blank" rel="noopener">'+esc(u[1])+'</a></div>';}).join(''):'<div>'+esc(tr('No use by another institution or company was found for this approach.'))+'</div>')+'</div>';
+  if(it.prod.length) h+='<div class="sec"><h3>'+tr('Existing products')+'</h3><ul>'+it.prod.map(function(p){return '<li><a href="'+esc(p[2])+'" target="_blank" rel="noopener">'+esc(p[0])+'</a>, '+esc(p[1])+'</li>';}).join('')+'</ul></div>';
+  h+='<div class="sec srcs"><h3>'+tr('Sources')+'</h3>'+it.src.map(function(s){return '<a href="'+esc(s[1])+'" target="_blank" rel="noopener">'+esc(s[0])+'</a>';}).join('')+'</div>';
+  h+='<div class="warn">'+esc(tr('Skill is quoted for the metric, region and period each source used. It is not comparable across items, and it is not a maturity call. Posters, preprints and vendor material are included where noted.'))+'</div>';
   d.innerHTML=h;
 }
 function renderList(){
   var l=document.getElementById('list'), h='';
   ITEMS.filter(visible).forEach(function(it){
-    h+='<button data-id="'+it.id+'" class="'+(S.sel===it.id?'sel':'')+'"><span class="dot'+(it.type==='d'?' d':'')+'" style="background:'+colorOf(it)+'"><span>'+it.id+'</span></span><span>'+esc(it.name)+'</span></button>';
+    h+='<button data-id="'+it.id+'" class="'+(S.sel===it.id?'sel':'')+'"><span class="dot'+(it.type==='d'?' d':'')+'" style="background:'+colorOf(it)+'"><span>'+it.id+'</span></span><span>'+esc(tr(it.name))+'</span></button>';
   });
-  if(!h) h='<p class="empty">No items match these filters.</p>';
+  if(!h) h='<p class="empty">'+esc(tr('No items match these filters.'))+'</p>';
   l.innerHTML=h;
 }
 document.getElementById('list').addEventListener('click',function(e){
@@ -766,15 +1095,15 @@ document.getElementById('list').addEventListener('click',function(e){
 });
 function renderLegend(){
   var g=document.getElementById('lgbody'), h='';
-  h+='<h4>Sphere colour</h4>';
-  if(S.color==='mat') h+='<span><i style="background:'+MAT.e.c+'"></i>Established</span><span><i style="background:'+MAT.x.c+'"></i>Experimental (dashed)</span>';
-  else Object.keys(COV).forEach(function(k){h+='<span><i style="background:'+COV[k].c+'"></i>'+esc(COVLEG[k])+'</span>';});
-  h+='<h4>Shape</h4><span>● product</span><span>◆ driver or method</span><span>? zone with no product</span>';
-  h+='<h4>Symbol colour, main variable</h4>';
-  Object.keys(GC).forEach(function(k){h+='<span><i style="background:'+GC[k]+';border-radius:50%"></i>'+esc(IV[k])+'</span>';});
+  h+='<h4>'+tr('Sphere colour')+'</h4>';
+  if(S.color==='mat') h+='<span><i style="background:'+MAT.e.c+'"></i>'+tr('Established')+'</span><span><i style="background:'+MAT.x.c+'"></i>'+tr('Experimental (dashed)')+'</span>';
+  else Object.keys(COV).forEach(function(k){h+='<span><i style="background:'+COV[k].c+'"></i>'+esc(tr(COVLEG[k]))+'</span>';});
+  h+='<h4>'+tr('Shape')+'</h4><span>'+tr('● product')+'</span><span>'+tr('◆ driver or method')+'</span><span>'+tr('? zone with no product')+'</span>';
+  h+='<h4>'+tr('Symbol colour, main variable')+'</h4>';
+  Object.keys(GC).forEach(function(k){h+='<span><i style="background:'+GC[k]+';border-radius:50%"></i>'+esc(tr(IV[k]))+'</span>';});
   g.innerHTML=h;
 }
-function setLegend(open){var l=document.getElementById('legend'),b=document.getElementById('lgtoggle');l.classList.toggle('closed',!open);b.setAttribute('aria-expanded',open?'true':'false');b.textContent=open?'Legend ▾':'Legend ▸';}
+function setLegend(open){var l=document.getElementById('legend'),b=document.getElementById('lgtoggle');l.classList.toggle('closed',!open);b.setAttribute('aria-expanded',open?'true':'false');b.textContent=tr(open?'Legend ▾':'Legend ▸');}
 document.getElementById('lgtoggle').addEventListener('click',function(){setLegend(document.getElementById('legend').classList.contains('closed'));});
 setLegend(window.innerWidth>=1100);
 document.getElementById('selView').addEventListener('change',function(){if(this.value)goView(this.value);});
@@ -784,10 +1113,35 @@ filt('selFm','fm'); filt('selFc','fc');
 document.getElementById('zin').addEventListener('click',function(){S.zoom=clamp(S.zoom*1.25,0.4,6);request();});
 document.getElementById('zout').addEventListener('click',function(){S.zoom=clamp(S.zoom/1.25,0.4,6);request();});
 document.getElementById('reset').addEventListener('click',resetView);
-(function(){var g=document.getElementById('selIv');Object.keys(IV).forEach(function(k){var o=document.createElement('option');o.value=k;o.textContent=IV[k];g.appendChild(o);});
+function fillIv(){var g=document.getElementById('selIv'),cur=g.value;while(g.options.length>1)g.remove(1);Object.keys(IV).forEach(function(k){var o=document.createElement('option');o.value=k;o.textContent=tr(IV[k]);g.appendChild(o);});g.value=cur||'all';}
+(function(){var g=document.getElementById('selIv');fillIv();
   g.addEventListener('change',function(){var k=this.value;S.iv=k;if(S.sel!==null&&!visible(byId(S.sel)))S.sel=null;renderList();renderDetail();goView(k==='all'?'2d':'3d');});})();
 window.addEventListener('resize',size);
 if(window.ResizeObserver){new ResizeObserver(size).observe(wrap);}
+/* language switch */
+function applyStatic(){
+  var id=LANG==='id';
+  document.querySelectorAll('[data-id]').forEach(function(el){
+    if(el._en===undefined) el._en=(el.tagName==='TITLE'||el.tagName==='META')?(el.tagName==='META'?el.getAttribute('content'):el.textContent):el.innerHTML;
+    var v=id?el.getAttribute('data-id'):el._en;
+    if(el.tagName==='META') el.setAttribute('content',v);
+    else if(el.tagName==='TITLE') document.title=v;
+    else el.innerHTML=v;
+  });
+  var c=document.getElementById('cv');if(c._en===undefined)c._en=c.getAttribute('aria-label');
+  c.setAttribute('aria-label',id?c.getAttribute('data-idlabel'):c._en);
+  document.querySelectorAll('[data-set-lang]').forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-set-lang')===LANG?'true':'false');});
+}
+function setLang(l){
+  LANG=l==='id'?'id':'en';
+  var h=document.documentElement;h.setAttribute('data-lang',LANG);h.setAttribute('lang',LANG);
+  try{localStorage.setItem('kl-lang',LANG);}catch(e){}
+  applyStatic();fillIv();
+  setLegend(!document.getElementById('legend').classList.contains('closed'));
+  renderLegend();renderList();renderDetail();updateHint();request();
+}
+document.querySelectorAll('[data-set-lang]').forEach(function(b){b.addEventListener('click',function(){setLang(b.getAttribute('data-set-lang'));});});
+applyStatic();
 renderLegend();renderList();renderDetail();updateHint();size();
 window.__map={S:S,select:select,goView:goView,draw:draw,GL:GL,SYM:SYM};
 })();
