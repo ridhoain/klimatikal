@@ -62,7 +62,11 @@
   #vars-toggle svg { transition: transform .15s; }
   #vars-toggle[aria-expanded="false"] svg { transform: rotate(180deg); }
   #vars[data-collapsed="true"] #layers { display: none; }
-  #layers { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; max-width: 100%; padding: 7px 8px; }
+  /* Always one row: if the screen is too narrow it scrolls sideways instead of wrapping. */
+  #layers { display: flex; gap: 4px; flex-wrap: nowrap; justify-content: safe center; max-width: 100%;
+    padding: 7px 8px; overflow-x: auto; scrollbar-width: thin; }
+  #layers button { flex: none; display: inline-flex; align-items: center; gap: 5px; }
+  #layers button svg { width: 14px; height: 14px; flex: none; }
   #layers button { all: unset; cursor: pointer; padding: 6px 8px; border-radius: 7px;
     font-size: 12.5px; color: #cfd8ee; border: 1px solid transparent; white-space: nowrap; }
   #layers button[aria-pressed="true"] { background: #2d6cf6; color: #fff; }
@@ -140,7 +144,7 @@
   #readout b { font-weight: 600; font-size: 13px; }
   /* The attribution is a licence condition, so it stays on screen and legible:
      small, but full-contrast text on the panel, on its own line under the slider. */
-  #credit { flex: 1 0 100%; order: 5; font-size: 10px; line-height: 1.35; color: #cfd8ee;
+  #credit { flex: 1 0 100%; order: 5; font-size: 8.5px; line-height: 1.3; color: #cfd8ee;
     margin-top: 2px; }
   #credit a { color: #bcc9e8; }
   #boot { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center;
@@ -152,8 +156,6 @@
     #legend { bottom: calc(var(--time-h, 100px) + var(--vars-h, 0px) + 24px); }
   }
   @media (max-width: 720px) {
-    #layers { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; }
-    #layers button { flex: none; }
     #legend { gap: 10px; padding: 6px 8px; }
     /* Narrow screens: play + time on one row, the full-width bar under them. */
     #stamp { margin-left: auto; }
@@ -237,7 +239,7 @@ const DATA =
 // Each parameter has its own colour map, chosen for what it measures:
 //   wind      speed, sequential, white when calm, then blue -> green -> red -> purple
 //   temp      diverging around freezing: purple/blue cold, green mild, red hot
-//   precip    white at the light end, then green -> yellow -> red -> purple, clear when dry
+//   precip    white when dry or missing, then pale green -> green -> yellow -> red -> purple
 //   cloud     white with rising opacity, so clear sky stays clear
 //   msl       diverging around the standard 1013 hPa: purple low, orange high
 // stops are [value, [r, g, b, alpha 0..255]]; `opacity` multiplies the alpha
@@ -259,7 +261,7 @@ const RAMPS = {
       [45,  [110, 10, 36, 255]]] },
   precip: { display: [0, 20], unitLabel: "mm/3h", opacity: 0.9, evenLegend: true, legendMinWhite: true,
     stops: [
-      [0,   [255, 255, 255, 0]],  [0.1, [255, 255, 255, 140]], [0.5, [155, 231, 164, 175]],
+      [0,   [255, 255, 255, 235]], [0.1, [214, 240, 220, 235]], [0.5, [155, 231, 164, 215]],
       [1,   [31, 158, 79, 210]], [2.5, [243, 227, 71, 235]], [5,   [245, 154, 43, 245]],
       [10,  [226, 54, 46, 250]], [20,  [176, 18, 154, 255]]] },
   cloud: { display: [0, 100], unitLabel: "%", opacity: 0.9, ticks: [0, 25, 50, 75, 100],
@@ -293,6 +295,10 @@ const WIND_SPEED = Number(new URLSearchParams(location.search).get("windspeed"))
 // for a 30 m/s one), twice the length it had when it moved twice as fast.
 const WIND_TRAIL_STEPS = 24;
 
+// Fields pale enough that white coastlines disappear on them.
+const LIGHT_FIELDS = new Set(["cloud", "msl", "precip"]);
+// Layers whose colours come from a different (higher-precision) PNG than their own.
+const FIELD_SOURCE = { wind: "windspeed" };
 const ENCODING_ID = { scalar8: 0, scalar16: 1, vector8: 2 };
 
 // ---------------------------------------------------------------------------
@@ -428,11 +434,32 @@ const FIELD_FS = `
   ${GLSL_DECODE}
   uniform sampler2D u_now, u_next, u_ramp;
   uniform float u_blend, u_dlo, u_dhi, u_opacity;
+  uniform vec2 u_texSize;
   varying vec2 v_merc;
+  // Cubic B-spline interpolation of the raw texel bytes, done with four
+  // hardware-bilinear fetches. Plain bilinear shows the 0.25 degree grid as
+  // facets once you zoom in, and the 8-bit steps as bands; this is C2-smooth.
+  // Every layer is encoded linearly, so filtering the bytes then decoding is
+  // the same as filtering the values.
+  vec4 sampleSmooth(sampler2D t, vec2 uv) {
+    vec2 coord = uv * u_texSize - 0.5;
+    vec2 i = floor(coord);
+    vec2 f = coord - i;
+    vec2 f2 = f * f, f3 = f2 * f;
+    vec2 w0 = (1.0 - 3.0 * f + 3.0 * f2 - f3) / 6.0;
+    vec2 w1 = (4.0 - 6.0 * f2 + 3.0 * f3) / 6.0;
+    vec2 w2 = (1.0 + 3.0 * f + 3.0 * f2 - 3.0 * f3) / 6.0;
+    vec2 w3 = f3 / 6.0;
+    vec2 g0 = w0 + w1, g1 = w2 + w3;
+    vec2 pA = (i - 1.0 + w1 / g0 + 0.5) / u_texSize;
+    vec2 pB = (i + 1.0 + w3 / g1 + 0.5) / u_texSize;
+    return g0.y * (g0.x * texture2D(t, vec2(pA.x, pA.y)) + g1.x * texture2D(t, vec2(pB.x, pA.y)))
+         + g1.y * (g0.x * texture2D(t, vec2(pA.x, pB.y)) + g1.x * texture2D(t, vec2(pB.x, pB.y)));
+  }
   void main() {
     vec2 uv = dataUV(v_merc.x, v_merc.y);
-    float a = decodeValue(texture2D(u_now,  uv));
-    float b = decodeValue(texture2D(u_next, uv));
+    float a = decodeValue(sampleSmooth(u_now,  uv));
+    float b = decodeValue(sampleSmooth(u_next, uv));
     float value = mix(a, b, u_blend);
     float t = clamp((value - u_dlo) / (u_dhi - u_dlo), 0.0, 1.0);
     vec4 c = texture2D(u_ramp, vec2(t, 0.5));
@@ -615,7 +642,7 @@ class WeatherLayer {
       return;
     }
     const app = this.app;
-    const frame = app.currentFrame();
+    const frame = app.currentFrame(app.fieldSource(app.layer));
     if (!frame) { this.map.triggerRepaint(); return; }
     // First weather frame is ready: now it is safe to start on the boundaries.
     // Deferred, because adding layers from inside a render callback is not.
@@ -631,7 +658,8 @@ class WeatherLayer {
     if (app.satOn && !app.satLoaded && !app.satLoading) {
       setTimeout(() => app.loadSatellite(), 0);
     }
-    const { spec, now, next, blend, name } = frame;
+    const { spec, now, next, blend } = frame;
+    const name = app.layer;   // colours and opacity belong to the selected layer
 
     // --- colour field -----------------------------------------------------
     const f = this.field;
@@ -647,6 +675,7 @@ class WeatherLayer {
     gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, this.ramp(name));
     gl.uniform1i(f.loc.u_ramp, 2);
     this.bindDecode(f.loc, spec);
+    gl.uniform2f(f.loc.u_texSize, app.manifest.grid.width, app.manifest.grid.height);
     gl.uniform1f(f.loc.u_blend, blend);
     gl.uniform1f(f.loc.u_dlo, RAMPS[name].display[0]);
     gl.uniform1f(f.loc.u_dhi, RAMPS[name].display[1]);
@@ -781,6 +810,13 @@ function tzParts(d, utc) {
   };
 }
 
+// Small line icons for the Radar and Satellite buttons.
+const SVG_ATTR = 'viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"';
+const ICON_RADAR = `<svg ${SVG_ATTR}><circle cx="8" cy="8" r="6.2"/><circle cx="8" cy="8" r="3"/><path d="M8 8l4-4.2"/></svg>`;
+const ICON_SAT = `<svg ${SVG_ATTR}><rect x="6.2" y="6.2" width="3.6" height="3.6" rx=".6" transform="rotate(45 8 8)"/><path d="M3.2 4.8l1.6-1.6 2 2-1.6 1.6zM9.2 10.8l1.6-1.6 2 2-1.6 1.6z"/><path d="M12.2 2.8c.9.9 1.4 2 1.5 3.2"/></svg>`;
+const RADAR_LABEL = ICON_RADAR + "Radar";
+const SAT_LABEL = ICON_SAT + "Satellite IR";
+
 class App {
   constructor() {
     this.textures = new Map();
@@ -881,6 +917,15 @@ class App {
     return null;
   }
 
+  // The layer whose PNG colours the map and feeds the hover value. Wind is
+  // drawn from the 16-bit speed layer when the run has one (the u/v pair is
+  // only 8-bit and bands in light wind); the particles still use u/v. Runs
+  // published before that layer existed fall back to u/v.
+  fieldSource(name) {
+    const src = FIELD_SOURCE[name];
+    return src && this.manifest.layers[src] ? src : name;
+  }
+
   // The frame to draw: two steps and how far between them we are.
   currentFrame(layerName) {
     const name = layerName || this.layer;
@@ -896,6 +941,7 @@ class App {
   buildChrome() {
     const box = document.getElementById("layers");
     for (const name of Object.keys(this.manifest.layers)) {
+      if (this.manifest.layers[name].hidden) continue;   // data-only layers, e.g. windspeed
       const b = document.createElement("button");
       b.textContent = this.manifest.layers[name].label;
       b.dataset.layer = name;
@@ -904,7 +950,7 @@ class App {
         this.layer = name;
         box.querySelectorAll("button[data-layer]").forEach((c) =>
           c.setAttribute("aria-pressed", String(c.dataset.layer === name)));
-        this.writeURL(); this.paintReadoutLabel(); this.paintLegend();
+        this.writeURL(); this.paintReadoutLabel(); this.paintLegend(); this.paintBoundaryStyle();
         this.map && this.map.triggerRepaint();
       };
       box.appendChild(b);
@@ -959,7 +1005,7 @@ class App {
     box.appendChild(radarSep);
     const radar = document.createElement("button");
     radar.className = "toggle";
-    radar.textContent = "Radar";
+    radar.innerHTML = RADAR_LABEL;
     radar.title = "Latest BMKG radar composite per station";
     radar.setAttribute("aria-pressed", String(this.radarOn));
     radar.onclick = () => this.setRadar(!this.radarOn);
@@ -971,7 +1017,7 @@ class App {
     box.appendChild(satSep);
     const sat = document.createElement("button");
     sat.className = "toggle";
-    sat.textContent = "Satellite IR";
+    sat.innerHTML = SAT_LABEL;
     sat.title = "Himawari-9 infrared, newest image (JMA, via NOAA Open Data)";
     sat.setAttribute("aria-pressed", String(this.satOn));
     sat.onclick = () => this.setSatellite(!this.satOn);
@@ -1043,8 +1089,8 @@ class App {
     const [lo, hi] = r.display;
     const n = r.stops.length;
     const at = (i) => (r.evenLegend ? i / (n - 1) : (r.stops[i][0] - lo) / (hi - lo));
-    // The key shows the minimum end as solid white; on the map precipitation is
-    // still clear at exactly 0 so dry areas do not whiten the basemap.
+    // The key shows the minimum end as solid white, matching the map where
+    // there is no precipitation (or no value).
     const gradient = r.stops.map(([, c], i) =>
       (i === 0 && r.legendMinWhite)
         ? `rgb(255,255,255) ${(at(i) * 100).toFixed(1)}%`
@@ -1301,9 +1347,9 @@ class App {
       ? `<small class="${entry.kind === "sat" ? "obs" : ""}">${entry.kind === "sat" ? "Satellite observation" : "Forecast"}</small>` : "";
     document.getElementById("stamp").innerHTML =
       `${main.day} ${main.hm} ${main.label}` +
-      `<small>${other.day === main.day ? "" : other.day + " "}${other.hm} ${other.label}</small>${tag}`;
+      `<small>${other.day} ${other.hm} ${other.label}</small>${tag}`;
     this.applySatelliteTime(entry);
-    this.textureFor(this.layer, Math.floor(this.stepIndex) + 1);  // prefetch
+    this.textureFor(this.fieldSource(this.layer), Math.floor(this.stepIndex) + 1);  // prefetch
     this.writeURL();
     this.map && this.map.triggerRepaint();
   }
@@ -1315,7 +1361,7 @@ class App {
 
   readURL() {
     const h = new URLSearchParams(location.hash.slice(1));
-    if (h.get("layer") && this.manifest.layers[h.get("layer")]) this.layer = h.get("layer");
+    if (h.get("layer") && this.manifest.layers[h.get("layer")] && !this.manifest.layers[h.get("layer")].hidden) this.layer = h.get("layer");
     if (h.get("step")) {
       this.stepIndex = Math.max(0, Math.min(this.steps.length - 1, +h.get("step")));
       this.stepFromURL = true;
@@ -1418,7 +1464,25 @@ class App {
       line("admin1-casing", "admin1", "rgba(8,12,24,0.35)", w(0.8, 1.6), { minzoom: 2, opacity: fade });
       line("admin1", "admin1", "rgba(255,255,255,0.35)", w(0.4, 0.9), { minzoom: 2, opacity: fade });
     });
+    this.paintBoundaryStyle();
     this.addLabels();
+  }
+
+  // Coastline and border colours follow the field underneath: white lines
+  // vanish on the pale fields (cloud is white, pressure is near-white around
+  // 1013 hPa), so those get dark lines with a light casing instead.
+  paintBoundaryStyle() {
+    const m = this.map;
+    if (!m) return;
+    const light = LIGHT_FIELDS.has(this.layer);
+    const dark = "rgba(10,18,42,", pale = "rgba(255,255,255,";
+    const set = (id, color) => { if (m.getLayer(id)) m.setPaintProperty(id, "line-color", color); };
+    set("coast", light ? dark + "0.92)" : pale + "0.92)");
+    set("coast-casing", light ? pale + "0.6)" : dark + "0.5)");
+    set("admin0", light ? dark + "0.7)" : pale + "0.7)");
+    set("admin0-casing", light ? pale + "0.45)" : dark + "0.45)");
+    set("admin1", light ? dark + "0.5)" : pale + "0.35)");
+    set("admin1-casing", light ? pale + "0.35)" : dark + "0.35)");
   }
 
   // Text labels: oceans/seas/lakes, countries and cities. They are symbol
@@ -1675,11 +1739,11 @@ class App {
   flashRadarUnavailable() {
     const btn = this.radarBtn;
     if (!btn) return;
-    btn.textContent = "Radar unavailable";
+    btn.innerHTML = ICON_RADAR + "Radar unavailable";
     btn.title = "Radar data could not be loaded right now. Try again later.";
     clearTimeout(this.radarMsgTimer);
     this.radarMsgTimer = setTimeout(() => {
-      btn.textContent = "Radar";
+      btn.innerHTML = RADAR_LABEL;
       btn.title = "Latest BMKG radar composite per station";
     }, 4000);
   }
@@ -1726,15 +1790,16 @@ class App {
   // Read the value under the cursor from the PNG itself, on a 2D canvas.
   // Same bytes the shader sees, so the number and the colour cannot disagree.
   probe(lngLat) {
-    const spec = this.manifest.layers[this.layer];
+    const source = this.fieldSource(this.layer);
+    const spec = this.manifest.layers[source];
     const step = this.steps[Math.round(this.stepIndex)];
-    const key = `${this.layer}/${step}`;
+    const key = `${source}/${step}`;
     const img = this.probeCache && this.probeCache.key === key ? this.probeCache.img : null;
     if (!img) {
       const loading = new Image();
       loading.crossOrigin = "anonymous";
       loading.onload = () => { this.probeCache = { key, img: loading }; };
-      loading.src = `${this.runPrefix}/${this.layer}/f${String(step).padStart(3, "0")}.png`;
+      loading.src = `${this.runPrefix}/${source}/f${String(step).padStart(3, "0")}.png`;
       return;
     }
     const g = this.manifest.grid;

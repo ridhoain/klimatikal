@@ -23,6 +23,20 @@ import encoding
 from encoding import LAYERS, NLAT, NLON, decode, encode, reproject
 
 
+def make_fields(spec: dict) -> list[np.ndarray]:
+    """Input fields for one layer. A derived speed layer gets u and v small
+    enough that the speed stays inside the layer's range."""
+    lo, hi = spec["range"]
+    if spec.get("derive") == "speed":
+        return [synthetic(-hi * 0.7, hi * 0.7, i) for i in range(2)]
+    return [synthetic(lo, hi, i) for i in range(len(spec["params"]))]
+
+
+def expected(spec: dict, fields: list[np.ndarray]) -> list[np.ndarray]:
+    """What decode() should give back for these input fields."""
+    return [np.hypot(*fields)] if spec.get("derive") == "speed" else fields
+
+
 def synthetic(lo: float, hi: float, seed: int) -> np.ndarray:
     """A smooth global field in [lo, hi], shaped a bit like a weather field."""
     rng = np.random.default_rng(seed)
@@ -129,20 +143,18 @@ def test_guard_skips_a_run_that_is_already_published():
 
 def test_alpha_is_always_opaque():
     for layer, spec in LAYERS.items():
-        lo, hi = spec["range"]
-        fields = [synthetic(lo, hi, i) for i in range(len(spec["params"]))]
+        fields = make_fields(spec)
         rgba = encode(layer, fields)
         assert (rgba[..., 3] == 255).all(), f"{layer} has non-opaque pixels"
 
 
 def test_round_trip_through_a_real_png():
     for layer, spec in LAYERS.items():
-        lo, hi = spec["range"]
-        fields = [synthetic(lo, hi, i) for i in range(len(spec["params"]))]
+        fields = make_fields(spec)
         raw = png_bytes(encode(layer, fields))
         back = np.array(Image.open(io.BytesIO(raw)).convert("RGBA"))
         got = decode(layer, back)
-        for original, recovered in zip(fields, got):
+        for original, recovered in zip(expected(spec, fields), got):
             err = np.abs(original - recovered).max()
             tolerance = worst_case_step(spec)
             assert err <= tolerance, f"{layer}: {err:.4g} > {tolerance:.4g}"
@@ -167,13 +179,12 @@ def report() -> None:
     print("-" * 54)
     total = 0
     for layer, spec in LAYERS.items():
-        lo, hi = spec["range"]
-        fields = [synthetic(lo, hi, i) for i in range(len(spec["params"]))]
+        fields = make_fields(spec)
         raw = png_bytes(encode(layer, fields))
         total += len(raw)
         back = np.array(Image.open(io.BytesIO(raw)).convert("RGBA"))
         got = decode(layer, back)
-        err = max(np.abs(o - r).max() for o, r in zip(fields, got))
+        err = max(np.abs(o - r).max() for o, r in zip(expected(spec, fields), got))
         kb = len(raw) / 1024
         print(
             f"{layer:8} {spec['encoding']:10} {spec['unit']:8} "

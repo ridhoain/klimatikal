@@ -31,7 +31,8 @@ FORMAT_VERSION = 1
 # "already published" guard in build_run.py.
 #   1  initial
 #   2  longitudes taken from the GRIB's own coordinates (half-world shift fix)
-REVISION = 2
+#   3  added the 16-bit "windspeed" layer (colour field and readout for wind)
+REVISION = 3
 
 # Grid of the ECMWF open data 0.25 degree product.
 NLAT, NLON = 721, 1440
@@ -40,6 +41,10 @@ NLAT, NLON = 721, 1440
 #   "scalar8"   value in R,              1 byte,  optional gamma curve
 #   "scalar16"  value in R (high), G (low), 2 bytes
 #   "vector8"   u in R, v in G,          1 byte each
+#
+# A layer with "derive": "speed" is computed from its two params (u, v) as
+# sqrt(u^2 + v^2) before encoding, and "hidden": True keeps it out of the
+# browser's layer buttons.
 #
 # gamma: stored = (normalised ** (1/gamma)), decoded = stored ** gamma.
 # gamma > 1 spends more of the byte budget near the low end, which is what
@@ -52,6 +57,19 @@ LAYERS: dict[str, dict] = {
         "unit": "m s-1",
         "range": [-50.0, 50.0],
         "label": "10 m wind",
+    },
+    # Wind speed on its own, at 16 bits. The colour map and the hover value read
+    # this one; the particles still read the 8-bit u/v pair above, where
+    # direction needs no more precision. At 8 bits the colour field showed
+    # diagonal bands in light wind, where speed moves in steps of ~0.4 m/s.
+    "windspeed": {
+        "params": ["10u", "10v"],
+        "derive": "speed",
+        "hidden": True,
+        "encoding": "scalar16",
+        "unit": "m s-1",
+        "range": [0.0, 70.0],
+        "label": "10 m wind speed",
     },
     "temp": {
         "params": ["2t"],
@@ -139,6 +157,10 @@ def reproject(
 def _normalise(values: np.ndarray, lo: float, hi: float, gamma: float | None) -> np.ndarray:
     """Map values onto 0..1, clipped, with an optional gamma curve."""
     out = (values.astype(np.float64) - lo) / (hi - lo)
+    # A missing value (NaN) encodes as the bottom of the range, on purpose: the
+    # cast to uint8 of a NaN is otherwise undefined. For precipitation that is
+    # 0 mm, which the map draws white.
+    out = np.nan_to_num(out, nan=0.0)
     out = np.clip(out, 0.0, 1.0)
     if gamma is not None:
         out = out ** (1.0 / gamma)
@@ -157,6 +179,10 @@ def encode(layer: str, fields: list[np.ndarray]) -> np.ndarray:
     lo, hi = spec["range"]
     gamma = spec.get("gamma")
     kind = spec["encoding"]
+
+    if spec.get("derive") == "speed":
+        u, v = fields
+        fields = [np.hypot(u.astype(np.float64), v.astype(np.float64))]
 
     rgba = np.zeros((NLAT, NLON, 4), dtype=np.uint8)
     rgba[..., 3] = 255  # see module docstring: never anything but 255
@@ -209,6 +235,8 @@ def layer_manifest(layer: str) -> dict:
         "min": spec["range"][0],
         "max": spec["range"][1],
     }
+    if spec.get("hidden"):
+        block["hidden"] = True
     if "gamma" in spec:
         block["gamma"] = spec["gamma"]
     return block
