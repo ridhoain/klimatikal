@@ -61,7 +61,7 @@ button.chip.on{background:var(--kl-amethyst);color:#fff;border-color:var(--kl-am
 .canvaswrap{position:relative;flex:1;min-height:320px;background:#fff}
 canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
 canvas.drag{cursor:grabbing}
-.tip{position:absolute;pointer-events:none;background:var(--kl-lime);color:var(--kl-amethyst);padding:3px 8px;border-radius:6px;font-size:12px;display:none;white-space:nowrap;z-index:3}
+.tip{position:absolute;pointer-events:none;background:var(--kl-lime);color:var(--kl-amethyst);padding:3px 8px;border-radius:6px;font-size:12px;display:none;max-width:240px;z-index:3}
 .legend{position:absolute;left:10px;bottom:8px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;font-size:12px;color:#3b4a5c;background:rgba(255,255,255,.92);padding:6px 8px;border-radius:8px;max-width:calc(100% - 20px);max-height:calc(100% - 16px);overflow:auto;z-index:2}
 .legend button{font:inherit;font-size:12px;font-weight:600;color:#0D0630;background:none;border:0;padding:0;cursor:pointer}
 .legend .lgbody{display:flex;flex-direction:column;gap:3px}
@@ -150,7 +150,7 @@ aside h2{font-size:16px;margin:0 0 4px;color:var(--kl-lime);font-weight:600}
   </div>
 </div>
 <aside>
-  <div id="detail"><p class="empty">Select a sphere on the map or an item in the list to see its skill and evidence.</p></div>
+  <div id="detail"><p class="empty">Select a sphere on the map or an item in the list to see its skill and evidence. The ? marks a zone with no forecast product; select it to see why.</p></div>
   <div class="list"><h3>All items</h3><div id="list"></div></div>
   <div class="cta">Not sure which approach fits your decision? <a href="/contact-us/">Talk to us</a></div>
   <div class="foot">© 2026 Klimatikal · Weather and Climate Intelligence · <a href="/privacy/">Privacy</a></div>
@@ -376,6 +376,19 @@ function covOf(it){return ['I','T','M','G','N','P'].filter(function(k){return it
 var IV={R:`Rainfall`,T:`Temperature and heat`,W:`Wind and storms`,H:`Water and land`,O:`Ocean`,F:`Fire`,C:`Modes and indices`,I:`Losses and exposure`};
 var MAT={e:{n:`Established`,c:'#2E9C8A'},x:{n:`Experimental`,c:'#E8832A'}};
 
+
+/* ---------- gaps: zones of the chart with no product, explained on click ---------- */
+var GAPS=[{gap:true,id:'g1',h:[240,730],s:[1,10],
+ tip:`Why is there no forecast for 10 days to 1 month below about 10 km?`,
+ title:`Why is there no forecast product for 10 days to 1 month at scales below about 10 km?`,
+ paras:[
+  `Small features are the least predictable. In cloud-resolving simulations, small errors roughly double every 4 hours at storm scale, against about 40 hours at synoptic scale [1]. A storm-scale forecast therefore loses its detail within hours to a day or two.`,
+  `Errors then spread upward to larger scales, which sets an intrinsic limit of about two weeks on forecasting individual weather systems, however fine the model [2].`,
+  `Beyond that, the skill that remains is found mainly in averaged quantities. A 2025 study of ECMWF sub-seasonal forecasts found that forecasts are often more precise than accurate when the grid is finer than the scales they can predict, and that spatial aggregation raises accuracy and extends predictable lead times [3]. Skill also falls from week 3 to week 4, and rainfall is the hardest variable [4].`,
+  `Products do exist in this window at coarser scales: S2S hazard products and S2S rain and temperature terciles are gridded at 25-100 km, but their published skill is mostly for regional or large-area averages. A product for single sites or storms below about 10 km would have more precision than accuracy.`],
+ note:`This is Klimatikal's reading of the cited sources. It is not a proof that no skill exists for any local quantity at these lead times.`,
+ src:[[`1. Hohenegger and Schaer 2007, BAMS`,`https://doi.org/10.1175/BAMS-88-11-1783`],[`2. Zhang et al. 2019, J. Atmos. Sci.`,`https://doi.org/10.1175/JAS-D-18-0269.1`],[`3. Dunn-Sigouin et al. 2025, Climate Services`,`https://eprints.whiterose.ac.uk/id/eprint/232266/13/1-s2.0-S240588072500055X-main.pdf`],[`4. ECMWF, AI Weather Quest`,`https://www.ecmwf.int/node/29473`]]}];
+
 /* ---------- geometry ---------- */
 var AX={h:[-0.3,6],s:[0,4.3]};
 var DIM={x:2.0,y:1.2,z:1.5};
@@ -406,6 +419,7 @@ function request(){ if(!raf){ raf=requestAnimationFrame(function(){raf=0;draw();
 function pal(){ return {fg:'#0D0630',mute:'#52667a',grid:'rgba(13,6,48,0.30)',plane:'rgba(24,49,79,0.06)',gridfaint:'rgba(13,6,48,0.10)'}; }
 
 function visible(it){
+  if(it.gap) return true;
   if(S.fm!=='all' && it.m!==S.fm) return false;
   if(S.fc!=='all' && it.c.indexOf(S.fc)<0) return false;
   if(S.iv!=='all' && !it.vars.some(function(v){return v[0]===S.iv;})) return false;
@@ -547,7 +561,7 @@ function draw(){
   list.sort(function(a,b){return a.c[2]-b.c[2];});
   list.forEach(function(o){
     var it=o.it, col=colorOf(it), isSel=S.sel===it.id, isHov=S.hov===it.id, on=isSel||isHov;
-    var dim=(S.sel!==null && !isSel)?0.5:1, bx=it.box;
+    var dim=(typeof S.sel==='number' && !isSel)?0.5:1, bx=it.box;
     var c0=it.ctr, rx=(bx.x1-bx.x0)/2, ry=(bx.y1-bx.y0)/2, rz=(bx.z1-bx.z0)/2;
     function sp(la,lo){return pr([c0[0]+rx*Math.cos(la)*Math.cos(lo),c0[1]+ry*Math.sin(la),c0[2]+rz*Math.cos(la)*Math.sin(lo)]);}
     // silhouette: convex hull of projected surface samples
@@ -589,7 +603,7 @@ function draw(){
   badges=[];
   list.forEach(function(o){
     var it=o.it, col=colorOf(it), p=o.c, sy=symOf(it), r=sy?12:9, isSel=S.sel===it.id||S.hov===it.id;
-    var dim=(S.sel!==null && S.sel!==it.id)?0.6:1;
+    var dim=(typeof S.sel==='number' && S.sel!==it.id)?0.6:1;
     ctx.globalAlpha=dim;
     ctx.beginPath();
     if(it.type==='d'){var q=r+5;ctx.moveTo(p[0],p[1]-q);ctx.lineTo(p[0]+q,p[1]);ctx.lineTo(p[0],p[1]+q);ctx.lineTo(p[0]-q,p[1]);ctx.closePath();}
@@ -600,6 +614,19 @@ function draw(){
     if(sy) drawGlyph(sy.g,p[0],p[1]+0.5,r*0.6,sy.c); else txt(String(it.id),p[0],p[1]+0.5,'#0D0630','center',10,true);
     ctx.globalAlpha=1;
     badges.push({id:it.id,x:p[0],y:p[1],r:r+5,z:p[2]});
+  });
+  // gap markers (2D view only)
+  if(flat) GAPS.forEach(function(g){
+    var x0=(nh(g.h[0])-0.5)*DIM.x,x1=(nh(g.h[1])-0.5)*DIM.x,z0=-(ns(g.s[1])-0.5)*DIM.z,z1=-(ns(g.s[0])-0.5)*DIM.z;
+    var q=[pr([x0,0,z0]),pr([x1,0,z0]),pr([x1,0,z1]),pr([x0,0,z1])], on=S.sel===g.id||S.hov===g.id;
+    var cxp=(q[0][0]+q[2][0])/2, cyp=(q[0][1]+q[2][1])/2;
+    ctx.beginPath();ctx.moveTo(q[0][0],q[0][1]);for(var i=1;i<4;i++)ctx.lineTo(q[i][0],q[i][1]);ctx.closePath();
+    ctx.fillStyle=on?'rgba(13,6,48,0.07)':'rgba(13,6,48,0.03)';ctx.fill();
+    ctx.setLineDash([4,4]);ctx.lineWidth=on?1.6:1;ctx.strokeStyle=on?'rgba(13,6,48,0.65)':'rgba(13,6,48,0.35)';ctx.stroke();ctx.setLineDash([]);
+    ctx.beginPath();ctx.arc(cxp,cyp,11,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
+    ctx.setLineDash([3,2]);ctx.lineWidth=on?2.4:1.6;ctx.strokeStyle=P.fg;ctx.stroke();ctx.setLineDash([]);
+    txt('?',cxp,cyp+1,P.fg,'center',14,true);
+    badges.push({id:g.id,x:cxp,y:cyp,r:15,z:9});
   });
 }
 
@@ -624,7 +651,7 @@ cv.addEventListener('pointermove',function(e){
   if(!p){ // hover
     var id=pick(lx,ly);
     if(id!==S.hov){S.hov=id;request();}
-    if(id!==null){var it=byId(id);tip.textContent=it.id+'. '+it.name;tip.style.display='block';tip.style.left=Math.min(lx+12,W-180)+'px';tip.style.top=(ly+14)+'px';}
+    if(id!==null){var it=byId(id);tip.textContent=it.gap?it.tip:it.id+'. '+it.name;tip.style.display='block';tip.style.left=Math.max(4,Math.min(lx+12,W-250))+'px';tip.style.top=(ly+14)+'px';}
     else tip.style.display='none';
     return;
   }
@@ -661,7 +688,7 @@ cv.addEventListener('pointerleave',function(){tip.style.display='none';if(S.hov!
 cv.addEventListener('wheel',function(e){e.preventDefault();S.zoom=clamp(S.zoom*Math.exp(-e.deltaY*0.0015),0.4,6);request();},{passive:false});
 cv.addEventListener('dblclick',resetView);
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
-function byId(id){return ITEMS[id-1];}
+function byId(id){return typeof id==='string'?GAPS.filter(function(g){return g.id===id;})[0]:ITEMS[id-1];}
 
 /* view presets with tween */
 var PRESETS={'3d':{yaw:-0.62,pitch:0.42,persp:1},'2d':{yaw:0,pitch:Math.PI/2,persp:0}};
@@ -697,7 +724,9 @@ function select(id,fromList){
 function renderDetail(){
   var d=document.getElementById('detail');
   if(S.sel===null){d.innerHTML='<p class="empty">Select a sphere on the map or an item in the list to see its skill and evidence.</p>';return;}
-  var it=byId(S.sel), m=MAT[it.m];
+  var it=byId(S.sel);
+  if(it.gap){var gh='<h2>'+esc(it.title)+'</h2>';it.paras.forEach(function(p){gh+='<p>'+esc(p)+'</p>';});gh+='<div class="sec srcs"><h3>Sources</h3>'+it.src.map(function(x){return '<a href="'+esc(x[1])+'" target="_blank" rel="noopener">'+esc(x[0])+'</a>';}).join('')+'</div><div class="warn">'+esc(it.note)+'</div>';d.innerHTML=gh;return;}
+  var m=MAT[it.m];
   var h='<h2>'+it.id+'. '+esc(it.name)+'</h2>';
   h+='<div class="tags"><span class="tag" style="background:'+m.c+'">'+m.n+'</span>'+it.c.split('').map(function(k){return '<span class="tag" style="background:'+COV[k].c+'">'+esc(COV[k].n)+'</span>';}).join('')+'<span class="tag" style="background:#9fb7c9">'+(it.type==='d'?'Driver or method':'Product')+'</span></div>';
   h+='<div class="kv"><b>Planning horizon</b><span>'+esc(it.hl)+'</span><b>Spatial extent</b><span>'+esc(it.sl)+'</span><b>Impact proximity</b><span>'+esc(it.al)+'</span></div>';
@@ -727,7 +756,7 @@ function renderLegend(){
   h+='<h4>Sphere colour</h4>';
   if(S.color==='mat') h+='<span><i style="background:'+MAT.e.c+'"></i>Established</span><span><i style="background:'+MAT.x.c+'"></i>Experimental (dashed)</span>';
   else Object.keys(COV).forEach(function(k){h+='<span><i style="background:'+COV[k].c+'"></i>'+esc(COVLEG[k])+'</span>';});
-  h+='<h4>Shape</h4><span>● product</span><span>◆ driver or method</span>';
+  h+='<h4>Shape</h4><span>● product</span><span>◆ driver or method</span><span>? zone with no product</span>';
   h+='<h4>Symbol colour, main variable</h4>';
   Object.keys(GC).forEach(function(k){h+='<span><i style="background:'+GC[k]+';border-radius:50%"></i>'+esc(IV[k])+'</span>';});
   g.innerHTML=h;
