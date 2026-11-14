@@ -1545,10 +1545,25 @@ class App {
     for (const id of this.radarLayerIds) this.map.setLayoutProperty(id, "visibility", v);
   }
 
+  // Shown on the button itself for a few seconds, then it goes back to
+  // "Radar" so the user can try again.
+  flashRadarUnavailable() {
+    const btn = this.radarBtn;
+    if (!btn) return;
+    btn.textContent = "Radar unavailable";
+    btn.title = "Radar data could not be loaded right now. Try again later.";
+    clearTimeout(this.radarMsgTimer);
+    this.radarMsgTimer = setTimeout(() => {
+      btn.textContent = "Radar";
+      btn.title = "Latest BMKG radar composite per station";
+    }, 4000);
+  }
+
   async loadRadarLayers() {
     this.radarLoading = true;
     try {
       const manifest = await this.fetchJSON(`${DATA}/radar/manifest.json`);
+      if (!manifest.stations || !manifest.stations.length) throw new Error("radar manifest has no stations");
       this.radarManifest = manifest;
       // Above the colour field, below the coastline, same reasoning as the
       // boundary layers: addBoundaries() usually runs first, but if the user
@@ -1575,6 +1590,7 @@ class App {
       console.warn("radar layer failed to load", err);
       this.radarOn = false;
       if (this.radarBtn) this.radarBtn.setAttribute("aria-pressed", "false");
+      this.flashRadarUnavailable();
     } finally {
       this.radarLoading = false;
       this.paintLegend();
