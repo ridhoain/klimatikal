@@ -644,7 +644,6 @@ var ID={
 "Indonesia's BMKG uses global NWP from ECMWF (IFS HRES to +240 h, ENS to +360 h), NOAA/NCEP (GFS and GEFS to +384 h) and other centres, issued every 12 hours, to initialise and analyse its National Digital Forecast, and runs WRF limited-area models on top of them.": "BMKG Indonesia menggunakan NWP global dari ECMWF (IFS HRES hingga +240 jam, ENS hingga +360 jam), NOAA/NCEP (GFS dan GEFS hingga +384 jam), dan pusat lain, diterbitkan setiap 12 jam, untuk inisialisasi dan analisis National Digital Forecast-nya, serta menjalankan model area terbatas WRF di atasnya.",
 "Established": "Mapan",
 "Experimental": "Eksperimental",
-"Experimental (dashed)": "Eksperimental (putus-putus)",
 "Evidence from Indonesia or Southeast Asia": "Bukti dari Indonesia atau Asia Tenggara",
 "Evidence from other tropical regions": "Bukti dari wilayah tropis lain",
 "Evidence from mid-latitude regions": "Bukti dari wilayah lintang tengah",
@@ -916,7 +915,7 @@ function draw(){
     var g=ctx.createRadialGradient(mx-rr*0.35,my-rr*0.4,rr*0.05,mx,my,rr*1.05);
     g.addColorStop(0,hexA(col,on?0.62:0.46));g.addColorStop(1,hexA(col,on?0.20:0.10));
     ctx.globalAlpha=dim;ctx.fillStyle=g;ctx.fill();
-    ctx.globalAlpha=dim*(on?0.75:0.22);ctx.strokeStyle=col;ctx.lineWidth=on?1.3:0.6;ctx.setLineDash(it.m==='x'?[3,4]:[]);ctx.stroke();ctx.globalAlpha=dim;
+    if(on){ctx.globalAlpha=dim*0.75;ctx.strokeStyle=col;ctx.lineWidth=1.3;ctx.stroke();ctx.globalAlpha=dim;}
     // three principal rings give the sphere its volume
     ctx.lineWidth=0.8;ctx.globalAlpha=dim*(on?0.6:0.25);
     [0,1,2].forEach(function(ax){
@@ -1096,7 +1095,7 @@ document.getElementById('list').addEventListener('click',function(e){
 function renderLegend(){
   var g=document.getElementById('lgbody'), h='';
   h+='<h4>'+tr('Sphere colour')+'</h4>';
-  if(S.color==='mat') h+='<span><i style="background:'+MAT.e.c+'"></i>'+tr('Established')+'</span><span><i style="background:'+MAT.x.c+'"></i>'+tr('Experimental (dashed)')+'</span>';
+  if(S.color==='mat') h+='<span><i style="background:'+MAT.e.c+'"></i>'+tr('Established')+'</span><span><i style="background:'+MAT.x.c+'"></i>'+tr('Experimental')+'</span>';
   else Object.keys(COV).forEach(function(k){h+='<span><i style="background:'+COV[k].c+'"></i>'+esc(tr(COVLEG[k]))+'</span>';});
   h+='<h4>'+tr('Shape')+'</h4><span>'+tr('● product')+'</span><span>'+tr('◆ driver or method')+'</span><span>'+tr('? zone with no product')+'</span>';
   h+='<h4>'+tr('Symbol colour, main variable')+'</h4>';
