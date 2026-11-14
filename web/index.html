@@ -713,9 +713,8 @@ class App {
     this.gridOn = true;
     this.labelsOn = true;
     this.labelLayerIds = [];
-    // Radar overlay: synthetic placeholder imagery (see
-    // pipeline/radar_demo_gen.py). Nothing here ever requests a BMKG
-    // address; everything it fetches is same-origin, under ./radar/.
+    // Radar overlay: BMKG radar frames built by pipeline/bmkg_radar.py and
+    // served from ${DATA}/radar/. The browser never calls BMKG directly.
     this.radarOn = false;
     // Satellite (Himawari-9 infrared): real imagery built every ten minutes by
     // pipeline/himawari.py and published next to the forecast data, under sat/.
@@ -853,8 +852,8 @@ class App {
     box.appendChild(radarSep);
     const radar = document.createElement("button");
     radar.className = "toggle";
-    radar.textContent = "Radar · demo";
-    radar.title = "Synthetic placeholder imagery for a few cities — not a live BMKG feed";
+    radar.textContent = "Radar";
+    radar.title = "Latest BMKG radar composite per station";
     radar.setAttribute("aria-pressed", String(this.radarOn));
     radar.onclick = () => this.setRadar(!this.radarOn);
     box.appendChild(radar);
@@ -976,7 +975,7 @@ class App {
     const gradient = rr.stops.map(([v, c]) =>
       `rgba(${c[0]},${c[1]},${c[2]},${(c[3] / 255).toFixed(3)}) ${(at(v) * 100).toFixed(1)}%`
     ).join(", ");
-    return this.legendColumn("Radar · demo", rr.unitLabel, gradient,
+    return this.legendColumn("Radar", rr.unitLabel, gradient,
       rr.ticks.map((v) => ({ v, p: at(v) })), "Synthetic placeholder for a few cities, not from BMKG.");
   }
 
@@ -1395,12 +1394,12 @@ class App {
     }
   }
 
-  // --- radar overlay (demo placeholder) -----------------------------------
-  // Toggled by the "Radar · demo" button, or by ?radar=1 / #radar=1 in the
+  // --- radar overlay ------------------------------------------------------
+  // Toggled by the "Radar" button, or by ?radar=1 / #radar=1 in the
   // URL (handled from WeatherLayer.render, the same way boundariesPending is,
   // since sources can only be added once the map's style has loaded).
-  // Everything this fetches is same-origin, under ./radar/: it never calls
-  // BMKG or any other third party. See pipeline/radar_demo_gen.py.
+  // Everything this fetches is under ${DATA}/radar/: it never calls BMKG
+  // directly. See pipeline/bmkg_radar.py.
   setRadar(on) {
     this.radarOn = on;
     if (this.radarBtn) this.radarBtn.setAttribute("aria-pressed", String(on));
@@ -1549,7 +1548,7 @@ class App {
   async loadRadarLayers() {
     this.radarLoading = true;
     try {
-      const manifest = await this.fetchJSON(new URL("radar/manifest.json", location.href).href);
+      const manifest = await this.fetchJSON(`${DATA}/radar/manifest.json`);
       this.radarManifest = manifest;
       // Above the colour field, below the coastline, same reasoning as the
       // boundary layers: addBoundaries() usually runs first, but if the user
@@ -1561,7 +1560,7 @@ class App {
         const srcId = `radar-${st.id}`, layerId = `radar-layer-${st.id}`;
         this.map.addSource(srcId, {
           type: "image",
-          url: new URL(`radar/${st.image}`, location.href).href,
+          url: `${DATA}/radar/${st.image}`,
           coordinates: [[west, north], [east, north], [east, south], [west, south]],
         });
         this.map.addLayer({
@@ -1573,7 +1572,7 @@ class App {
       }
       this.radarLoaded = true;
     } catch (err) {
-      console.warn("radar demo layer failed to load", err);
+      console.warn("radar layer failed to load", err);
       this.radarOn = false;
       if (this.radarBtn) this.radarBtn.setAttribute("aria-pressed", "false");
     } finally {
