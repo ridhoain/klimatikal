@@ -91,6 +91,9 @@ aside h2{font-size:16px;margin:0 0 4px;color:var(--kl-lime);font-weight:600}
 .dot.d{border-radius:3px;transform:rotate(45deg)}
 .dot.d span{transform:rotate(-45deg)}
 .back{margin:0 0 6px}.back button,.pick button{font:inherit;background:none;border:0;color:var(--kl-lime);cursor:pointer;padding:0;text-align:left}.back button{font-size:12.5px;color:var(--kl-teal)}.back button:hover,.pick button:hover{color:#fff;text-decoration:underline}.pick{list-style:none;padding:0;margin:2px 0 0}.pick li{margin:5px 0}.pick .mu{display:block;font-size:12px;color:var(--mute)}
+.how dl{margin:6px 0 2px;columns:2 320px;column-gap:28px}.how dt{font-weight:600;color:var(--text);break-after:avoid}.how dd{margin:0 0 7px;break-inside:avoid}
+abbr.gl{text-decoration:underline dotted;text-underline-offset:3px;cursor:help}
+.plain{margin:2px 0 8px;font-size:13.5px}
 .foot{margin-top:16px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;color:var(--mute)}
 @media (min-width:901px){html,body{height:100%}body{height:100vh;overflow:hidden}}
 @media (max-width:900px){
@@ -138,6 +141,10 @@ aside h2{font-size:16px;margin:0 0 4px;color:var(--kl-lime);font-weight:600}
       <li data-id="<b>Bukti skill.</b> Tag menunjukkan di mana skill yang dikutip diukur: Indonesia atau Asia Tenggara, wilayah tropis lain, wilayah lintang tengah, atau studi global. Satu item dapat memiliki beberapa tag. Item tanpa angka ditandai sebagai tidak ditemukan atau tidak dapat diverifikasi karena berupa proyeksi atau model kerugian. Angka dikutip dari sumber untuk metrik, wilayah, dan periode yang digunakan masing-masing; angka tidak dapat dibandingkan antar pendekatan. Bila sumber berupa poster, preprint, atau materi vendor, entri menyebutkannya, dan bila tidak ada temuan untuk Indonesia, entri juga menyebutkannya."><b>Skill evidence.</b> The tags show where the cited skill was measured: Indonesia or Southeast Asia, other tropical regions, mid-latitude regions, or global studies. An item can carry several. Items with no figure are marked either as having none found or as not verifiable, because they are projections or loss models. Figures are quoted from the cited sources for the metric, region and period each used. They are not comparable across approaches. Where a source is a poster, preprint or vendor material, the entry says so, and where nothing was found for Indonesia, it says that too.</li>
       <li data-id="<b>Lingkup.</b> Ini panduan memilih pendekatan, bukan prakiraan, dan bukan rekomendasi untuk keputusan tertentu."><b>Scope.</b> This is a guide to choosing an approach, not a forecast, and not a recommendation for any specific decision.</li>
     </ul>
+  </details>
+  <details class="how" id="glos">
+    <summary data-id="Daftar istilah">Glossary</summary>
+    <dl id="glossary"></dl>
   </details>
 </div>
 <noscript><p data-id="Panduan ini interaktif dan memerlukan JavaScript. Tanpa itu, hubungi kami melalui <a href=&quot;/contact-us/&quot;>halaman kontak</a> dan kami akan membantu Anda memilih pendekatan.">This guide is interactive and needs JavaScript. Without it, contact us at <a href="/contact-us/">our contact page</a> and we will help you choose an approach.</p></noscript>
@@ -728,6 +735,68 @@ var ID={
 "Outdoor work scheduling, health-service readiness and heat warnings.": "Penjadwalan kerja luar ruang, kesiapan layanan kesehatan, dan peringatan panas.",
 "Marine and coastal operations": "Operasi laut dan pesisir",
 "Shipping, fisheries and marine ecosystem management.": "Pelayaran, perikanan, dan pengelolaan ekosistem laut.",
+"Glossary": "Daftar istilah",
+"Anomaly correlation (ACC)": "Korelasi anomali (ACC)",
+"Climatology": "Klimatologi",
+"Reanalysis": "Reanalisis",
+"Very short-range forecasts, up to a few hours ahead, that extend the latest radar and satellite observations to show where rain is moving.": "Prakiraan jangka sangat pendek, hingga beberapa jam ke depan, yang memperpanjang pengamatan radar dan satelit terbaru untuk menunjukkan ke mana hujan bergerak.",
+"Weather models run at kilometre-scale grid spacing so that thunderstorms and heavy rain are simulated directly rather than approximated.": "Model cuaca dengan jarak grid skala kilometer sehingga badai petir dan hujan lebat disimulasikan secara langsung, bukan didekati dengan pendekatan.",
+"Statistical correction of a set of model runs so that forecasts at a station give reliable probabilities.": "Koreksi statistik atas sekumpulan hasil model agar prakiraan di suatu stasiun memberikan probabilitas yang andal.",
+"Hydrological models that turn forecast rainfall into expected river flow and flood probability.": "Model hidrologi yang mengubah prakiraan hujan menjadi perkiraan aliran sungai dan probabilitas banjir.",
+"Forecasts of the heat load on people, combining temperature, humidity, wind and sunshine.": "Prakiraan beban panas pada manusia, yang menggabungkan suhu, kelembapan, angin, dan sinar matahari.",
+"Forecasts that describe what the weather may do, such as damage or disruption, rather than only what the weather will be.": "Prakiraan yang menjelaskan apa yang mungkin ditimbulkan cuaca, seperti kerusakan atau gangguan, bukan hanya bagaimana cuacanya.",
+"Indices of how dry conditions are expected to become, and outlooks of what that means for crops and pasture.": "Indeks seberapa kering kondisi diperkirakan akan menjadi, dan prospek artinya bagi tanaman dan padang rumput.",
+"Weather models that learn from past weather data with machine learning instead of solving the physical equations.": "Model cuaca yang belajar dari data cuaca masa lalu dengan pembelajaran mesin, bukan menyelesaikan persamaan fisika.",
+"A rating of how easily vegetation will ignite and spread fire, calculated from weather and fuel moisture.": "Peringkat seberapa mudah vegetasi terbakar dan menyebarkan api, dihitung dari cuaca dan kelembapan bahan bakar.",
+"Weather models that cover a limited region in finer detail than global models, using global model output at their edges.": "Model cuaca yang mencakup wilayah terbatas dengan detail lebih halus daripada model global, memakai keluaran model global di tepinya.",
+"Track, intensity and size forecasts for tropical cyclones from physics-based weather models.": "Prakiraan lintasan, intensitas, dan ukuran siklon tropis dari model cuaca berbasis fisika.",
+"Machine-learning models that forecast tropical cyclone track and intensity, run alongside physics-based forecasts.": "Model pembelajaran mesin yang memprakirakan lintasan dan intensitas siklon tropis, dijalankan berdampingan dengan prakiraan berbasis fisika.",
+"Forecasts of when the rainy season starts and ends, and how long dry periods within it last.": "Prakiraan kapan musim hujan dimulai dan berakhir, serta berapa lama periode kering di dalamnya berlangsung.",
+"Probabilities of hazards such as heatwaves or heavy rain, weeks ahead.": "Probabilitas bahaya seperti gelombang panas atau hujan lebat, beberapa minggu ke depan.",
+"Physics-based weather models that cover the whole globe and provide the base forecasts for up to about two weeks ahead.": "Model cuaca berbasis fisika yang mencakup seluruh dunia dan menjadi prakiraan dasar hingga sekitar dua minggu ke depan.",
+"Simulations of many possible disasters used to estimate how often losses of a given size occur, not to forecast a specific date.": "Simulasi banyak kemungkinan bencana untuk memperkirakan seberapa sering kerugian dengan besaran tertentu terjadi, bukan untuk memprakirakan tanggal tertentu.",
+"Two regional systems linked to heavy rain in the Maritime Continent: a low-level circulation near Borneo and surges of northerly wind across the South China Sea.": "Dua sistem regional yang berkaitan dengan hujan lebat di Maritime Continent: sirkulasi lapisan bawah di sekitar Borneo dan seruakan angin utara melintasi Laut Cina Selatan.",
+"Outlooks, weeks ahead, of whether rain or temperature is likely to be below, near or above normal.": "Outlook beberapa minggu ke depan tentang apakah hujan atau suhu cenderung di bawah, mendekati, atau di atas normal.",
+"Estimates and forecasts of soil wetness, evaporation and streamflow, which carry the memory of past rain into the coming weeks.": "Estimasi dan prakiraan kebasahan tanah, penguapan, dan aliran sungai, yang membawa memori hujan lampau ke minggu-minggu mendatang.",
+"Climate model forecasts for the coming months, refined to local scale, giving the chance of a wetter or drier season than normal.": "Prakiraan model iklim untuk beberapa bulan ke depan, diperhalus ke skala lokal, yang memberi peluang musim lebih basah atau lebih kering dari normal.",
+"Catastrophe models adjusted for the current warm state of the oceans, so that expected losses reflect the next few years rather than the long-term average.": "Model katastrofe yang disesuaikan dengan kondisi hangat samudra saat ini, sehingga kerugian yang diharapkan mencerminkan beberapa tahun ke depan, bukan rata-rata jangka panjang.",
+"Forecasts of unusually warm sea temperatures and other ocean conditions, weeks to months ahead.": "Prakiraan suhu laut yang luar biasa hangat dan kondisi laut lainnya, beberapa minggu hingga bulan ke depan.",
+"Using a recent or trend-adjusted average, rather than an old 30-year average, as the reference for what is normal.": "Memakai rata-rata terbaru atau terkoreksi tren, bukan rata-rata 30 tahun yang lama, sebagai acuan tentang apa yang normal.",
+"Machine-learning systems for forecasts weeks ahead, still at the trial stage.": "Sistem pembelajaran mesin untuk prakiraan beberapa minggu ke depan, yang masih pada tahap uji coba.",
+"Climate projections for the next 5 to 20 years, refined to local scale.": "Proyeksi iklim untuk 5 hingga 20 tahun ke depan, diperhalus ke skala lokal.",
+"Combines projected climate hazards with what is exposed and how vulnerable it is, to estimate future risk or loss.": "Menggabungkan bahaya iklim terproyeksi dengan apa yang terpapar dan seberapa rentan, untuk memperkirakan risiko atau kerugian di masa depan.",
+"Long-term climate model projections refined to local scale for planning.": "Proyeksi model iklim jangka panjang yang diperhalus ke skala lokal untuk perencanaan.",
+"Long-term projections summarised as practical indices, such as the number of hot days or the heaviest rain in 5 days.": "Proyeksi jangka panjang yang diringkas sebagai indeks praktis, seperti jumlah hari panas atau hujan terlebat dalam 5 hari.",
+"Large-scale wave patterns along the equator that make rain more or less likely over days to a few weeks.": "Pola gelombang skala besar di sepanjang ekuator yang membuat hujan lebih atau kurang mungkin terjadi selama beberapa hari hingga beberapa minggu.",
+"A small set of recurring large-scale weather patterns, used to group forecasts and judge the likelihood of rain or temperature extremes.": "Sekumpulan kecil pola cuaca skala besar yang berulang, dipakai untuk mengelompokkan prakiraan dan menilai kemungkinan hujan atau suhu ekstrem.",
+"Risk estimates for the coming years, given whether the Pacific is in an El Niño or La Niña phase.": "Perkiraan risiko untuk beberapa tahun ke depan, bergantung pada apakah Pasifik berada pada fase El Niño atau La Niña.",
+"Tropical rain patterns that evolve over weeks and shift rainfall from one region to another.": "Pola hujan tropis yang berkembang selama beberapa minggu dan menggeser hujan dari satu wilayah ke wilayah lain.",
+"Links between the stratosphere and surface weather, mainly useful in mid-latitudes; the connection to Indonesia is indirect.": "Keterkaitan antara stratosfer dan cuaca permukaan, terutama berguna di lintang tengah; hubungannya dengan Indonesia tidak langsung.",
+"The global climate models used in the latest assessments of long-term climate change.": "Model iklim global yang dipakai dalam penilaian terbaru tentang perubahan iklim jangka panjang.",
+"Outlooks of two ocean-atmosphere patterns, El Niño-Southern Oscillation and the Indian Ocean Dipole, that influence year-to-year rainfall in Indonesia.": "Outlook dua pola laut-atmosfer, El Niño-Southern Oscillation dan Indian Ocean Dipole, yang memengaruhi curah hujan dari tahun ke tahun di Indonesia.",
+"Forecasts of average climate for the next several years, started from the present state of the ocean.": "Prakiraan rata-rata iklim untuk beberapa tahun ke depan, dimulai dari kondisi samudra saat ini.",
+"How closely forecast departures from normal match observed ones; 1 is perfect.": "Seberapa dekat penyimpangan dari normal pada prakiraan dengan yang teramati; 1 berarti sempurna.",
+"Boreal summer intraseasonal oscillation: the northern-summer counterpart of the MJO over Asia.": "Boreal summer intraseasonal oscillation: padanan MJO pada musim panas belahan bumi utara di atas Asia.",
+"Coupled Model Intercomparison Project, phase 6: the set of global climate models used in the latest assessments.": "Coupled Model Intercomparison Project fase 6: kumpulan model iklim global yang dipakai dalam penilaian terbaru.",
+"The long-term average weather for a place and time of year, often used as the reference forecast.": "Rata-rata cuaca jangka panjang untuk suatu tempat dan waktu dalam setahun, sering dipakai sebagai prakiraan acuan.",
+"Continuous ranked probability skill score: skill of a probability forecast against a reference; 1 is perfect and 0 is no better than the reference.": "Continuous ranked probability skill score: skill prakiraan probabilistik terhadap suatu acuan; 1 berarti sempurna dan 0 berarti tidak lebih baik dari acuan.",
+"Refining coarse model output to finer local detail.": "Memperhalus keluaran model yang kasar menjadi detail lokal yang lebih halus.",
+"A set of forecasts started from slightly different conditions, used to estimate how uncertain the forecast is.": "Sekumpulan prakiraan yang dimulai dari kondisi yang sedikit berbeda, dipakai untuk memperkirakan seberapa pasti prakiraan itu.",
+"El Niño-Southern Oscillation: year-to-year warming and cooling of the tropical Pacific that shifts rainfall around the world.": "El Niño-Southern Oscillation: pemanasan dan pendinginan Pasifik tropis dari tahun ke tahun yang menggeser hujan di seluruh dunia.",
+"Fire Weather Index: a rating of fire danger from weather and fuel moisture.": "Fire Weather Index: peringkat bahaya kebakaran dari cuaca dan kelembapan bahan bakar.",
+"Indian Ocean Dipole: the east-west difference in sea temperature across the Indian Ocean, which affects rainfall around it.": "Indian Ocean Dipole: perbedaan suhu laut timur-barat di Samudra Hindia, yang memengaruhi hujan di sekitarnya.",
+"The islands and shallow seas of Indonesia, Malaysia, the Philippines and New Guinea.": "Kepulauan dan laut dangkal Indonesia, Malaysia, Filipina, dan Papua Nugini.",
+"Madden-Julian Oscillation: a tropical rain pattern that moves eastward around the globe over about 30 to 60 days.": "Madden-Julian Oscillation: pola hujan tropis yang bergerak ke timur mengelilingi bumi dalam sekitar 30 hingga 60 hari.",
+"Numerical weather prediction: forecasts from physics-based computer models.": "Numerical weather prediction: prakiraan dari model komputer berbasis fisika.",
+"Outgoing longwave radiation: heat leaving the earth; low values indicate deep tropical cloud.": "Outgoing longwave radiation: panas yang meninggalkan bumi; nilai rendah menunjukkan awan tropis yang tebal.",
+"Statistical correction of raw model output using past forecasts and observations.": "Koreksi statistik atas keluaran model mentah menggunakan prakiraan dan pengamatan masa lalu.",
+"Quasi-biennial oscillation: stratospheric winds over the equator that reverse direction about every two years.": "Quasi-biennial oscillation: angin stratosfer di atas ekuator yang berbalik arah sekitar setiap dua tahun.",
+"A consistent reconstruction of past weather from observations and a model.": "Rekonstruksi cuaca masa lalu yang konsisten dari pengamatan dan sebuah model.",
+"Relative operating characteristic: shows how well a forecast separates events from non-events.": "Relative operating characteristic: menunjukkan seberapa baik prakiraan memisahkan kejadian dari bukan kejadian.",
+"Sub-seasonal to seasonal: forecasts from about two weeks to several months ahead.": "Sub-seasonal to seasonal: prakiraan dari sekitar dua minggu hingga beberapa bulan ke depan.",
+"How much better a forecast is than a simple reference such as climatology or persistence.": "Seberapa lebih baik suatu prakiraan dibanding acuan sederhana seperti klimatologi atau persistensi.",
+"One of three equally likely categories: below, near or above normal.": "Salah satu dari tiga kategori yang sama mungkin: di bawah, mendekati, atau di atas normal.",
+"Wet bulb globe temperature: a heat-stress measure combining temperature, humidity, wind and sunshine.": "Wet bulb globe temperature: ukuran cekaman panas yang menggabungkan suhu, kelembapan, angin, dan sinar matahari.",
 "drag to pan · scroll or pinch to zoom · click a sphere": "seret untuk menggeser · gulir atau cubit untuk zoom · klik sebuah bola",
 "scroll or pinch to zoom · shift+drag to pan · click a sphere": "gulir atau cubit untuk zoom · shift+seret untuk menggeser · klik sebuah bola",
 "None": "Tidak ada",
@@ -741,8 +810,170 @@ var ID={
 };
 function tr(s){return (LANG==='id'&&Object.prototype.hasOwnProperty.call(ID,s))?ID[s]:s;}
 // planning horizon, spatial extent and impact proximity labels: units, decimal and thousands separators
+function gloss(html){
+  var tok=[];
+  GLOSS.forEach(function(g){if(!g.t)return;
+    html=html.replace(new RegExp('\\b'+g.t+'s?\\b'),function(m){tok.push('<abbr class="gl" title="'+esc(tr(g.d))+'">'+m+'</abbr>');return '\u0001'+(tok.length-1)+'\u0002';});});
+  return html.replace(/\u0001(\d+)\u0002/g,function(_,i){return tok[+i];});
+}
+function renderGlossary(){
+  var el=document.getElementById('glossary');
+  var rows=GLOSS.map(function(g){return {n:tr(g.n),d:tr(g.d)};}).sort(function(a,b){return a.n.localeCompare(b.n,LANG);});
+  el.innerHTML=rows.map(function(r){return '<dt>'+esc(r.n)+'</dt><dd>'+esc(r.d)+'</dd>';}).join('');
+}
 function tl(s){if(LANG!=='id')return s;return String(s).replace(/(\d)\.(\d)/g,'$1,$2').replace(/(\d),(\d{3})/g,'$1.$2').replace(/\bh\b/g,'jam').replace(/\bd\b/g,'hari').replace(/\bwk\b/g,'mgg').replace(/\bmo\b/g,'bln').replace(/\byr\b/g,'thn').replace(/\bstation\b/g,'stasiun').replace(/\bmathematical\b/g,'matematis').replace(/\bphysical\b/g,'fisik').replace(/\bsocioeconomic\b/g,'sosioekonomi').replace(/ to /g,' hingga ');}
 
+
+var PLAIN={
+"Nowcasting (radar, satellite)": "Very short-range forecasts, up to a few hours ahead, that extend the latest radar and satellite observations to show where rain is moving.",
+"Convection-permitting models": "Weather models run at kilometre-scale grid spacing so that thunderstorms and heavy rain are simulated directly rather than approximated.",
+"Ensemble post-processing": "Statistical correction of a set of model runs so that forecasts at a station give reliable probabilities.",
+"Flood forecasting (hydrological)": "Hydrological models that turn forecast rainfall into expected river flow and flood probability.",
+"Heat stress forecasts": "Forecasts of the heat load on people, combining temperature, humidity, wind and sunshine.",
+"Impact-based forecasting": "Forecasts that describe what the weather may do, such as damage or disruption, rather than only what the weather will be.",
+"Drought index and yield outlook": "Indices of how dry conditions are expected to become, and outlooks of what that means for crops and pasture.",
+"ML weather models": "Weather models that learn from past weather data with machine learning instead of solving the physical equations.",
+"Fire danger rating": "A rating of how easily vegetation will ignite and spread fire, calculated from weather and fuel moisture.",
+"Regional NWP (limited-area, WRF)": "Weather models that cover a limited region in finer detail than global models, using global model output at their edges.",
+"Tropical cyclone forecasts (physics)": "Track, intensity and size forecasts for tropical cyclones from physics-based weather models.",
+"AI tropical cyclone models": "Machine-learning models that forecast tropical cyclone track and intensity, run alongside physics-based forecasts.",
+"Onset, cessation, dry spells": "Forecasts of when the rainy season starts and ends, and how long dry periods within it last.",
+"S2S hazard products": "Probabilities of hazards such as heatwaves or heavy rain, weeks ahead.",
+"Global NWP (medium-range, ensemble)": "Physics-based weather models that cover the whole globe and provide the base forecasts for up to about two weeks ahead.",
+"Catastrophe modelling": "Simulations of many possible disasters used to estimate how often losses of a given size occur, not to forecast a specific date.",
+"Borneo vortex, cold surges": "Two regional systems linked to heavy rain in the Maritime Continent: a low-level circulation near Borneo and surges of northerly wind across the South China Sea.",
+"S2S rain and temperature terciles": "Outlooks, weeks ahead, of whether rain or temperature is likely to be below, near or above normal.",
+"Soil moisture and land surface": "Estimates and forecasts of soil wetness, evaporation and streamflow, which carry the memory of past rain into the coming weeks.",
+"Seasonal models plus downscaling": "Climate model forecasts for the coming months, refined to local scale, giving the chance of a wetter or drier season than normal.",
+"Warm-conditioned catastrophe models": "Catastrophe models adjusted for the current warm state of the oceans, so that expected losses reflect the next few years rather than the long-term average.",
+"Marine heatwave and ocean-state forecasts": "Forecasts of unusually warm sea temperatures and other ocean conditions, weeks to months ahead.",
+"Updated baselines, trend-adjusted climatology": "Using a recent or trend-adjusted average, rather than an old 30-year average, as the reference for what is normal.",
+"AI-based S2S forecasts": "Machine-learning systems for forecasts weeks ahead, still at the trial stage.",
+"Near-term projections, downscaled": "Climate projections for the next 5 to 20 years, refined to local scale.",
+"Projected risk with exposure": "Combines projected climate hazards with what is exposed and how vulnerable it is, to estimate future risk or loss.",
+"Downscaled projections": "Long-term climate model projections refined to local scale for planning.",
+"Projected hazard indices": "Long-term projections summarised as practical indices, such as the number of hot days or the heaviest rain in 5 days.",
+"Equatorial waves": "Large-scale wave patterns along the equator that make rain more or less likely over days to a few weeks.",
+"Weather regimes": "A small set of recurring large-scale weather patterns, used to group forecasts and judge the likelihood of rain or temperature extremes.",
+"Phase-conditioned multi-year risk": "Risk estimates for the coming years, given whether the Pacific is in an El Niño or La Niña phase.",
+"MJO, moisture mode, BSISO": "Tropical rain patterns that evolve over weeks and shift rainfall from one region to another.",
+"Stratosphere and extratropical links": "Links between the stratosphere and surface weather, mainly useful in mid-latitudes; the connection to Indonesia is indirect.",
+"CMIP6 climate models": "The global climate models used in the latest assessments of long-term climate change.",
+"ENSO and IOD outlooks": "Outlooks of two ocean-atmosphere patterns, El Niño-Southern Oscillation and the Indian Ocean Dipole, that influence year-to-year rainfall in Indonesia.",
+"Decadal predictions": "Forecasts of average climate for the next several years, started from the present state of the ocean."
+};
+var GLOSS=[
+{
+"n": "Anomaly correlation (ACC)",
+"t": "ACC",
+"d": "How closely forecast departures from normal match observed ones; 1 is perfect."
+},
+{
+"n": "BSISO",
+"t": "BSISO",
+"d": "Boreal summer intraseasonal oscillation: the northern-summer counterpart of the MJO over Asia."
+},
+{
+"n": "CMIP6",
+"t": "CMIP6",
+"d": "Coupled Model Intercomparison Project, phase 6: the set of global climate models used in the latest assessments."
+},
+{
+"n": "Climatology",
+"t": "",
+"d": "The long-term average weather for a place and time of year, often used as the reference forecast."
+},
+{
+"n": "CRPSS",
+"t": "CRPSS",
+"d": "Continuous ranked probability skill score: skill of a probability forecast against a reference; 1 is perfect and 0 is no better than the reference."
+},
+{
+"n": "Downscaling",
+"t": "",
+"d": "Refining coarse model output to finer local detail."
+},
+{
+"n": "Ensemble",
+"t": "",
+"d": "A set of forecasts started from slightly different conditions, used to estimate how uncertain the forecast is."
+},
+{
+"n": "ENSO",
+"t": "ENSO",
+"d": "El Niño-Southern Oscillation: year-to-year warming and cooling of the tropical Pacific that shifts rainfall around the world."
+},
+{
+"n": "FWI",
+"t": "FWI",
+"d": "Fire Weather Index: a rating of fire danger from weather and fuel moisture."
+},
+{
+"n": "IOD",
+"t": "IOD",
+"d": "Indian Ocean Dipole: the east-west difference in sea temperature across the Indian Ocean, which affects rainfall around it."
+},
+{
+"n": "Maritime Continent",
+"t": "",
+"d": "The islands and shallow seas of Indonesia, Malaysia, the Philippines and New Guinea."
+},
+{
+"n": "MJO",
+"t": "MJO",
+"d": "Madden-Julian Oscillation: a tropical rain pattern that moves eastward around the globe over about 30 to 60 days."
+},
+{
+"n": "NWP",
+"t": "NWP",
+"d": "Numerical weather prediction: forecasts from physics-based computer models."
+},
+{
+"n": "OLR",
+"t": "OLR",
+"d": "Outgoing longwave radiation: heat leaving the earth; low values indicate deep tropical cloud."
+},
+{
+"n": "Post-processing",
+"t": "",
+"d": "Statistical correction of raw model output using past forecasts and observations."
+},
+{
+"n": "QBO",
+"t": "QBO",
+"d": "Quasi-biennial oscillation: stratospheric winds over the equator that reverse direction about every two years."
+},
+{
+"n": "Reanalysis",
+"t": "reanalysis",
+"d": "A consistent reconstruction of past weather from observations and a model."
+},
+{
+"n": "ROC",
+"t": "ROC",
+"d": "Relative operating characteristic: shows how well a forecast separates events from non-events."
+},
+{
+"n": "S2S",
+"t": "S2S",
+"d": "Sub-seasonal to seasonal: forecasts from about two weeks to several months ahead."
+},
+{
+"n": "Skill",
+"t": "",
+"d": "How much better a forecast is than a simple reference such as climatology or persistence."
+},
+{
+"n": "Tercile",
+"t": "tercile",
+"d": "One of three equally likely categories: below, near or above normal."
+},
+{
+"n": "WBGT",
+"t": "WBGT",
+"d": "Wet bulb globe temperature: a heat-stress measure combining temperature, humidity, wind and sunshine."
+}
+];
 
 /* ---------- decision areas: items are listed by name so they survive renumbering ---------- */
 var SECT=[
@@ -1163,12 +1394,12 @@ function renderDetail(){
   var it=byId(S.sel);
   if(it.gap){var gh='<h2>'+esc(tr(it.title))+'</h2>';it.paras.forEach(function(p){gh+='<p>'+esc(tr(p))+'</p>';});gh+='<div class="sec srcs"><h3>'+tr('Sources')+'</h3>'+it.src.map(function(x){return '<a href="'+esc(x[1])+'" target="_blank" rel="noopener">'+esc(x[0])+'</a>';}).join('')+'</div><div class="warn">'+esc(tr(it.note))+'</div>';d.innerHTML=gh;return;}
   var m=MAT[it.m];
-  var h=(S.sector!=='all'?'<p class="back"><button type="button" data-back>← '+esc(tr('Back to decision area'))+'</button></p>':'')+'<h2>'+it.id+'. '+esc(tr(it.name))+'</h2>';
+  var h=(S.sector!=='all'?'<p class="back"><button type="button" data-back>← '+esc(tr('Back to decision area'))+'</button></p>':'')+'<h2>'+it.id+'. '+esc(tr(it.name))+'</h2>'+(PLAIN[it.name]?'<p class="plain">'+gloss(esc(tr(PLAIN[it.name])))+'</p>':'');
   h+='<div class="tags"><span class="tag" style="background:'+m.c+'">'+tr(m.n)+'</span>'+it.c.split('').map(function(k){return '<span class="tag" style="background:'+COV[k].c+'">'+esc(tr(COV[k].n))+'</span>';}).join('')+'<span class="tag" style="background:#9fb7c9">'+tr(it.type==='d'?'Driver or method':'Product')+'</span></div>';
   h+='<div class="kv"><b>'+tr('Planning horizon')+'</b><span>'+esc(tl(it.hl))+'</span><b>'+tr('Spatial extent')+'</b><span>'+esc(tl(it.sl))+'</span><b>'+tr('Impact proximity')+'</b><span>'+esc(tl(it.al))+'</span></div>';
-  h+='<div class="sec"><h3>'+tr('Note')+'</h3><div>'+esc(tr(it.note))+'</div></div>';
+  h+='<div class="sec"><h3>'+tr('Note')+'</h3><div>'+gloss(esc(tr(it.note)))+'</div></div>';
   h+='<div class="sec"><h3>'+tr('Variables it can forecast')+'</h3><ul>'+it.vars.map(function(v){return '<li><b>'+esc(tr(IV[v[0]]))+'</b> '+esc(tr(v[1]))+'</li>';}).join('')+'</ul></div>';
-  h+='<div class="sec"><h3>'+tr('Reported skill and evidence')+'</h3><div>'+esc(tr(it.skill))+'</div></div>';
+  h+='<div class="sec"><h3>'+tr('Reported skill and evidence')+'</h3><div>'+gloss(esc(tr(it.skill)))+'</div></div>';
   h+='<div class="sec uc"><h3>'+tr('Real-world use')+'</h3>'+(it.uc.length?it.uc.map(function(u){return '<div>'+esc(tr(u[0]))+' <a href="'+esc(u[2])+'" target="_blank" rel="noopener">'+esc(u[1])+'</a></div>';}).join(''):'<div>'+esc(tr('No use by another institution or company was found for this approach.'))+'</div>')+'</div>';
   if(it.prod.length) h+='<div class="sec"><h3>'+tr('Existing products')+'</h3><ul>'+it.prod.map(function(p){return '<li><a href="'+esc(p[2])+'" target="_blank" rel="noopener">'+esc(p[0])+'</a>, '+esc(p[1])+'</li>';}).join('')+'</ul></div>';
   h+='<div class="sec srcs"><h3>'+tr('Sources')+'</h3>'+it.src.map(function(s){return '<a href="'+esc(s[1])+'" target="_blank" rel="noopener">'+esc(s[0])+'</a>';}).join('')+'</div>';
@@ -1237,12 +1468,12 @@ function setLang(l){
   LANG=l==='id'?'id':'en';
   var h=document.documentElement;h.setAttribute('data-lang',LANG);h.setAttribute('lang',LANG);
   try{localStorage.setItem('kl-lang',LANG);}catch(e){}
-  applyStatic();fillIv();fillSect();
+  applyStatic();fillIv();fillSect();renderGlossary();
   setLegend(!document.getElementById('legend').classList.contains('closed'));
   renderLegend();renderList();renderDetail();updateHint();request();
 }
 document.querySelectorAll('[data-set-lang]').forEach(function(b){b.addEventListener('click',function(){setLang(b.getAttribute('data-set-lang'));});});
-applyStatic();
+applyStatic();renderGlossary();
 renderLegend();renderList();renderDetail();updateHint();size();
 window.__map={S:S,select:select,goView:goView,draw:draw,GL:GL,SYM:SYM};
 })();
