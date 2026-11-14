@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forecast services · Klimatikal</title>
+<meta name="description" content="A guide to 33 weather and climate forecasting approaches, placed by how far ahead you decide, how large an area you care about and how close the output is to a real impact, with the evidence behind each.">
+<link rel="canonical" href="https://klimatikal.com/product/forecast-services/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#0D0630">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Forecast services · Klimatikal">
+<meta property="og:description" content="Which forecast fits your decision? 33 weather and climate approaches, with the evidence behind each.">
+<meta property="og:url" content="https://klimatikal.com/product/forecast-services/">
+<meta property="og:image" content="https://klimatikal.com/brand/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+:root{--kl-amethyst:#0D0630;--kl-deep:#18314F;--kl-dusk:#384E77;--kl-teal:#8BBEB2;--kl-lime:#E6F9AF;--text:#e9edf7;
+  --line:rgba(139,190,178,.22);--panel:rgba(24,49,79,.38);--chip:rgba(139,190,178,.12);--mute:#9fb7c9}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+html,body{margin:0}
+body{background:var(--kl-amethyst);color:var(--text);font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh;display:flex;flex-direction:column}
+a{color:var(--kl-lime);text-underline-offset:3px}
+a:focus-visible,button:focus-visible{outline:2px solid var(--kl-lime);outline-offset:3px;border-radius:3px}
+.site-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 16px;border-bottom:1px solid var(--line);flex:none}
+.logo-img{height:40px;width:auto;display:block}
+@media (max-width:600px){.logo-img{height:32px}}
+.site-header nav{display:flex;gap:20px;font-size:14px}
+.site-header nav a{color:var(--kl-teal);text-decoration:none}
+.site-header nav a:hover,.site-header nav a[aria-current="page"]{color:var(--kl-lime)}
+@media (max-width:600px){.site-header nav{gap:12px;flex-wrap:wrap;justify-content:flex-end}}
+.intro{padding:12px 16px;border-bottom:1px solid var(--line);flex:none}
+.eyebrow{margin:0 0 2px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--kl-teal)}
+.intro h1{margin:0;font-size:22px;line-height:1.2;color:var(--kl-lime);font-weight:600}
+.intro p{margin:4px 0 0;color:var(--mute);font-size:13px;max-width:110ch}
+.how{margin-top:6px;font-size:13px;color:var(--mute);max-width:110ch}
+.how summary{cursor:pointer;color:var(--kl-teal);width:max-content}
+.how summary:hover{color:var(--kl-lime)}
+.how ul{margin:6px 0 2px;padding-left:18px}
+.how li{margin:3px 0}
+.how b{color:var(--text);font-weight:600}
+.cta{margin-top:14px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:13px;background:var(--chip)}
+.cta a{font-weight:600}
+noscript p{margin:0;padding:12px 16px;color:var(--text)}
+.app{flex:1;display:grid;grid-template-columns:minmax(0,1fr) 400px;min-height:0}
+.stage{display:flex;flex-direction:column;min-width:0;min-height:0}
+.bar{display:flex;flex-wrap:wrap;gap:6px 14px;padding:8px 12px;border-bottom:1px solid var(--line);align-items:center}
+.grp{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.grp>span{color:var(--kl-teal);font-size:12px;margin-right:2px}
+button.chip{border:1px solid var(--line);background:var(--chip);color:var(--text);border-radius:14px;padding:3px 10px;font:inherit;font-size:12.5px;cursor:pointer}
+button.chip:hover{border-color:var(--kl-teal)}
+button.chip.on{background:var(--kl-lime);color:var(--kl-amethyst);border-color:var(--kl-lime)}
+.canvaswrap{position:relative;flex:1;min-height:320px}
+canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
+canvas.drag{cursor:grabbing}
+.tip{position:absolute;pointer-events:none;background:var(--kl-lime);color:var(--kl-amethyst);padding:3px 8px;border-radius:6px;font-size:12px;display:none;white-space:nowrap;z-index:3}
+.legend{position:absolute;left:10px;bottom:8px;display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--mute);background:rgba(13,6,48,.82);padding:4px 8px;border-radius:8px;max-width:calc(100% - 20px)}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.hint{position:absolute;right:10px;top:8px;font-size:11.5px;color:var(--mute);background:rgba(13,6,48,.82);padding:2px 8px;border-radius:8px}
+aside{background:var(--panel);border-left:1px solid var(--line);overflow:auto;min-height:0;padding:14px}
+aside h2{font-size:16px;margin:0 0 4px;color:var(--kl-lime);font-weight:600}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 8px}
+.tag{font-size:11.5px;padding:2px 8px;border-radius:10px;color:var(--kl-amethyst);font-weight:600}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:13px;margin:6px 0}
+.kv b{color:var(--kl-teal);font-weight:500}
+.sec{margin-top:10px}
+.sec h3{margin:0 0 3px;font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--kl-teal);font-weight:600}
+.srcs a{display:block;font-size:13px;margin:2px 0;word-break:break-word}
+.warn{font-size:12px;color:var(--mute);border-left:3px solid var(--line);padding:2px 0 2px 8px;margin-top:10px}
+.empty{color:var(--mute)}
+.list{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+.list h3{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--kl-teal);font-weight:600}
+.list button{display:flex;gap:8px;align-items:center;width:100%;text-align:left;background:none;border:0;color:var(--text);font:inherit;font-size:13px;padding:3px 4px;border-radius:6px;cursor:pointer}
+.list button:hover,.list button.sel{background:var(--chip)}
+.dot{flex:none;width:20px;height:20px;border-radius:50%;color:var(--kl-amethyst);font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.dot.d{border-radius:3px;transform:rotate(45deg)}
+.dot.d span{transform:rotate(-45deg)}
+.foot{margin-top:16px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;color:var(--mute)}
+@media (min-width:901px){html,body{height:100%}body{height:100vh;overflow:hidden}}
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  .canvaswrap{height:62vh;flex:none}
+  aside{border-left:0;border-top:1px solid var(--line)}
+  .hint{display:none}
+}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <a class="logo" href="/" aria-label="Klimatikal home">
+    <picture>
+      <source media="(max-width: 600px)" srcset="/brand/klimatikal-mark-on-dark.svg">
+      <img src="/brand/klimatikal-lockup-on-dark.svg?v=2" alt="Klimatikal" class="logo-img">
+    </picture>
+  </a>
+  <nav aria-label="Main">
+    <a href="/">Weather map</a>
+    <a href="/atlas-cuaca/">Atlas Cuaca</a>
+    <a href="/product/forecast-services/" aria-current="page">Forecast services</a>
+    <a href="/about-us/">About us</a>
+    <a href="/contact-us/">Contact us</a>
+  </nav>
+</header>
+<div class="intro">
+  <p class="eyebrow">Product · Forecast services</p>
+  <h1>Which forecast fits your decision?</h1>
+  <p>33 weather and climate forecasting approaches, placed by how far ahead you decide, how large an area you care about and how close the output is to a real impact.</p>
+  <details class="how">
+    <summary>How to read this guide</summary>
+    <ul>
+      <li><b>Position.</b> Each box spans the lead time, area size and closeness to impact that approach typically serves. Both distance axes are logarithmic.</li>
+      <li><b>Placement and maturity.</b> These are Klimatikal's assessments as of 14 November 2026 and will change as evidence does. Established means routine in operational use; experimental means early, limited or still being verified.</li>
+      <li><b>Skill evidence.</b> Figures are quoted from the cited sources for the metric, region and period each used. They are not comparable across approaches. Where a source is a poster, preprint or vendor material, the entry says so, and where nothing was found for Indonesia, it says that too.</li>
+      <li><b>Scope.</b> This is a guide to choosing an approach, not a forecast, and not a recommendation for any specific decision.</li>
+    </ul>
+  </details>
+</div>
+<noscript><p>This guide is interactive and needs JavaScript. Without it, contact us at <a href="/contact-us/">our contact page</a> and we will help you choose an approach.</p></noscript>
+<div class="app">
+<div class="stage">
+  <div class="bar">
+    <div class="grp"><span>View</span><button class="chip on" data-view="3d">3D</button><button class="chip" data-view="front">Ahead × Impact</button><button class="chip" data-view="top">Ahead × Area</button><button class="chip" data-view="side">Area × Impact</button></div>
+    <div class="grp"><span>Colour</span><button class="chip on" data-color="mat">Maturity</button><button class="chip" data-color="cov">Skill evidence</button></div>
+    <div class="grp"><span>Maturity</span><button class="chip on" data-fm="all">All</button><button class="chip" data-fm="e">Established</button><button class="chip" data-fm="x">Experimental</button></div>
+    <div class="grp"><span>Evidence</span><button class="chip on" data-fc="all">All</button><button class="chip" data-fc="I">Indonesia / SE Asia</button><button class="chip" data-fc="T">Tropics</button><button class="chip" data-fc="G">Global</button><button class="chip" data-fc="C">Context only</button></div>
+    <div class="grp"><button class="chip" id="zin">+</button><button class="chip" id="zout">−</button><button class="chip" id="reset">Reset</button></div>
+  </div>
+  <div class="canvaswrap" id="wrap">
+    <canvas id="cv" role="img" aria-label="Three-dimensional chart placing 33 forecasting approaches by lead time, area size and closeness to impact. The full list of approaches is in the side panel."></canvas>
+    <div class="tip" id="tip"></div>
+    <div class="hint">Drag to rotate · scroll or pinch to zoom · shift+drag to pan · click a box</div>
+    <div class="legend" id="legend"></div>
+  </div>
+</div>
+<aside>
+  <div id="detail"><p class="empty">Select a box on the map or an item in the list to see its skill and evidence.</p></div>
+  <div class="list"><h3>All items</h3><div id="list"></div></div>
+  <div class="cta">Not sure which approach fits your decision? <a href="/contact-us/">Talk to us</a></div>
+  <div class="foot">© 2026 Klimatikal · Weather and Climate Intelligence · <a href="/privacy/">Privacy</a></div>
+</aside>
+</div>
+<script>
+(function(){
+"use strict";
+/* ---------- data ---------- */
+// [id, name, type(p|d), h0h, h1h, horizonLabel, s0km, s1km, scaleLabel, a0, a1, abstractionLabel, maturity(e|x), coverage(I|T|G|C), note, skill, sources]
+function I(id,name,type,h0,h1,hl,s0,s1,sl,a0,a1,al,m,c,note,skill,src){return {id:id,name:name,type:type,h:[h0,h1],hl:hl,s:[s0,s1],sl:sl,a:[a0,a1],al:al,m:m,c:c,note:note,skill:skill,src:src};}
+var D=6570, Y=8760;
+var ITEMS=[
+I(1,`Nowcasting (radar, satellite)`,'p',0.5,6,`0-6 h`,1,10,`1-10 km`,3.5,4.5,`3.5-4.5, physical`,'e','T',`Extrapolation routine; ML versions newer.`,
+ `Forecasters judged a deep generative radar model more useful than older methods at 0-2 h (UK radar, not tropics). Extrapolation is useful for about 1-4 h for convective rain. In Zambia an ML satellite product beat two alternatives for rain occurrence, but all lose skill for extreme rain. A 2026 preprint says skill at 2-6 h decays fast.`,
+ [[`Ravuri 2021`,`https://pmc.ncbi.nlm.nih.gov/articles/PMC8481123`],[`Zambia verification`,`https://nora.nerc.ac.uk/id/eprint/542583/1/N542583JA.pdf`]]),
+I(2,`ML weather models`,'p',6,336,`6 h-14 d`,25,100,`25-100 km`,3,4.5,`3-4.5, physical`,'x','T',`Operational at ECMWF since 2025; tropical rain and extremes still being verified.`,
+ `GraphCast beat ECMWF HRES on 90% of 1,380 verification targets (global, scored against reanalysis, medium range). In Ecuador (station data) ML models had better broad-scale scores and physical models were better for extreme rain. For record-breaking heat, cold and wind, HRES still beat GraphCast, Pangu and FuXi.`,
+ [[`GraphCast`,`https://arxiv.org/pdf/2212.12794`],[`ECMWF Ecuador blog`,`https://www.ecmwf.int/en/about/media-centre/science-blog/2025/evaluating-rainfall-forecasts-ecuador`],[`Zhang et al. records`,`https://publikationen.bibliothek.kit.edu/1000192852/180384477`]]),
+I(3,`Ensemble post-processing`,'p',24,240,`1-10 d`,1,5,`station-5 km`,2.5,4,`2.5-4, mathematical to physical`,'e','G',`Routine.`,
+ `EMOS on UK MOGREPS-UK temperature improved probabilistic skill about 20% and deterministic skill about 10%. For global ECMWF 2 m temperature it cut CRPS at most stations at all lead times, with gains shrinking as lead time grows. No tropical or Indonesian verification found.`,
+ [[`Rapid adjustment, arXiv`,`https://arxiv.org/pdf/1910.05101`],[`ECMWF multivariate comparison`,`https://arxiv.org/pdf/2206.10237`]]),
+I(4,`Weather regimes`,'d',120,730,`5 d-1 mo`,1000,10000,`1,000-10,000 km`,1,3.5,`1-3.5, mathematical to physical`,'e','I',`Standard in Europe; less tested for Indonesian rain.`,
+ `Southeast Asia weather patterns (Met Office GloSea5): pattern-conditioned forecasts of high-impact weather gave a small but significant gain over direct forecasts (conference abstract). Heavy rain is 2-4 times more likely in Indonesia, Malaysia, Vietnam and the Philippines when conditioned on equatorial wave phase. The gain is modest.`,
+ [[`Gonzalez et al. 2022`,`https://centaur.reading.ac.uk/107599/`],[`Equatorial waves, MWR`,`https://reading-clone.eprints-hosting.org/111329/9/mwre-MWR-D-22-0300.1.pdf`]]),
+I(5,`Impact-based forecasting`,'p',24,168,`1-7 d`,1,30,`1-30 km`,5,8,`5-8, physical to socioeconomic`,'e','C',`Patchy across the tropics.`,
+ `No skill figure found. Sources describe the gap: how well forecast impacts match observed damage is an open question, and verification is limited by fragmented, biased impact data.`,
+ [[`UT Twente topic note`,`https://mscresearch.itc.utwente.nl/node/707`],[`Wyatt and Robbins, EMS 2023`,`https://meetingorganizer.copernicus.org/EMS2023/EMS2023-28.html`]]),
+I(6,`MJO, equatorial waves, moisture mode, BSISO`,'d',168,1008,`1-6 wk`,1000,20000,`1,000-20,000 km`,1,3.5,`1-3.5, mathematical to physical`,'e','I',`Skill depends on season and phase.`,
+ `In S2S models the OLR-based MJO index stays skilful (correlation above 0.6) for about 15-36 days in boreal winter, 5-10 days less in summer. The RMM index gives about 3 weeks (ACC above 0.5) against potential predictability of 6-7 weeks. The Maritime Continent barrier costs about 10 days. ECMWF reached about 27 days (older study).`,
+ [[`Kim et al. 2018 (ROMI)`,`https://link.springer.com/doi/10.1007/s00382-018-4492-9`],[`Roy et al. 2026`,`https://wcd.copernicus.org/articles/7/1385/2026/`]]),
+I(7,`Borneo vortex, cold surges`,'d',24,336,`1-14 d`,100,1000,`100-1,000 km`,3,4.5,`3-4.5, physical`,'e','C',`Used by regional services. Southeast Asia context only.`,
+ `No forecast-skill figure found. Borneo vortices need model resolution of at least about 65 km to be simulated; CMIP6 models at 100-300 km cannot adequately resolve them. Equatorial waves, which interact with these systems, are relatively well forecast in Southeast Asia (see item 4).`,
+ [[`Borneo Vortices in a warmer climate, npj 2023`,`https://www.nature.com/articles/s41612-023-00326-1`]]),
+I(8,`S2S rain and temperature terciles`,'p',336,1008,`2-6 wk`,50,200,`50-200 km`,2,4,`2-4, mathematical to physical`,'e','I',`Skill modest in the tropics.`,
+ `A multimodel week 3-4 system showed moderate rain skill over many tropical land regions including Southeast Asia, with gains over single models over Indonesia. ECMWF reforecasts for East Nusa Tenggara: anomaly correlation peaks at weeks 2-3 in Jan-Feb, week 6 not significant (conference poster, not peer reviewed). Treat Indonesia rain skill as modest.`,
+ [[`Multimodel week 3-4`,`https://repository.library.noaa.gov/view/noaa/54496/noaa_54496_DS1.pdf`],[`NTT poster 2026`,`https://epic.noaa.gov/wp-content/uploads/2026/07/8.-UIFCW26_VirtualPosterSlam_MuhammadIndraBendi.pdf`],[`Frontiers 2022`,`https://www.frontiersin.org/journals/earth-science/articles/10.3389/feart.2022.970791/text`]]),
+I(9,`S2S hazard products`,'p',336,1008,`2-6 wk`,25,100,`25-100 km`,4,6,`4-6, physical`,'x','G',`Few services, no common standard.`,
+ `S2S models give probabilities of some large-scale extremes weeks ahead: for the 2010 Russian heat wave, skill up to 3 weeks. European summer warm extremes were more predictable at 3-4 weeks than average conditions. Extreme rain skill over Europe is higher in winter than summer. No Indonesia-specific hazard verification found.`,
+ [[`Vitart and Robertson 2018`,`https://www.nature.com/articles/s41612-018-0013-0`],[`Rivoire et al. 2023`,`https://doaj.org/article/1ec0b9a3c86e463db874e7fbee25e67e`]]),
+I(10,`ENSO and IOD outlooks`,'d',730,6570,`1-9 mo`,1000,10000,`1,000-10,000 km`,1,3.5,`1-3.5, mathematical to physical`,'e','T',`Long-running.`,
+ `ENSO: skill of 12-17 months in recent studies (one coupled model had ACC above 0.7 at 12 months, older study). IOD: skill historically about one season; in four seasonal systems ACC of 0.6 or more held to 3-4 months, and the hit rate for events fell below 50% after about 2 months.`,
+ [[`Luo et al. 2005`,`https://www.jamstec.go.jp/aplinfo/sintexf/luo.prediction.jcli.2005.pdf`],[`Multi-year IOD, Frontiers 2021`,`https://www.frontiersin.org/article/10.3389/fclim.2021.736759`]]),
+I(11,`Seasonal models plus downscaling`,'p',730,5110,`1-7 mo`,25,100,`25-100 km`,3,4.5,`3-4.5, physical`,'e','I',`Dynamical downscaling less common.`,
+ `NMME over Indonesia: good skill in the monsoonal region, modest in the equatorial region, very low in the third; skill drops after about 4 months lead, and the dry season is better than the rainy season. SEAS5 in Java: bias correction improved scores mainly for the first 2 lead months.`,
+ [[`NMME Indonesia abstract`,`https://ui.adsabs.harvard.edu/abs/2018AGUFM.H41I2161K`],[`SEAS5 Java bias correction`,`https://meetingorganizer.copernicus.org/EGU2018/EGU2018-17339.pdf`]]),
+I(12,`Onset, cessation, dry spells`,'p',730,2920,`1-4 mo`,10,50,`10-50 km`,4.5,6,`4.5-6, physical`,'e','I',`Skill varies by region.`,
+ `Indonesian study (Indramayu, Bone): ensemble seasonal rainfall and dry-spell frequency verified with ROC; using an optimal probability threshold raised skill 5-17% (first dry-season planting) and 3-24% (second). It covers seasonal rain amount and long dry spells, not onset dates directly.`,
+ [[`Surmaini and Hadi, BMKG journal`,`https://jmg.bmkg.go.id/jmg/index.php/jmg/article/view/618`]]),
+I(13,`Drought index and yield outlook`,'p',730,4380,`1-6 mo`,1,10,`1-10 km`,5,7.5,`5-7.5, physical to socioeconomic`,'e','G',`Indices routine; yield outlooks vary.`,
+ `SPI forecast skill declines with lead time; SPEI shows more coherent skill than SPI in Europe. In the US, persistence gives most seasonal skill and dynamical models add little. Australian indicators driven by ACCESS-S2: antecedent conditions raise skill for crop yield and pasture. No tropical or Indonesian yield-outlook verification found.`,
+ [[`Drought forecasting review`,`https://iris.polito.it/retrieve/handle/11583/3005898/954441`],[`AADI, NHESS 2025`,`https://nhess.copernicus.org/articles/25/4053/2025/`]]),
+I(14,`CMIP6 climate models`,'p',87600,876000,`10-100 yr`,50,200,`50-200 km`,3,4,`3-4, physical`,'e','I',`Standard reference.`,
+ `27 CMIP6 models over Southeast Asia: most overestimate rain in Thailand, Cambodia and the maritime countries and underestimate it in Indonesia and Laos; the ensemble mean has limited skill. A benchmark found wet biases over Maritime Continent terrain; 19 of 32 models passed minimum rainfall criteria.`,
+ [[`Pimonsree et al. 2023`,`https://repository.li.mahidol.ac.th/handle/123456789/81833`],[`GMD 2024 benchmarking`,`https://gmd.copernicus.org/articles/17/7285/2024/`]]),
+I(15,`Downscaled projections`,'p',87600,876000,`10-100 yr`,5,25,`5-25 km`,3,4.5,`3-4.5, physical`,'e','I',`Methods differ; bias persists.`,
+ `CORDEX-Southeast Asia (21 members): reasonable rain pattern but substantial wet bias; members from the same regional model share bias structure. Sumatra: raw CMIP6 underestimates rain, especially Dec-Feb and Sep-Nov; bias correction is needed.`,
+ [[`CORDEX-SEA ensemble`,`https://www.apn-gcr.org/?p=36591`],[`Sumatra bias correction`,`https://journal.ipb.ac.id/agromet/article/download/63609/30845/342585`]]),
+I(16,`Projected hazard indices`,'p',87600,876000,`10-100 yr`,10,50,`10-50 km`,4.5,6.5,`4.5-6.5, physical`,'e','C',`ETCCDI-type indices. Southeast Asia context only.`,
+ `No skill figure possible (projections cannot be verified against the future). Ensemble medians characterised historical precipitation extremes in Southeast Asia better than individual models; extremes are projected to increase over Indochina and the Maritime Continent. For compound wind and rain extremes, model uncertainty in rain falls from 73.9% to 42.7% over the century while scenario uncertainty rises from 20.3% to 55.0%.`,
+ [[`Ge et al. 2021`,`https://doaj.org/article/bb8d49186bbb4659b6bf5ca7e35dfc8b`],[`Jiang et al. 2025`,`https://doaj.org/article/3d9cbd2dfbcc47cbbbfdca1be76173f6`],[`Hariadi et al. 2024`,`https://edepot.wur.nl/658981`]]),
+I(17,`Projected risk with exposure`,'p',87600,876000,`10-100 yr`,1,30,`1-30 km`,6.5,9.5,`6.5-9.5, physical to socioeconomic`,'x','C',`Methods and data not standardised.`,
+ `No skill figure found. Risk combines hazard, exposure and vulnerability, each with its own uncertainty; commercial climate risk metrics under-represent uncertainty, and one analysis (Aon) calls address-level financial decisions almost always misguided; exposure data is often coarser than hazard grids.`,
+ [[`Meiler et al. 2025`,`https://texmex.mit.edu/pub/emanuel/PAPERS/Meiler_etal_2025.pdf`],[`Aon`,`https://aon.com/apac/insights/blog/embracing-uncertainty-why-climate-risk-modelling-needs-to-change`]]),
+I(18,`Soil moisture and land surface`,'d',120,4380,`5 d-6 mo`,25,300,`25-300 km`,3,4.5,`3-4.5, physical`,'e','T',`Monitoring routine; tropical S2S predictor use still tested.`,
+ `CESM2 sub-seasonal experiments (US): land initialisation gives 91 ± 3% of root-zone soil moisture forecast skill, mostly from soil moisture memory. Sri Lanka: soil moisture initialisation adds streamflow skill at monthly timescale, up to 2 months.`,
+ [[`Duan et al. 2025`,`https://impacts.ucar.edu/en/publications/enhancing-sub-seasonal-soil-moisture-forecasts-through-land-initi/`],[`Sri Lanka streamflow`,`https://core.ac.uk/download/161438538.pdf`]]),
+I(19,`Marine heatwave and ocean-state forecasts`,'p',1008,4380,`6 wk-6 mo`,25,300,`25-300 km`,3.5,6,`3.5-6, physical`,'x','T',`Few centres; not routine for Indonesia.`,
+ `Six seasonal systems, 1991-2020: significant skill everywhere out to about 2 months; at 3-6 months in large areas; at 10.5 months only in parts of the eastern tropical Pacific, Indian Ocean and Indo-Pacific. Skill is highest in the tropics and poor in the Southern Ocean and western boundary currents.`,
+ [[`Jacox et al. 2022`,`https://repository.library.noaa.gov/view/noaa/45151/noaa_45151_DS1.pdf`],[`Carbon Brief summary`,`https://www.carbonbrief.org/marine-heatwaves-can-be-predicted-up-to-a-year-ahead`]]),
+I(20,`AI-based S2S forecasts`,'p',336,1008,`2-6 wk`,100,500,`100-500 km`,3,4.5,`3-4.5, physical`,'x','G',`Early trials, limited verification.`,
+ `FuXi-S2S beat the ECMWF S2S model for total rain and OLR, was slightly worse for 2 m temperature, and extended skilful MJO prediction from 30 to 36 days (global, scored against ERA5). In the 2025-26 AI Weather Quest, ECMWF IFS was best for temperature at weeks 3-4 and FuXi-S2S had the highest central rain score (preprint). None verified for Indonesia.`,
+ [[`FuXi-S2S, Nature Comms 2024`,`https://doaj.org/article/4fb0d812e0774d9faa1648e9dc01dcf4`],[`AIFS-SUBS preprint`,`https://arxiv.org/pdf/2607.05100`]]),
+I(21,`Fire danger rating`,'p',24,336,`1-14 d`,10,100,`10-100 km`,4.5,6,`4.5-6, physical`,'e','T',`FWI-based systems.`,
+ `ECMWF ensemble FWI forecasts beat mean climate for more than 10 days, but accurate FWI does not translate into accurate fire activity. An earlier assessment found skill peaking in boreal forests, the Mediterranean, the Amazon and Southeast Asia. Seasonal FWI anomalies are predictable about 1 month ahead, sometimes 2.`,
+ [[`Di Giuseppe et al. 2020`,`https://doaj.org/article/bae2477232a943aca3d15c42263a5c57`],[`Di Giuseppe et al. 2024`,`https://doaj.org/article/8375430e28cb4b73b2638d248ebffc13`]]),
+I(22,`Heat stress forecasts`,'p',6,120,`6 h-5 d`,3,20,`3-20 km`,4.5,6.5,`4.5-6.5, physical`,'e','G',`Tropical WBGT less settled.`,
+ `Post-processed WBGT from ECMWF extended-range forecasts beat climatology up to 15-20 days over Europe; WBGT skill matched or beat its component variables. A US WBGT forecast was close to observations on average but gave more false alarms for the most dangerous conditions. No tropical or Indonesian verification found.`,
+ [[`ECMWF S2S WBGT poster`,`https://events.ecmwf.int/event/95/contributions/363/contribution.pdf`],[`US WBGT accuracy`,`https://repository.library.noaa.gov/view/noaa/65112`]]),
+I(23,`Flood forecasting (hydrological)`,'p',24,240,`1-10 d`,1,10,`1-10 km`,5,7,`5-7, physical`,'e','G',`Needs gauges and models.`,
+ `GloFAS ensemble: skilful (CRPSS vs persistence) in over 93% of catchments at days 1-15 and over 80% out to day 30, but no or negative skill at longer leads in tropical Africa and the west coast of South America. Global median CRPSS is 0.78 at 3 days, falling to 0.47 at 10 days. No Indonesia-specific number found.`,
+ [[`Harrigan et al. 2021`,`https://centaur.reading.ac.uk/106766`]]),
+I(24,`Decadal predictions`,'p',8760,87600,`1-10 yr`,500,5000,`500-5,000 km`,3,4,`3-4, physical`,'x','G',`Skill limited to large regions.`,
+ `High skill for surface temperature; with a larger ensemble, also significant skill for land rain and circulation (forecast years 2-9, mostly large scale). Regional rain skill at fine scale is not shown.`,
+ [[`Smith et al. 2019`,`https://impacts.ucar.edu/en/publications/robust-skill-of-decadal-climate-predictions/`]]),
+I(25,`Convection-permitting models`,'p',1,72,`0-3 d`,1,5,`1-5 km`,3,4.5,`3-4.5, physical`,'e','I',`Not at all tropical services.`,
+ `Met Office convection-permitting ensembles over Malaysia, Indonesia and the Philippines: skilful for 3-hour rain at scales above 200 km during the first day; skill falls with lead time and is largest in the daytime over land. Convection representation mattered more than grid spacing. A Maritime Continent system (SINGV_NG MPAS) beat global ECMWF rain forecasts, especially for intense rain (initial evaluation).`,
+ [[`Ferrett et al. 2021`,`https://centaur.reading.ac.uk/96819`],[`SINGV_NG(MPAS)`,`https://impacts.ucar.edu/en/publications/performance-evaluation-of-regional-weather-predictions-with-the-m/`]]),
+I(26,`Stratosphere and extratropical links`,'d',336,1344,`2-8 wk`,3000,10000,`3,000-10,000 km`,1.5,3.5,`1.5-3.5, mathematical to physical`,'e','G',`Little skill gain for Indonesia.`,
+ `Skill for stratospheric events is generally limited to 1-2 weeks; weak and strong polar vortex events add surface skill 3-4 weeks later over the US, Russia and the Middle East but not Europe. For Indonesia the link runs through the QBO-MJO connection: MJO skill is higher in easterly QBO phases (see item 6).`,
+ [[`Domeisen et al. 2020`,`https://impacts.ucar.edu/en/publications/the-role-of-the-stratosphere-in-subseasonal-to-seasonal-predictio-2/`],[`Lawrence et al. 2022`,`https://wcd.copernicus.org/articles/3/977/2022/`]]),
+I(27,`Catastrophe modelling`,'p',4380,17520,`6 mo-2 yr`,1,100,`1-100 km`,6,10,`6-10, physical to socioeconomic`,'e','G',`Probability of loss, not a forecast for a date; climate-conditioned versions not mature.`,
+ `Validation is thin and public evidence shows wide disagreement. In a Chile case three vendor models gave 250-year loss estimates differing by up to 60%. For US flood, Verisk, Moody's RMS and KatRisk were within 4% of historical NFIP losses while Karen Clark was about 13 times lower and First Street about twice as high. No tropical Asia validation found.`,
+ [[`Dusseau et al. 2026`,`https://journalofcrr.com/research/04-01-Dusseau-et-al/`],[`Styles, ESC 2016`,`https://meetingorganizer.copernicus.org/ESC2016/ESC2016-204.pdf`]]),
+I(28,`Updated baselines, trend-adjusted climatology`,'p',8760,87600,`1-10 yr`,5,50,`5-50 km`,3.5,6,`3.5-6, physical`,'e','G',`Simple; rarely used in the tropics.`,
+ `The US Climate Prediction Center says trend can beat ENSO as a seasonal temperature predictor. Scoring week 3-4 forecasts against the fixed 30-year normal can inflate skill; against a sliding 20-year climate, much of the apparent skill is the trend. All US evidence; no tropical or Indonesian test found.`,
+ [[`Climate.gov on trends`,`https://www.climate.gov/news-features/blogs/enso/another-non-enso-thing-affects-seasonal-forecasts`],[`Livezey et al. 2007`,`https://efis.psc.mo.gov/Document/Display/165163`]]),
+I(29,`Phase-conditioned multi-year risk`,'p',8760,43800,`1-5 yr`,100,1000,`100-1,000 km`,2,5,`2-5, mathematical to physical`,'x','G',`Rain skill weak.`,
+ `Multi-year predictions started from El Niño or La Niña show higher skill for temperature and precipitation than those from neutral years. In idealised experiments over 80% of the area has significant temperature skill for years 2-3 after El Niño against about 50% from neutral years; real hindcasts show the effect to a lesser extent. No fine-scale or Indonesian rain verification found.`,
+ [[`Liu et al. 2023`,`https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10567839/`]]),
+I(30,`Near-term projections, downscaled`,'p',43800,175200,`5-20 yr`,5,25,`5-25 km`,3,4.5,`3-4.5, physical`,'x','C',`Signal small against variability.`,
+ `No skill figure; the evidence is about signal against noise. Downscaled 2026-2035 rainfall for Hawai'i: natural variability will keep masking the forced signal. For monsoon regions, internal variability dominates uncertainty before about 2050.`,
+ [[`Hawai'i downscaling`,`https://researchconnect.suny.edu/en/publications/dynamical-downscaling-of-near-term-20262035-climate-variability-a/`],[`Monsoon emergence, CAS 2026`,`https://english.cas.cn/newsroom/research-news/202603/t20260304_1151431.shtml`]]),
+I(31,`Warm-conditioned catastrophe models`,'p',17520,43800,`2-5 yr`,1,100,`1-100 km`,6,10,`6-10, physical to socioeconomic`,'x','C',`Few validated examples.`,
+ `No independent skill figure. Vendor and industry material only: a climate-conditioned hurricane model raised US average annual loss about 20% versus historical rates (conference abstract); a Reask/LGT backtest of seasonally conditioned event sets over 1985-2024 beat a static benchmark in simulated reinsurance pricing (industry write-up). No tropical Asia example.`,
+ [[`EGU 2025 abstract`,`https://meetingorganizer.copernicus.org/EGU25/EGU25-9927.html`],[`Inigo/Reask write-up`,`https://inigoinsurance.com/catastrophe-research/insight-to-action-making-seasonal-hurricane-forecasts-pay-off-in-risk-transfer-markets/`]]),
+I(32,`Tropical cyclone forecasts (physics)`,'p',6,168,`6 h-7 d`,25,1000,`25-1,000 km`,3.5,6,`3.5-6, physical`,'e','G',`Track good, intensity harder.`,
+ `US National Hurricane Center (Atlantic): 2024 track errors at all lead times were records low; intensity errors keep falling slowly and rapid intensification stays hard. Older averages for scale: track about 160 km at 24 h and 370 km at 72 h. Atlantic evidence only; not verified for Indonesia's surrounding basins.`,
+ [[`NHC verification preview 2024`,`https://nhc.noaa.gov/pdf/NHC_Verification_Report_Preview.pdf`],[`AOML FAQ (dated)`,`https://www.aoml.noaa.gov/hrd/tcfaq/F6.html`]]),
+I(33,`AI tropical cyclone models`,'p',12,360,`12 h-15 d`,25,1000,`25-1,000 km`,3.5,6,`3.5-6, physical`,'x','G',`Evidence mostly for NHC basins.`,
+ `DeepMind WeatherNext Cyclones: about 24 h average lead-time gain on 2023-2025 storms, run alongside NHC in 2025. Limits: a model trained without Category 3-5 storms could not forecast unseen Category 5 storms; AI models tend to underpredict intensity of the strongest storms.`,
+ [[`Gray swan study`,`https://climate.uchicago.edu/working-papers/can-ai-weather-models-predict-out-of-distribution-gray-swan-tropical-cyclones-2/`],[`WeatherNext Cyclones coverage`,`https://www.unite.ai/?p=449527`]])
+];
+var COV={I:{n:`Indonesia / SE Asia evidence`,c:'#E6F9AF'},T:{n:`Other tropics`,c:'#8BBEB2'},G:{n:`Global or mid-latitude only`,c:'#8A9BC4'},C:{n:`Context only, no skill figure`,c:'#E58BB0'}};
+var MAT={e:{n:`Established`,c:'#8BBEB2'},x:{n:`Experimental`,c:'#F2A65A'}};
+
+/* ---------- geometry ---------- */
+var AX={h:[-0.3,6],s:[0,4.3]};
+var DIM={x:2.0,y:1.2,z:1.5};
+function nh(v){return (Math.log10(Math.max(v,0.5))-AX.h[0])/(AX.h[1]-AX.h[0]);}
+function ns(v){return (Math.log10(Math.max(v,1))-AX.s[0])/(AX.s[1]-AX.s[0]);}
+function widen(a,b,min){ if(b-a<min){var m=(a+b)/2;a=m-min/2;b=m+min/2;} return [a,b]; }
+ITEMS.forEach(function(it){
+  var x=widen(nh(it.h[0]),nh(it.h[1]),0.03), z=widen(ns(it.s[0]),ns(it.s[1]),0.03), y=widen(it.a[0]/10,it.a[1]/10,0.03);
+  it.box={x0:(x[0]-0.5)*DIM.x,x1:(x[1]-0.5)*DIM.x,y0:(y[0]-0.5)*DIM.y,y1:(y[1]-0.5)*DIM.y,z0:-(z[1]-0.5)*DIM.z,z1:-(z[0]-0.5)*DIM.z};
+  it.ctr=[(it.box.x0+it.box.x1)/2,(it.box.y0+it.box.y1)/2,(it.box.z0+it.box.z1)/2];
+});
+var FACES=[[0,2,6,4],[1,3,7,5],[0,1,5,4],[2,3,7,6],[0,1,3,2],[4,5,7,6]];
+var EDGES=[[0,1],[2,3],[4,5],[6,7],[0,2],[1,3],[4,6],[5,7],[0,4],[1,5],[2,6],[3,7]];
+function corners(b){var o=[];for(var i=0;i<8;i++){o.push([(i&1)?b.x1:b.x0,(i&2)?b.y1:b.y0,(i&4)?b.z1:b.z0]);}return o;}
+
+/* ---------- state ---------- */
+var S={yaw:-0.62,pitch:0.42,persp:1,zoom:1,px:0,py:0,sel:null,hov:null,color:'mat',fm:'all',fc:'all',view:'3d'};
+var HOME={yaw:-0.62,pitch:0.42};
+var cv=document.getElementById('cv'), ctx=cv.getContext('2d'), wrap=document.getElementById('wrap'), tip=document.getElementById('tip');
+var dpr=1, W=0, H=0, badges=[], raf=0, tween=null;
+
+function size(){
+  dpr=Math.min(window.devicePixelRatio||1,2);
+  W=wrap.clientWidth; H=wrap.clientHeight;
+  cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
+  request();
+}
+function request(){ if(!raf){ raf=requestAnimationFrame(function(){raf=0;draw();}); } }
+function pal(){ return {fg:'#e9edf7',mute:'#9fb7c9',grid:'rgba(139,190,178,0.26)',plane:'rgba(139,190,178,0.07)',gridfaint:'rgba(139,190,178,0.10)'}; }
+
+function visible(it){
+  if(S.fm!=='all' && it.m!==S.fm) return false;
+  if(S.fc!=='all' && it.c!==S.fc) return false;
+  return true;
+}
+function colorOf(it){ return S.color==='mat'?MAT[it.m].c:COV[it.c].c; }
+
+/* ---------- drawing ---------- */
+function draw(){
+  var P=pal();
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+  var nar=W<600, k=Math.min(W/(nar?3.9:3.1),H/2.7)*S.zoom, cx=W/2+S.px+(nar?40:0), cy=H/2+S.py;
+  var cyw=Math.cos(S.yaw), syw=Math.sin(S.yaw), cp=Math.cos(S.pitch), sp=Math.sin(S.pitch), DP=7;
+  function pr(p){
+    var x1=p[0]*cyw-p[2]*syw, z1=p[0]*syw+p[2]*cyw;
+    var y2=p[1]*cp-z1*sp, z2=p[1]*sp+z1*cp;
+    var f=1+(DP/(DP-z2)-1)*S.persp;
+    return [cx+x1*f*k, cy-y2*f*k, z2];
+  }
+  var hx=DIM.x/2, hy=DIM.y/2, hz=DIM.z/2;
+  function line(a,b,col,w,dash){ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.strokeStyle=col;ctx.lineWidth=w||1;ctx.setLineDash(dash||[]);ctx.stroke();ctx.setLineDash([]);}
+  function txt(s,x,y,col,al,sz,bold){ctx.font=(bold?'600 ':'')+(sz||11)+'px system-ui,sans-serif';ctx.fillStyle=col;ctx.textAlign=al||'center';ctx.textBaseline='middle';ctx.fillText(s,x,y);}
+  var origin=pr([0,0,0]);
+
+  // abstraction band planes
+  [3,7].forEach(function(a){
+    var y=(a/10-0.5)*DIM.y, q=[pr([-hx,y,-hz]),pr([hx,y,-hz]),pr([hx,y,hz]),pr([-hx,y,hz])];
+    ctx.beginPath();ctx.moveTo(q[0][0],q[0][1]);for(var i=1;i<4;i++)ctx.lineTo(q[i][0],q[i][1]);ctx.closePath();
+    ctx.fillStyle=P.plane;ctx.fill();ctx.strokeStyle=P.gridfaint;ctx.lineWidth=1;ctx.stroke();
+  });
+  // floor grid
+  var hT=[[1,'1 h'],[24,'1 d'],[168,'1 wk'],[730,'1 mo'],[8760,'1 yr'],[87600,'10 yr'],[876000,'100 yr']];
+  var sT=[[1,'1 km'],[10,'10'],[100,'100'],[1000,'1,000'],[10000,'10,000 km']];
+  var fy=-hy;
+  hT.forEach(function(t){var x=(nh(t[0])-0.5)*DIM.x;line(pr([x,fy,-hz]),pr([x,fy,hz]),P.gridfaint,1);});
+  sT.forEach(function(t){var z=-(ns(t[0])-0.5)*DIM.z;line(pr([-hx,fy,z]),pr([hx,fy,z]),P.gridfaint,1);});
+  // cube
+  for(var ci=0;ci<EDGES.length;ci++){
+    var cc=corners({x0:-hx,x1:hx,y0:-hy,y1:hy,z0:-hz,z1:hz});
+    line(pr(cc[EDGES[ci][0]]),pr(cc[EDGES[ci][1]]),P.grid,1);
+  }
+  // tick labels and axis titles
+  function slen(a,b){var A=pr(a),B=pr(b);return Math.hypot(A[0]-B[0],A[1]-B[1]);}
+  function away(p,d){var dx=p[0]-origin[0],dy=p[1]-origin[1],l=Math.hypot(dx,dy)||1;return [p[0]+dx/l*d,p[1]+dy/l*d];}
+  // horizon axis: nearer of two floor edges
+  var zE=(pr([0,fy,hz])[2]>=pr([0,fy,-hz])[2])?hz:-hz;
+  if(slen([-hx,fy,zE],[hx,fy,zE])>40){
+  hT.forEach(function(t){var x=(nh(t[0])-0.5)*DIM.x,p=away(pr([x,fy,zE]),12);txt(t[1],p[0],p[1],P.mute,'center',10.5);});
+  var tm=away(pr([0,fy,zE]),36);txt('How far ahead (log)',tm[0],tm[1],P.fg,'center',11.5,true);}
+  // scale axis
+  var xE=(pr([hx,fy,0])[2]>=pr([-hx,fy,0])[2])?hx:-hx;
+  if(slen([xE,fy,-hz],[xE,fy,hz])>40){
+  sT.forEach(function(t){var z=-(ns(t[0])-0.5)*DIM.z,p=away(pr([xE,fy,z]),12);txt(t[1],p[0],p[1],P.mute,'center',10.5);});
+  var sm=away(pr([xE,fy,0]),42);txt('Area size (log)',sm[0],sm[1],P.fg,'center',11.5,true);}
+  // abstraction axis: leftmost vertical edge
+  var ve=[[-hx,-hz],[-hx,hz],[hx,-hz],[hx,hz]], best=ve[0], bx=1e9;
+  ve.forEach(function(e){var s=pr([e[0],fy,e[1]])[0]; if(s<bx){bx=s;best=e;}});
+  if(slen([best[0],-hy,best[1]],[best[0],hy,best[1]])>40){
+  [[0,'0'],[3,'3'],[7,'7'],[10,'10']].forEach(function(t){var y=(t[0]/10-0.5)*DIM.y,p=away(pr([best[0],y,best[1]]),12);txt(t[1],p[0],p[1],P.mute,'right',10.5);});
+  [[1.5,'indices'],[5,'weather, hazards'],[8.5,'people, money']].forEach(function(t){var y=(t[0]/10-0.5)*DIM.y,p=away(pr([best[0],y,best[1]]),W<600?30:44);txt(t[1],p[0],p[1],P.mute,'right',10.5);});
+  var at=away(pr([best[0],hy,best[1]]),26);txt(nar?'Impact':'Closeness to impact',at[0]-4,at[1]-10,P.fg,'right',11.5,true);}
+
+  // boxes
+  var list=ITEMS.filter(visible).map(function(it){var c=pr(it.ctr);return {it:it,c:c};});
+  list.sort(function(a,b){return a.c[2]-b.c[2];});
+  list.forEach(function(o){
+    var it=o.it, col=colorOf(it), isSel=S.sel===it.id, isHov=S.hov===it.id;
+    var dim=(S.sel!==null && !isSel)?0.5:1;
+    var cs=corners(it.box).map(pr);
+    var fa=faces(cs);
+    ctx.globalAlpha=dim;
+    fa.forEach(function(f){
+      ctx.beginPath();ctx.moveTo(cs[f.q[0]][0],cs[f.q[0]][1]);for(var i=1;i<4;i++)ctx.lineTo(cs[f.q[i]][0],cs[f.q[i]][1]);ctx.closePath();
+      ctx.globalAlpha=dim*((isSel||isHov)?0.34:0.17);ctx.fillStyle=col;ctx.fill();
+    });
+    ctx.globalAlpha=dim;
+    ctx.strokeStyle=col;ctx.lineWidth=(isSel||isHov)?2.4:1.3;
+    ctx.setLineDash(it.m==='x'?[5,4]:[]);
+    ctx.beginPath();
+    EDGES.forEach(function(e){ctx.moveTo(cs[e[0]][0],cs[e[0]][1]);ctx.lineTo(cs[e[1]][0],cs[e[1]][1]);});
+    ctx.stroke();ctx.setLineDash([]);
+    ctx.globalAlpha=1;
+  });
+  function faces(cs){var r=FACES.map(function(q){var z=0;q.forEach(function(i){z+=cs[i][2];});return {q:q,z:z/4};});r.sort(function(a,b){return a.z-b.z;});return r;}
+
+  // badges
+  badges=[];
+  list.forEach(function(o){
+    var it=o.it, col=colorOf(it), p=o.c, r=9, isSel=S.sel===it.id||S.hov===it.id;
+    var dim=(S.sel!==null && S.sel!==it.id)?0.6:1;
+    ctx.globalAlpha=dim;
+    ctx.beginPath();
+    if(it.type==='d'){ctx.moveTo(p[0],p[1]-r-2);ctx.lineTo(p[0]+r+2,p[1]);ctx.lineTo(p[0],p[1]+r+2);ctx.lineTo(p[0]-r-2,p[1]);ctx.closePath();}
+    else ctx.arc(p[0],p[1],r,0,Math.PI*2);
+    ctx.fillStyle=col;ctx.fill();
+    ctx.lineWidth=isSel?3:1.5;ctx.strokeStyle='#0D0630';ctx.stroke();
+    if(isSel){ctx.lineWidth=1.5;ctx.strokeStyle=P.fg;ctx.stroke();}
+    txt(String(it.id),p[0],p[1]+0.5,'#0D0630','center',10,true);
+    ctx.globalAlpha=1;
+    badges.push({id:it.id,x:p[0],y:p[1],r:r+4,z:p[2]});
+  });
+}
+
+/* ---------- interaction ---------- */
+function pick(x,y){
+  var best=null,bd=1e9;
+  badges.forEach(function(b){var d=Math.hypot(b.x-x,b.y-y);if(d<=b.r&&(d<bd||(Math.abs(d-bd)<2&&b.z>(best?best.z:-1e9)))){bd=d;best=b;}});
+  return best?best.id:null;
+}
+var ptrs=new Map(), moved=0, startX=0, startY=0, pinch0=0, zoom0=1;
+cv.addEventListener('contextmenu',function(e){e.preventDefault();});
+cv.addEventListener('pointerdown',function(e){
+  cv.setPointerCapture(e.pointerId);
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY,btn:e.button,shift:e.shiftKey});
+  moved=0;startX=e.clientX;startY=e.clientY;
+  if(ptrs.size===2){var a=Array.from(ptrs.values());pinch0=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);zoom0=S.zoom;}
+  cancelTween();
+});
+cv.addEventListener('pointermove',function(e){
+  var rect=cv.getBoundingClientRect(), lx=e.clientX-rect.left, ly=e.clientY-rect.top;
+  var p=ptrs.get(e.pointerId);
+  if(!p){ // hover
+    var id=pick(lx,ly);
+    if(id!==S.hov){S.hov=id;request();}
+    if(id!==null){var it=byId(id);tip.textContent=it.id+'. '+it.name;tip.style.display='block';tip.style.left=Math.min(lx+12,W-180)+'px';tip.style.top=(ly+14)+'px';}
+    else tip.style.display='none';
+    return;
+  }
+  var dx=e.clientX-p.x, dy=e.clientY-p.y;
+  p.x=e.clientX;p.y=e.clientY;
+  moved+=Math.abs(dx)+Math.abs(dy);
+  if(ptrs.size===2){
+    var a=Array.from(ptrs.values()),d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
+    if(pinch0>0){S.zoom=clamp(zoom0*d/pinch0,0.4,6);}
+    S.px+=dx/2;S.py+=dy/2;request();return;
+  }
+  if(moved<4 && ptrs.size===1 && Math.hypot(e.clientX-startX,e.clientY-startY)<4) return;
+  cv.classList.add('drag');
+  if(p.btn===2||p.shift||e.shiftKey){S.px+=dx;S.py+=dy;}
+  else{
+    S.yaw+=dx*0.008; S.pitch=clamp(S.pitch+dy*0.006,-1.5708,1.5708);
+    if(S.persp<1){S.persp=1;}
+    setViewChip(null);
+  }
+  request();
+});
+function endPtr(e){
+  var p=ptrs.get(e.pointerId); ptrs.delete(e.pointerId); cv.classList.remove('drag');
+  if(p && moved<5 && ptrs.size===0 && e.type==='pointerup'){
+    var rect=cv.getBoundingClientRect();
+    var id=pick(e.clientX-rect.left,e.clientY-rect.top);
+    select(id===S.sel?null:id,false);
+  }
+  if(ptrs.size<2) pinch0=0;
+}
+cv.addEventListener('pointerup',endPtr);
+cv.addEventListener('pointercancel',endPtr);
+cv.addEventListener('pointerleave',function(){tip.style.display='none';if(S.hov!==null){S.hov=null;request();}});
+cv.addEventListener('wheel',function(e){e.preventDefault();S.zoom=clamp(S.zoom*Math.exp(-e.deltaY*0.0015),0.4,6);request();},{passive:false});
+cv.addEventListener('dblclick',resetView);
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function byId(id){return ITEMS[id-1];}
+
+/* view presets with tween */
+var PRESETS={'3d':{yaw:-0.62,pitch:0.42,persp:1},'front':{yaw:0,pitch:0,persp:0},'top':{yaw:0,pitch:Math.PI/2,persp:0},'side':{yaw:Math.PI/2,pitch:0,persp:0}};
+function cancelTween(){tween=null;}
+function goView(name){
+  var t=PRESETS[name]; S.view=name; setViewChip(name);
+  var a={yaw:S.yaw,pitch:S.pitch,persp:S.persp,zoom:S.zoom,px:S.px,py:S.py};
+  var dy=t.yaw-a.yaw; dy=Math.atan2(Math.sin(dy),Math.cos(dy));
+  var t0=performance.now(), dur=(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)?0:450;
+  tween=function(now){
+    var u=clamp((now-t0)/dur,0,1), e=u<0.5?2*u*u:1-Math.pow(-2*u+2,2)/2;
+    S.yaw=a.yaw+dy*e;S.pitch=a.pitch+(t.pitch-a.pitch)*e;S.persp=a.persp+(t.persp-a.persp)*e;
+    S.zoom=a.zoom+(1-a.zoom)*e;S.px=a.px*(1-e);S.py=a.py*(1-e);
+    draw();
+    return u<1;
+  };
+  loop();
+}
+function loop(){
+  function step(now){ if(!tween) return; var more=tween(now); if(more) requestAnimationFrame(step); else tween=null; }
+  requestAnimationFrame(step);
+}
+function resetView(){ goView('3d'); }
+function setViewChip(n){document.querySelectorAll('[data-view]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-view')===n);});}
+
+/* ---------- UI ---------- */
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function select(id,fromList){
+  S.sel=id; request(); renderList(); renderDetail();
+  if(id!==null && fromList && window.matchMedia('(max-width:900px)').matches){document.getElementById('detail').scrollIntoView({behavior:'smooth',block:'start'});}
+}
+function renderDetail(){
+  var d=document.getElementById('detail');
+  if(S.sel===null){d.innerHTML='<p class="empty">Select a box on the map or an item in the list to see its skill and evidence.</p>';return;}
+  var it=byId(S.sel), m=MAT[it.m], c=COV[it.c];
+  var h='<h2>'+it.id+'. '+esc(it.name)+'</h2>';
+  h+='<div class="tags"><span class="tag" style="background:'+m.c+'">'+m.n+'</span><span class="tag" style="background:'+c.c+'">'+esc(c.n)+'</span><span class="tag" style="background:#9fb7c9">'+(it.type==='d'?'Driver or method':'Product')+'</span></div>';
+  h+='<div class="kv"><b>How far ahead</b><span>'+esc(it.hl)+'</span><b>Area size</b><span>'+esc(it.sl)+'</span><b>Closeness to impact</b><span>'+esc(it.al)+'</span></div>';
+  h+='<div class="sec"><h3>Note</h3><div>'+esc(it.note)+'</div></div>';
+  h+='<div class="sec"><h3>Reported skill and evidence</h3><div>'+esc(it.skill)+'</div></div>';
+  h+='<div class="sec srcs"><h3>Sources</h3>'+it.src.map(function(s){return '<a href="'+esc(s[1])+'" target="_blank" rel="noopener">'+esc(s[0])+'</a>';}).join('')+'</div>';
+  h+='<div class="warn">Skill is quoted for the metric, region and period each source used. It is not comparable across items, and it is not a maturity call. Posters, preprints and vendor material are included where noted.</div>';
+  d.innerHTML=h;
+}
+function renderList(){
+  var l=document.getElementById('list'), h='';
+  ITEMS.filter(visible).forEach(function(it){
+    h+='<button data-id="'+it.id+'" class="'+(S.sel===it.id?'sel':'')+'"><span class="dot'+(it.type==='d'?' d':'')+'" style="background:'+colorOf(it)+'"><span>'+it.id+'</span></span><span>'+esc(it.name)+'</span></button>';
+  });
+  if(!h) h='<p class="empty">No items match these filters.</p>';
+  l.innerHTML=h;
+}
+document.getElementById('list').addEventListener('click',function(e){
+  var b=e.target.closest('button[data-id]'); if(!b) return;
+  var id=+b.getAttribute('data-id'); select(id===S.sel?null:id,true);
+});
+function renderLegend(){
+  var g=document.getElementById('legend'), h='';
+  if(S.color==='mat') h+='<span><i style="background:'+MAT.e.c+'"></i>Established</span><span><i style="background:'+MAT.x.c+'"></i>Experimental (dashed)</span>';
+  else Object.keys(COV).forEach(function(k){h+='<span><i style="background:'+COV[k].c+'"></i>'+esc(COV[k].n)+'</span>';});
+  h+='<span>● product ◆ driver or method</span>';
+  g.innerHTML=h;
+}
+document.querySelectorAll('[data-view]').forEach(function(b){b.addEventListener('click',function(){goView(b.getAttribute('data-view'));});});
+document.querySelectorAll('[data-color]').forEach(function(b){b.addEventListener('click',function(){
+  S.color=b.getAttribute('data-color');
+  document.querySelectorAll('[data-color]').forEach(function(x){x.classList.toggle('on',x===b);});
+  renderLegend();renderList();request();
+});});
+function filt(attr,key){
+  document.querySelectorAll('['+attr+']').forEach(function(b){b.addEventListener('click',function(){
+    S[key]=b.getAttribute(attr);
+    document.querySelectorAll('['+attr+']').forEach(function(x){x.classList.toggle('on',x===b);});
+    if(S.sel!==null && !visible(byId(S.sel))) S.sel=null;
+    renderList();renderDetail();request();
+  });});
+}
+filt('data-fm','fm'); filt('data-fc','fc');
+document.getElementById('zin').addEventListener('click',function(){S.zoom=clamp(S.zoom*1.25,0.4,6);request();});
+document.getElementById('zout').addEventListener('click',function(){S.zoom=clamp(S.zoom/1.25,0.4,6);request();});
+document.getElementById('reset').addEventListener('click',resetView);
+window.addEventListener('resize',size);
+if(window.ResizeObserver){new ResizeObserver(size).observe(wrap);}
+renderLegend();renderList();renderDetail();size();
+window.__map={S:S,select:select,goView:goView,draw:draw};
+})();
+</script>
+</body>
+</html>
