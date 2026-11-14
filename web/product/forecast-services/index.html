@@ -90,6 +90,7 @@ aside h2{font-size:16px;margin:0 0 4px;color:var(--kl-lime);font-weight:600}
 .dot{flex:none;width:20px;height:20px;border-radius:50%;color:var(--kl-amethyst);font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
 .dot.d{border-radius:3px;transform:rotate(45deg)}
 .dot.d span{transform:rotate(-45deg)}
+.back{margin:0 0 6px}.back button,.pick button{font:inherit;background:none;border:0;color:var(--kl-lime);cursor:pointer;padding:0;text-align:left}.back button{font-size:12.5px;color:var(--kl-teal)}.back button:hover,.pick button:hover{color:#fff;text-decoration:underline}.pick{list-style:none;padding:0;margin:2px 0 0}.pick li{margin:5px 0}.pick .mu{display:block;font-size:12px;color:var(--mute)}
 .foot{margin-top:16px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;color:var(--mute)}
 @media (min-width:901px){html,body{height:100%}body{height:100vh;overflow:hidden}}
 @media (max-width:900px){
@@ -130,6 +131,7 @@ aside h2{font-size:16px;margin:0 0 4px;color:var(--kl-lime);font-weight:600}
     <summary data-id="Cara membaca panduan ini">How to read this guide</summary>
     <ul>
       <li data-id="<b>Posisi.</b> Tampilan bawaan dua dimensi: horizon perencanaan ke samping dan cakupan spasial ke atas, keduanya logaritmik, dengan item bernomor sepanjang diagonal dari skala kecil dan jangka pendek hingga skala besar dan jangka panjang. Memilih variabel dampak menyaring item yang memprakirakannya dan membuka tampilan tiga dimensi, tempat setiap bola juga direntangkan sesuai kedekatan dampak yang umumnya dicakup pendekatan itu."><b>Position.</b> The default view is two-dimensional: planning horizon across and spatial extent upward, both logarithmic, with items numbered along the diagonal from small and short-range to large and long-range. Selecting an impact variable filters the items that forecast it and opens the three-dimensional view, where each sphere is also stretched to the impact proximity that approach typically covers.</li>
+      <li data-id="<b>Area keputusan.</b> Pilih area keputusan untuk menampilkan hanya pendekatan yang umumnya dipertimbangkan untuk area itu, diurutkan menurut horizon perencanaan. Pemilihannya adalah penilaian Klimatikal."><b>Decision area.</b> Choose a decision area to show only the approaches usually considered for it, listed by planning horizon. The selection is Klimatikal's assessment.</li>
       <li data-id="<b>Simbol.</b> Setiap item memiliki simbol cuaca, diwarnai menurut kelompok variabel utama yang diprakirakannya. Warna bola tetap menunjukkan kematangan atau bukti skill. Nomor ditampilkan pada daftar dan saat kursor diarahkan."><b>Symbols.</b> Each item has a weather symbol, coloured by the main variable group it forecasts. Sphere colour still shows maturity or skill evidence. Numbers are shown in the list and on hover.</li>
       <li data-id="<b>Variabel, contoh penggunaan, dan produk.</b> Setiap entri mencantumkan variabel yang dapat diprakirakan pendekatan tersebut, contoh penggunaan oleh institusi atau perusahaan lain, dan produk yang tersedia bila ada. Contoh dijelaskan sebagaimana dilaporkan sumbernya; contoh vendor dan riset diberi label."><b>Variables, use cases and products.</b> Each entry lists the variables the approach can forecast, examples of use by other institutions or companies, and existing products where one is available. Examples are described as the sources report them; vendor and research examples are labelled as such.</li>
       <li data-id="<b>Penempatan dan kematangan.</b> Ini adalah penilaian Klimatikal per 14 November 2026 dan akan berubah seiring bukti. Mapan berarti rutin dipakai secara operasional; eksperimental berarti masih awal, terbatas, atau sedang diverifikasi."><b>Placement and maturity.</b> These are Klimatikal's assessments as of 14 November 2026 and will change as evidence does. Established means routine in operational use; experimental means early, limited or still being verified.</li>
@@ -142,6 +144,7 @@ aside h2{font-size:16px;margin:0 0 4px;color:var(--kl-lime);font-weight:600}
 <div class="app">
 <div class="stage">
   <div class="bar">
+    <label class="grp"><span data-id="Area keputusan">Decision area</span><select id="selSect"><option value="all" data-id="Semua">All</option></select></label>
     <label class="grp"><span data-id="Tampilan">View</span><select id="selView"><option value="2d">2D</option><option value="3d">3D</option><option value="" hidden data-id="Kustom">Custom</option></select></label>
     <label class="grp"><span data-id="Variabel dampak">Impact variable</span><select id="selIv"><option value="all" data-id="Tidak ada">None</option></select></label>
     <label class="grp"><span data-id="Warna menurut">Colour by</span><select id="selColor"><option value="mat" data-id="Kematangan">Maturity</option><option value="cov" data-id="Bukti skill">Skill evidence</option></select></label>
@@ -703,6 +706,28 @@ var ID={
 "Impact": "Dampak",
 "Select an impact variable to add the third axis · ": "Pilih variabel dampak untuk menambah sumbu ketiga · ",
 "Drag to rotate · ": "Seret untuk memutar · ",
+"Decision area": "Area keputusan",
+"All": "Semua",
+"Typical decisions": "Keputusan umum",
+"Relevant approaches, by planning horizon": "Pendekatan yang relevan, menurut horizon perencanaan",
+"Back to decision area": "Kembali ke area keputusan",
+"Items are selected by Klimatikal from the evidence in this guide. Match the planning horizon of the decision first, then check where the cited skill was measured. This is not a recommendation for a specific decision.": "Item dipilih Klimatikal berdasarkan bukti dalam panduan ini. Cocokkan dahulu horizon perencanaan keputusan Anda, lalu periksa di mana skill yang dikutip diukur. Ini bukan rekomendasi untuk keputusan tertentu.",
+"Agriculture and food security": "Pertanian dan ketahanan pangan",
+"Planting dates, input purchase, irrigation and food-security planning.": "Waktu tanam, pembelian input, irigasi, dan perencanaan ketahanan pangan.",
+"Disaster risk reduction and emergency response": "Penanggulangan bencana dan tanggap darurat",
+"Early warning, anticipatory action and pre-positioning of resources before an event.": "Peringatan dini, tindakan antisipatif, dan penempatan sumber daya sebelum kejadian.",
+"Water resources and flood management": "Sumber daya air dan pengelolaan banjir",
+"Reservoir and drainage operations, flood preparedness and water-supply planning.": "Operasi waduk dan drainase, kesiapsiagaan banjir, dan perencanaan pasokan air.",
+"Energy and infrastructure operations": "Energi dan operasi infrastruktur",
+"Operating schedules, demand and supply forecasting and maintenance planning.": "Jadwal operasi, prakiraan permintaan dan pasokan, dan perencanaan pemeliharaan.",
+"Insurance, reinsurance and finance": "Asuransi, reasuransi, dan keuangan",
+"Risk pricing, exposure accumulation and climate risk disclosure.": "Penetapan harga risiko, akumulasi eksposur, dan pengungkapan risiko iklim.",
+"Long-term planning and adaptation": "Perencanaan jangka panjang dan adaptasi",
+"Infrastructure investment, urban planning and adaptation strategy.": "Investasi infrastruktur, perencanaan kota, dan strategi adaptasi.",
+"Health and outdoor work": "Kesehatan dan kerja luar ruang",
+"Outdoor work scheduling, health-service readiness and heat warnings.": "Penjadwalan kerja luar ruang, kesiapan layanan kesehatan, dan peringatan panas.",
+"Marine and coastal operations": "Operasi laut dan pesisir",
+"Shipping, fisheries and marine ecosystem management.": "Pelayaran, perikanan, dan pengelolaan ekosistem laut.",
 "drag to pan · scroll or pinch to zoom · click a sphere": "seret untuk menggeser · gulir atau cubit untuk zoom · klik sebuah bola",
 "scroll or pinch to zoom · shift+drag to pan · click a sphere": "gulir atau cubit untuk zoom · shift+seret untuk menggeser · klik sebuah bola",
 "None": "Tidak ada",
@@ -718,6 +743,19 @@ function tr(s){return (LANG==='id'&&Object.prototype.hasOwnProperty.call(ID,s))?
 // planning horizon, spatial extent and impact proximity labels: units, decimal and thousands separators
 function tl(s){if(LANG!=='id')return s;return String(s).replace(/(\d)\.(\d)/g,'$1,$2').replace(/(\d),(\d{3})/g,'$1.$2').replace(/\bh\b/g,'jam').replace(/\bd\b/g,'hari').replace(/\bwk\b/g,'mgg').replace(/\bmo\b/g,'bln').replace(/\byr\b/g,'thn').replace(/\bstation\b/g,'stasiun').replace(/\bmathematical\b/g,'matematis').replace(/\bphysical\b/g,'fisik').replace(/\bsocioeconomic\b/g,'sosioekonomi').replace(/ to /g,' hingga ');}
 
+
+/* ---------- decision areas: items are listed by name so they survive renumbering ---------- */
+var SECT=[
+{k:'agri',n:`Agriculture and food security`,d:`Planting dates, input purchase, irrigation and food-security planning.`,items:['Onset, cessation, dry spells','Seasonal models plus downscaling','Drought index and yield outlook','S2S rain and temperature terciles','Soil moisture and land surface','ENSO and IOD outlooks','Ensemble post-processing']},
+{k:'drr',n:`Disaster risk reduction and emergency response`,d:`Early warning, anticipatory action and pre-positioning of resources before an event.`,items:['Nowcasting (radar, satellite)','Convection-permitting models','Impact-based forecasting','Flood forecasting (hydrological)','Tropical cyclone forecasts (physics)','AI tropical cyclone models','Borneo vortex, cold surges','Fire danger rating','S2S hazard products']},
+{k:'water',n:`Water resources and flood management`,d:`Reservoir and drainage operations, flood preparedness and water-supply planning.`,items:['Flood forecasting (hydrological)','Convection-permitting models','Ensemble post-processing','Soil moisture and land surface','S2S rain and temperature terciles','Seasonal models plus downscaling','Onset, cessation, dry spells']},
+{k:'energy',n:`Energy and infrastructure operations`,d:`Operating schedules, demand and supply forecasting and maintenance planning.`,items:['Nowcasting (radar, satellite)','Regional NWP (limited-area, WRF)','Global NWP (medium-range, ensemble)','Ensemble post-processing','Heat stress forecasts','S2S rain and temperature terciles','Seasonal models plus downscaling']},
+{k:'finance',n:`Insurance, reinsurance and finance`,d:`Risk pricing, exposure accumulation and climate risk disclosure.`,items:['Catastrophe modelling','Warm-conditioned catastrophe models','Updated baselines, trend-adjusted climatology','Phase-conditioned multi-year risk','Decadal predictions','Near-term projections, downscaled','Projected risk with exposure']},
+{k:'plan',n:`Long-term planning and adaptation`,d:`Infrastructure investment, urban planning and adaptation strategy.`,items:['Near-term projections, downscaled','CMIP6 climate models','Downscaled projections','Projected hazard indices','Projected risk with exposure','Decadal predictions']},
+{k:'health',n:`Health and outdoor work`,d:`Outdoor work scheduling, health-service readiness and heat warnings.`,items:['Nowcasting (radar, satellite)','Heat stress forecasts','Impact-based forecasting','S2S hazard products','Updated baselines, trend-adjusted climatology']},
+{k:'marine',n:`Marine and coastal operations`,d:`Shipping, fisheries and marine ecosystem management.`,items:['Global NWP (medium-range, ensemble)','Tropical cyclone forecasts (physics)','Borneo vortex, cold surges','Marine heatwave and ocean-state forecasts','Seasonal models plus downscaling','ENSO and IOD outlooks']}
+];
+SECT.forEach(function(g){g.items.forEach(function(nm){if(!ITEMS.some(function(it){return it.name===nm;}))throw new Error('Unknown item in decision area: '+nm);});});
 
 /* ---------- gaps: zones of the chart with no product, explained on click ---------- */
 var GAPS=[{gap:true,id:'g1',h:[240,730],s:[1,10],
@@ -747,7 +785,7 @@ var EDGES=[[0,1],[2,3],[4,5],[6,7],[0,2],[1,3],[4,6],[5,7],[0,4],[1,5],[2,6],[3,
 function corners(b){var o=[];for(var i=0;i<8;i++){o.push([(i&1)?b.x1:b.x0,(i&2)?b.y1:b.y0,(i&4)?b.z1:b.z0]);}return o;}
 
 /* ---------- state ---------- */
-var S={yaw:0,pitch:Math.PI/2,persp:0,zoom:1,px:0,py:0,sel:null,hov:null,color:'mat',fm:'all',fc:'all',iv:'all',view:'2d'};
+var S={yaw:0,pitch:Math.PI/2,persp:0,zoom:1,px:0,py:0,sel:null,hov:null,color:'mat',fm:'all',fc:'all',iv:'all',view:'2d',sector:'all'};
 var cv=document.getElementById('cv'), ctx=cv.getContext('2d'), wrap=document.getElementById('wrap'), tip=document.getElementById('tip');
 var dpr=1, W=0, H=0, badges=[], raf=0, tween=null;
 
@@ -764,6 +802,7 @@ function visible(it){
   if(it.gap) return true;
   if(S.fm!=='all' && it.m!==S.fm) return false;
   if(S.fc!=='all' && it.c.indexOf(S.fc)<0) return false;
+  if(S.sector!=='all' && SECT.filter(function(g){return g.k===S.sector;})[0].items.indexOf(it.name)<0) return false;
   if(S.iv!=='all' && !it.vars.some(function(v){return v[0]===S.iv;})) return false;
   return true;
 }
@@ -1111,11 +1150,20 @@ function select(id,fromList){
 }
 function renderDetail(){
   var d=document.getElementById('detail');
+  if(S.sel===null&&S.sector!=='all'){
+    var g=SECT.filter(function(x){return x.k===S.sector;})[0];
+    var ls=ITEMS.filter(visible).sort(function(a,b){return Math.sqrt(a.h[0]*a.h[1])-Math.sqrt(b.h[0]*b.h[1]);});
+    var sh='<h2>'+esc(tr(g.n))+'</h2><div class="sec"><h3>'+tr('Typical decisions')+'</h3><div>'+esc(tr(g.d))+'</div></div><div class="sec"><h3>'+tr('Relevant approaches, by planning horizon')+'</h3><ul class="pick">';
+    ls.forEach(function(it){sh+='<li><button type="button" data-pick="'+it.id+'"><b>'+it.id+'.</b> '+esc(tr(it.name))+' <span class="mu">'+esc(tl(it.hl))+' · '+esc(tr(MAT[it.m].n))+'</span></button></li>';});
+    if(!ls.length)sh+='<li>'+esc(tr('No items match these filters.'))+'</li>';
+    sh+='</ul></div><div class="warn">'+esc(tr('Items are selected by Klimatikal from the evidence in this guide. Match the planning horizon of the decision first, then check where the cited skill was measured. This is not a recommendation for a specific decision.'))+'</div>';
+    d.innerHTML=sh;return;
+  }
   if(S.sel===null){d.innerHTML='<p class="empty">'+esc(tr('Select a sphere on the map or an item in the list to see its skill and evidence. The ? marks a zone with no forecast product; select it to see why.'))+'</p>';return;}
   var it=byId(S.sel);
   if(it.gap){var gh='<h2>'+esc(tr(it.title))+'</h2>';it.paras.forEach(function(p){gh+='<p>'+esc(tr(p))+'</p>';});gh+='<div class="sec srcs"><h3>'+tr('Sources')+'</h3>'+it.src.map(function(x){return '<a href="'+esc(x[1])+'" target="_blank" rel="noopener">'+esc(x[0])+'</a>';}).join('')+'</div><div class="warn">'+esc(tr(it.note))+'</div>';d.innerHTML=gh;return;}
   var m=MAT[it.m];
-  var h='<h2>'+it.id+'. '+esc(tr(it.name))+'</h2>';
+  var h=(S.sector!=='all'?'<p class="back"><button type="button" data-back>← '+esc(tr('Back to decision area'))+'</button></p>':'')+'<h2>'+it.id+'. '+esc(tr(it.name))+'</h2>';
   h+='<div class="tags"><span class="tag" style="background:'+m.c+'">'+tr(m.n)+'</span>'+it.c.split('').map(function(k){return '<span class="tag" style="background:'+COV[k].c+'">'+esc(tr(COV[k].n))+'</span>';}).join('')+'<span class="tag" style="background:#9fb7c9">'+tr(it.type==='d'?'Driver or method':'Product')+'</span></div>';
   h+='<div class="kv"><b>'+tr('Planning horizon')+'</b><span>'+esc(tl(it.hl))+'</span><b>'+tr('Spatial extent')+'</b><span>'+esc(tl(it.sl))+'</span><b>'+tr('Impact proximity')+'</b><span>'+esc(tl(it.al))+'</span></div>';
   h+='<div class="sec"><h3>'+tr('Note')+'</h3><div>'+esc(tr(it.note))+'</div></div>';
@@ -1135,6 +1183,13 @@ function renderList(){
   if(!h) h='<p class="empty">'+esc(tr('No items match these filters.'))+'</p>';
   l.innerHTML=h;
 }
+document.getElementById('detail').addEventListener('click',function(e){
+  var p=e.target.closest('[data-pick]'); if(p){select(+p.getAttribute('data-pick'),true);return;}
+  if(e.target.closest('[data-back]')) select(null,false);
+});
+function fillSect(){var g=document.getElementById('selSect'),cur=g.value;while(g.options.length>1)g.remove(1);SECT.forEach(function(x){var o=document.createElement('option');o.value=x.k;o.textContent=tr(x.n);g.appendChild(o);});g.value=cur||'all';}
+fillSect();
+document.getElementById('selSect').addEventListener('change',function(){S.sector=this.value;if(S.sel!==null&&!visible(byId(S.sel)))S.sel=null;renderList();renderDetail();request();});
 document.getElementById('list').addEventListener('click',function(e){
   var b=e.target.closest('button[data-id]'); if(!b) return;
   var id=+b.getAttribute('data-id'); select(id===S.sel?null:id,true);
@@ -1182,7 +1237,7 @@ function setLang(l){
   LANG=l==='id'?'id':'en';
   var h=document.documentElement;h.setAttribute('data-lang',LANG);h.setAttribute('lang',LANG);
   try{localStorage.setItem('kl-lang',LANG);}catch(e){}
-  applyStatic();fillIv();
+  applyStatic();fillIv();fillSect();
   setLegend(!document.getElementById('legend').classList.contains('closed'));
   renderLegend();renderList();renderDetail();updateHint();request();
 }
