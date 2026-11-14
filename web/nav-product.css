@@ -1,0 +1,12 @@
+/* "Product" menu with a dropdown, shared by the main navigation. Opens on hover,
+   and on keyboard focus or tap through :focus-within, so it needs no script. */
+.navdd { position: relative; }
+.navdd > button { all: unset; box-sizing: border-box; cursor: pointer; color: #8BBEB2; white-space: nowrap; font: inherit; }
+.navdd > button::after { content: " \25BE"; font-size: .85em; }
+.navdd:hover > button, .navdd:focus-within > button, .navdd.current > button { color: #E6F9AF; }
+.navdd > button:focus-visible { outline: 2px solid #E6F9AF; outline-offset: 3px; border-radius: 3px; }
+.navdd .menu { display: none; position: absolute; right: 0; top: 100%; padding-top: 8px; min-width: 230px; z-index: 1000; }
+.navdd:hover .menu, .navdd:focus-within .menu { display: block; }
+.navdd .menu a { display: block; padding: 9px 12px; background: #0D0630; color: #8BBEB2; text-decoration: none; white-space: normal;
+  border: 1px solid rgba(139, 190, 178, .3); border-radius: 8px; box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
+.navdd .menu a:hover, .navdd .menu a:focus-visible, .navdd .menu a[aria-current="page"] { color: #E6F9AF; }
