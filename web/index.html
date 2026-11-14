@@ -46,7 +46,23 @@
     #brand { padding: 8px 10px; gap: 14px; }
     .site-nav { gap: 12px; font-size: 12.5px; }
   }
-  #layers { display: flex; gap: 4px; flex-wrap: wrap; max-width: 100%; padding: 7px 8px; }
+  /* Variable bar: centred just above the time panel (--time-h is kept in step
+     from JS). The wrapper stays as wide as its content so it never blocks the
+     map either side; collapsing hides the bar and leaves only the pill. */
+  #vars { position: absolute; z-index: 2; left: 50%; transform: translateX(-50%);
+    bottom: calc(var(--time-h, 100px) + 12px); max-width: calc(100vw - 24px);
+    display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  #vars .panel { position: static; }
+  #vars-toggle { all: unset; cursor: pointer; display: flex; align-items: center; gap: 6px;
+    padding: 3px 12px; border-radius: 999px; font-size: 11.5px; color: #cfd8ee;
+    background: rgba(12,18,34,.3); border: 1px solid rgba(255,255,255,.12);
+    backdrop-filter: blur(12px); text-shadow: 0 0 3px rgba(8,12,24,.9); }
+  #vars-toggle:hover { color: #fff; }
+  #vars-toggle:focus-visible { outline: 2px solid #8ab4ff; outline-offset: 2px; }
+  #vars-toggle svg { transition: transform .15s; }
+  #vars-toggle[aria-expanded="false"] svg { transform: rotate(180deg); }
+  #vars[data-collapsed="true"] #layers { display: none; }
+  #layers { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; max-width: 100%; padding: 7px 8px; }
   #layers button { all: unset; cursor: pointer; padding: 6px 8px; border-radius: 7px;
     font-size: 12.5px; color: #cfd8ee; border: 1px solid transparent; white-space: nowrap; }
   #layers button[aria-pressed="true"] { background: #2d6cf6; color: #fff; }
@@ -83,24 +99,45 @@
     pointer-events: none; }
   /* Vertical colour key on the right edge, sitting just above the time panel
      (--time-h is kept in step with that panel's height from JS). */
+  /* Legend and cursor readout: 70% transparent (alpha .3), the colour bar itself
+     stays opaque. Text gets a faint shadow so it holds up over saturated fields. */
+  .panel.glass { background: rgba(12,18,34,.3); backdrop-filter: blur(12px);
+    text-shadow: 0 0 3px rgba(8,12,24,.9), 0 1px 2px rgba(8,12,24,.9); }
+  /* Grid and label toggles: icon buttons under the zoom control, top right. */
+  /* Same look as MapLibre's zoom buttons: white, 29px, grouped with dividers. */
+  #maptools { top: 78px; right: 10px; padding: 0; gap: 0; display: flex; flex-direction: column;
+    background: #fff; border: 0; border-radius: 4px; box-shadow: 0 0 0 2px rgba(0,0,0,.1);
+    backdrop-filter: none; overflow: hidden; }
+  #maptools button { all: unset; cursor: pointer; box-sizing: border-box; width: 29px; height: 29px;
+    display: grid; place-items: center; color: #333; }
+  #maptools button + button { border-top: 1px solid #ddd; }
+  #maptools button:hover { background: #f2f2f2; }
+  #maptools button[aria-pressed="true"] { background: #dbe7ff; color: #1f55d6; }
+  #maptools button:focus-visible { outline: 2px solid #2d6cf6; outline-offset: -2px; }
+  #maptools svg { width: 15px; height: 15px; }
+  #maptools .aa { font: 700 12px/1 ui-sans-serif, system-ui, sans-serif; }
+  #tz { display: flex; border: 1px solid rgba(255,255,255,.18); border-radius: 7px; overflow: hidden; }
+  #tz button { all: unset; cursor: pointer; padding: 3px 8px; font-size: 11px; color: #9fb0d4; }
+  #tz button[aria-pressed="true"] { background: #243156; color: #fff; }
+  #tz button:focus-visible { outline: 2px solid #8ab4ff; outline-offset: -2px; }
   #legend { bottom: calc(var(--time-h, 100px) + 24px); right: 12px; width: auto;
     display: flex; gap: 14px; padding: 8px 10px; }
   #legend .col { display: flex; flex-direction: column; align-items: flex-end; }
-  #legend .title { text-align: right; font-size: 12px; color: #cfd8ee; margin-bottom: 6px;
-    max-width: 88px; line-height: 1.25; }
+  #legend .title { text-align: right; font-size: 10.5px; color: #cfd8ee; margin-bottom: 4px;
+    max-width: 76px; line-height: 1.25; }
   #legend .title span { display: block; }
-  #legend .title span:last-child { color: #8e9ab8; font-size: 11px; }
-  #legend .body { display: flex; gap: 6px; height: clamp(140px, 34vh, 280px); }
-  #legend .ticks { position: relative; width: 30px; font-size: 11px; color: #cfd8ee;
+  #legend .title span:last-child { color: #a9b5d0; font-size: 9.5px; }
+  #legend .body { display: flex; gap: 6px; height: clamp(100px, 25vh, 190px); }
+  #legend .ticks { position: relative; width: 26px; font-size: 9.5px; color: #cfd8ee;
     font-variant-numeric: tabular-nums; }
   #legend .ticks span { position: absolute; right: 0; transform: translateY(50%); white-space: nowrap; }
   #legend .ticks span.first { transform: none; }
   #legend .ticks span.last { transform: translateY(100%); }
-  #legend .bar { width: 12px; border-radius: 3px; background-color: #0b1020;
+  #legend .bar { width: 9px; border-radius: 3px; background-color: #0b1020;
     border: 1px solid rgba(255,255,255,.25); }
-  #legend .note { margin-top: 6px; max-width: 88px; text-align: right; font-size: 10px; color: #9fb0d4; }
-  #readout { top: 12px; right: 56px; min-width: 150px; font-variant-numeric: tabular-nums; }
-  #readout b { font-weight: 600; font-size: 16px; }
+  #legend .note { margin-top: 4px; max-width: 76px; text-align: right; font-size: 9px; color: #b4c0dc; }
+  #readout { padding: 6px 8px; top: 12px; right: 56px; min-width: 100px; line-height: 1.25; font-variant-numeric: tabular-nums; }
+  #readout b { font-weight: 600; font-size: 13px; }
   /* The attribution is a licence condition, so it stays on screen and legible:
      small, but full-contrast text on the panel, on its own line under the slider. */
   #credit { flex: 1 0 100%; order: 5; font-size: 10px; line-height: 1.35; color: #cfd8ee;
@@ -110,7 +147,13 @@
     background: #0b1020; text-align: center; padding: 24px; }
   .err { color: #ff9b9b; max-width: 60ch; }
   /* Last in the sheet on purpose: these must win over the base rules above. */
+  @media (max-width: 1000px) {
+    /* The centred variable bar can reach the legend: lift the legend above it. */
+    #legend { bottom: calc(var(--time-h, 100px) + var(--vars-h, 0px) + 24px); }
+  }
   @media (max-width: 720px) {
+    #layers { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; }
+    #layers button { flex: none; }
     #legend { gap: 10px; padding: 6px 8px; }
     /* Narrow screens: play + time on one row, the full-width bar under them. */
     #stamp { margin-left: auto; }
@@ -124,7 +167,7 @@
 <canvas id="grid" aria-hidden="true"></canvas>
 
 <div id="chrome">
-  <div id="brand" class="panel">
+  <div id="brand" class="panel glass">
     <a class="logo" href="/" aria-label="Klimatikal home">
       <picture>
         <source media="(max-width: 600px)" srcset="brand/klimatikal-mark-on-dark.svg">
@@ -138,21 +181,34 @@
       <a href="/contact-us/">Contact us</a>
     </nav>
   </div>
-  <div id="layers" class="panel" role="group" aria-label="Weather layer"></div>
+  </div>
+
+<div id="vars" data-collapsed="false">
+  <button id="vars-toggle" type="button" aria-expanded="true" aria-controls="layers">
+    <span>Layers</span>
+    <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 3.5 5 7l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <div id="layers" class="panel glass" role="group" aria-label="Weather layer"></div>
 </div>
 
-<div id="legend" class="panel" aria-label="Colour scale"></div>
+<div id="maptools" class="panel" role="group" aria-label="Map overlays"></div>
 
-<div id="readout" class="panel" hidden>
-  <div id="readout-label" style="font-size:12px;color:#9fb0d4"></div>
+<div id="legend" class="panel glass" aria-label="Colour scale"></div>
+
+<div id="readout" class="panel glass" hidden>
+  <div id="readout-label" style="font-size:10px;color:#b4c0dc"></div>
   <b id="readout-value">—</b>
-  <div id="readout-pos" style="font-size:11px;color:#7f8dae;margin-top:2px"></div>
+  <div id="readout-pos" style="font-size:9.5px;color:#a9b5d0;margin-top:1px"></div>
 </div>
 
-<div id="time" class="panel">
+<div id="time" class="panel glass">
   <button id="play" aria-label="Play or pause">▶</button>
   <div id="track"><input id="slider" type="range" min="0" max="0" step="1" value="0" aria-label="Forecast time"><div id="ticks" aria-hidden="true"></div></div>
   <span id="stamp">—</span>
+  <div id="tz" role="group" aria-label="Time zone">
+    <button type="button" data-tz="local" title="Show times in your browser's time zone">Local</button>
+    <button type="button" data-tz="utc" title="Show times in UTC">UTC</button>
+  </div>
   <div id="credit"></div>
 </div>
 
@@ -179,9 +235,9 @@ const DATA =
 // encoding range in the manifest is deliberately wider so nothing clips, and
 // these narrower ranges are what make the map readable.
 // Each parameter has its own colour map, chosen for what it measures:
-//   wind      speed, sequential, transparent when calm so the particles read
+//   wind      speed, sequential, white when calm, then blue -> green -> red -> purple
 //   temp      diverging around freezing: purple/blue cold, green mild, red hot
-//   precip    radar-style green -> yellow -> red -> purple, clear when dry
+//   precip    white at the light end, then green -> yellow -> red -> purple, clear when dry
 //   cloud     white with rising opacity, so clear sky stays clear
 //   msl       diverging around the standard 1013 hPa: purple low, orange high
 // stops are [value, [r, g, b, alpha 0..255]]; `opacity` multiplies the alpha
@@ -190,9 +246,9 @@ const DATA =
 // instead of by value, for fields (precipitation) where most of the interest
 // is crowded near zero.
 const RAMPS = {
-  wind: { display: [0, 32], unitLabel: "m/s", opacity: 0.7, ticks: [0, 5, 10, 15, 20, 25, 30],
+  wind: { display: [0, 32], unitLabel: "m/s", opacity: 0.7, legendMinWhite: true, ticks: [0, 5, 10, 15, 20, 25, 30],
     stops: [
-      [0,  [22, 34, 77, 0]],    [2,  [43, 95, 168, 150]], [5,  [43, 163, 181, 215]],
+      [0,  [255, 255, 255, 220]], [2,  [43, 95, 168, 150]], [5,  [43, 163, 181, 215]],
       [10, [111, 208, 106, 235]], [15, [242, 224, 74, 245]], [20, [245, 154, 58, 250]],
       [25, [229, 71, 63, 255]], [32, [184, 35, 154, 255]]] },
   temp: { display: [-40, 45], unitLabel: "°C", opacity: 0.72, ticks: [-40, -30, -20, -10, 0, 10, 20, 30, 40],
@@ -201,9 +257,9 @@ const RAMPS = {
       [0,   [159, 216, 238, 255]], [8, [127, 207, 138, 255]], [16, [230, 227, 115, 255]],
       [24,  [245, 166, 64, 255]], [32, [226, 85, 58, 255]], [40, [168, 20, 46, 255]],
       [45,  [110, 10, 36, 255]]] },
-  precip: { display: [0, 20], unitLabel: "mm/3h", opacity: 0.9, evenLegend: true,
+  precip: { display: [0, 20], unitLabel: "mm/3h", opacity: 0.9, evenLegend: true, legendMinWhite: true,
     stops: [
-      [0,   [0, 0, 0, 0]],       [0.1, [155, 231, 164, 90]], [0.5, [79, 196, 106, 170]],
+      [0,   [255, 255, 255, 0]],  [0.1, [255, 255, 255, 140]], [0.5, [155, 231, 164, 175]],
       [1,   [31, 158, 79, 210]], [2.5, [243, 227, 71, 235]], [5,   [245, 154, 43, 245]],
       [10,  [226, 54, 46, 250]], [20,  [176, 18, 154, 255]]] },
   cloud: { display: [0, 100], unitLabel: "%", opacity: 0.9, ticks: [0, 25, 50, 75, 100],
@@ -692,6 +748,39 @@ class WeatherLayer {
 // ---------------------------------------------------------------------------
 // App: manifest, texture cache, time slider, URL state.
 // ---------------------------------------------------------------------------
+// Time display. Default is the browser's own time zone; the user can switch to
+// UTC and the choice is remembered. Everything time-related goes through here.
+const TZ_KEY = "klimatikal.tz";
+const tzStore = {
+  get() { try { return localStorage.getItem(TZ_KEY); } catch (e) { return null; } },
+  set(v) { try { localStorage.setItem(TZ_KEY, v); } catch (e) { /* private mode */ } },
+};
+const INDONESIA_TZ = {
+  "Asia/Jakarta": "WIB", "Asia/Pontianak": "WIB",
+  "Asia/Makassar": "WITA", "Asia/Ujung_Pandang": "WITA", "Asia/Jayapura": "WIT",
+};
+function localTzName(d) {
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (INDONESIA_TZ[zone]) return INDONESIA_TZ[zone];
+  const p = new Intl.DateTimeFormat("en-GB", { timeZoneName: "short" }).formatToParts(d)
+    .find((x) => x.type === "timeZoneName");
+  return p ? p.value : "local";
+}
+function tzParts(d, utc) {
+  const o = utc ? { timeZone: "UTC" } : {};
+  const f = (opts) => d.toLocaleDateString("en-GB", { ...opts, ...o });
+  const two = (v) => String(v).padStart(2, "0");
+  const hr = utc ? d.getUTCHours() : d.getHours();
+  const mn = utc ? d.getUTCMinutes() : d.getMinutes();
+  return {
+    hr, mn, hm: `${two(hr)}:${two(mn)}`,
+    day: f({ weekday: "short", day: "numeric", month: "short" }),
+    dayShort: f({ weekday: "short", day: "numeric" }),
+    dayLong: f({ weekday: "long", day: "numeric", month: "long", year: "numeric" }),
+    label: utc ? "UTC" : localTzName(d),
+  };
+}
+
 class App {
   constructor() {
     this.textures = new Map();
@@ -710,6 +799,7 @@ class App {
     this.satSwap = 0;         // latest-wins token for frame swaps while scrubbing
     this.satBad = new Set();  // images that failed to load; dropped from the axis
     this.playing = false;
+    this.useUTC = tzStore.get() === "utc";
     this.gridOn = true;
     this.labelsOn = true;
     this.labelLayerIds = [];
@@ -820,24 +910,41 @@ class App {
       box.appendChild(b);
     }
 
-    // The grid is not a layer of weather, so it gets its own toggle.
-    const sep = document.createElement("span");
-    sep.className = "sep";
-    box.appendChild(sep);
+    // Hide / show the variable bar; starts expanded, remembers the last choice.
+    const vars = document.getElementById("vars");
+    const varsBtn = document.getElementById("vars-toggle");
+    const setVars = (open, save) => {
+      vars.dataset.collapsed = String(!open);
+      varsBtn.setAttribute("aria-expanded", String(open));
+      varsBtn.title = open ? "Hide the layer bar" : "Show the layer bar";
+      if (save) { try { localStorage.setItem("klimatikal.vars", open ? "1" : "0"); } catch (e) { /* ignore */ } }
+    };
+    let savedOpen = true;
+    try { savedOpen = localStorage.getItem("klimatikal.vars") !== "0"; } catch (e) { /* ignore */ }
+    setVars(savedOpen, false);
+    varsBtn.onclick = () => setVars(vars.dataset.collapsed === "true", true);
+    new ResizeObserver(() =>
+      document.documentElement.style.setProperty("--vars-h", `${vars.offsetHeight + 12}px`)).observe(vars);
+
+    // The grid and label toggles are not weather layers: icon buttons, top right.
+    const tools = document.getElementById("maptools");
     const grid = document.createElement("button");
     grid.className = "toggle";
-    grid.textContent = "Grid";
+    grid.title = "Coordinate grid";
+    grid.setAttribute("aria-label", "Coordinate grid");
+    grid.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M5.5 1.5v13M10.5 1.5v13M1.5 5.5h13M1.5 10.5h13"/></svg>';
     grid.setAttribute("aria-pressed", String(this.gridOn));
     grid.onclick = () => {
       this.gridOn = !this.gridOn;
       grid.setAttribute("aria-pressed", String(this.gridOn));
       this.drawGrid(); this.writeURL();
     };
-    box.appendChild(grid);
+    tools.appendChild(grid);
 
     const labels = document.createElement("button");
     labels.className = "toggle";
-    labels.textContent = "Labels";
+    labels.innerHTML = '<span class="aa" aria-hidden="true">Aa</span>';
+    labels.setAttribute("aria-label", "Place labels");
     labels.title = "City, country, sea and lake names";
     labels.setAttribute("aria-pressed", String(this.labelsOn));
     labels.onclick = () => {
@@ -845,7 +952,7 @@ class App {
       labels.setAttribute("aria-pressed", String(this.labelsOn));
       this.showLabels(this.labelsOn); this.writeURL();
     };
-    box.appendChild(labels);
+    tools.appendChild(labels);
 
     const radarSep = document.createElement("span");
     radarSep.className = "sep";
@@ -888,6 +995,16 @@ class App {
     this.setPos(Math.round(this.stepIndex));
 
     this.buildTicks();
+    const tzBtns = document.querySelectorAll("#tz button");
+    const paintTz = () => tzBtns.forEach((b) =>
+      b.setAttribute("aria-pressed", String((b.dataset.tz === "utc") === this.useUTC)));
+    paintTz();
+    tzBtns.forEach((b) => b.onclick = () => {
+      const utc = b.dataset.tz === "utc";
+      if (utc === this.useUTC) return;
+      this.useUTC = utc; tzStore.set(utc ? "utc" : "local");
+      paintTz(); this.buildTicks(); this.onTimeChange(); this.paintLegend();
+    });
     const timeBox = document.getElementById("time");
     new ResizeObserver(() =>
       document.documentElement.style.setProperty("--time-h", `${timeBox.offsetHeight}px`)).observe(timeBox);
@@ -926,8 +1043,12 @@ class App {
     const [lo, hi] = r.display;
     const n = r.stops.length;
     const at = (i) => (r.evenLegend ? i / (n - 1) : (r.stops[i][0] - lo) / (hi - lo));
+    // The key shows the minimum end as solid white; on the map precipitation is
+    // still clear at exactly 0 so dry areas do not whiten the basemap.
     const gradient = r.stops.map(([, c], i) =>
-      `rgba(${c[0]},${c[1]},${c[2]},${(c[3] / 255 * r.opacity).toFixed(3)}) ${(at(i) * 100).toFixed(1)}%`
+      (i === 0 && r.legendMinWhite)
+        ? `rgb(255,255,255) ${(at(i) * 100).toFixed(1)}%`
+        : `rgba(${c[0]},${c[1]},${c[2]},${(c[3] / 255 * r.opacity).toFixed(3)}) ${(at(i) * 100).toFixed(1)}%`
     ).join(", ");
     const ticks = r.evenLegend
       ? r.stops.map(([v], i) => ({ v, p: at(i) }))
@@ -959,8 +1080,9 @@ class App {
     const at = (v) => (v - lo) / (hi - lo);
     const gradient = m.colormap.map(([v, c]) => `rgb(${c[0]},${c[1]},${c[2]}) ${(at(v) * 100).toFixed(1)}%`).join(", ");
     const t = this.satFrame ? new Date(this.satFrame.t) : null;
-    const hh = (d, off) => String(new Date(d.getTime() + off * 3600e3).getUTCHours()).padStart(2, "0");
-    const note = !t ? "No satellite image for this time" : `Observed ${hh(t, 0)}:${String(t.getUTCMinutes()).padStart(2, "0")} UTC (${hh(t, 7)}:${String(t.getUTCMinutes()).padStart(2, "0")} WIB)`;
+    const fmt = (u) => { const p = tzParts(t, u); return `${p.hm} ${p.label}`; };
+    const note = !t ? "No satellite image for this time"
+      : `Observed ${fmt(this.useUTC)} (${fmt(!this.useUTC)})`;
     return this.legendColumn(m.label, m.unit, gradient,
       m.legend_ticks.map((v) => ({ v, p: at(v) })), note);
   }
@@ -1004,7 +1126,7 @@ class App {
     const south = Math.max(-85, b.getSouth()), north = Math.min(85, b.getNorth());
     // Keep the longitude labels clear of the layer panel, which grows to two
     // rows on a narrow screen.
-    const labelTop = document.getElementById("layers").getBoundingClientRect().bottom + 10;
+    const labelTop = document.getElementById("chrome").getBoundingClientRect().bottom + 10;
 
     // Kept quiet on purpose: the grid is a reference, and the weather and the
     // coastline are what the eye should land on.
@@ -1117,26 +1239,31 @@ class App {
     box.textContent = "";
     this.tickLabels = [];
     const frac = (i) => (n > 1 ? i / (n - 1) : 0);
+    const utc = this.useUTC;
     const two = (v) => String(v).padStart(2, "0");
+    let prevDay = null;
     for (let i = 0; i < n; i++) {
-      const e = this.axis[i], d = e.t, hr = d.getUTCHours();
+      const e = this.axis[i], d = e.t, p = tzParts(d, utc), hr = p.hr;
+      // A "day" tick is the first entry of each calendar day in the chosen zone.
+      // In local time midnight may fall between entries (Jakarta midnight is
+      // 17:00 UTC), so compare dates rather than testing for hour 0.
+      const dayStart = prevDay !== null && p.dayLong !== prevDay;
+      prevDay = p.dayLong;
       const t = document.createElement("i");
       if (e.kind === "sat") t.className = "sat";
-      else if (hr === 0) t.className = "day"; else if (hr === 12) t.className = "half";
+      else if (dayStart) t.className = "day"; else if (hr === 12) t.className = "half";
       t.style.left = `${frac(i) * 100}%`;
       box.appendChild(t);
-      if ((e.kind === "fc" && hr === 0) || i === 0) {
+      if ((e.kind === "fc" && dayStart) || i === 0) {
         const b = document.createElement("button");
         b.type = "button";
-        const date = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", timeZone: "UTC" });
         if (e.kind === "sat") {
           b.className = "sat";
-          b.textContent = `Satellite ${two(hr)}:${two(d.getUTCMinutes())}Z`;
+          b.textContent = `Satellite ${p.hm}${utc ? "Z" : ""}`;
         } else {
-          b.textContent = date + (hr === 0 ? "" : ` ${two(hr)}Z`);
+          b.textContent = p.dayShort + (dayStart && hr === 0 ? "" : ` ${two(hr)}${utc ? "Z" : ":00"}`);
         }
-        b.title = d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })
-          + ` ${two(hr)}:${two(d.getUTCMinutes())} UTC`;
+        b.title = `${p.dayLong} ${p.hm} ${p.label}`;
         b.style.left = `${frac(i) * 100}%`;
         b.onclick = () => { this.setPos(i); this.onTimeChange(); };
         box.appendChild(b);
@@ -1166,17 +1293,15 @@ class App {
   onTimeChange() {
     const entry = this.axis[Math.round(this.pos)];
     const d = entry.t;
-    const two = (v) => String(v).padStart(2, "0");
-    const day = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
-    // Indonesia is UTC+7 (WIB); the map's audience is there, so show it too.
-    const wib = new Date(d.getTime() + 7 * 3600e3);
-    const wibDay = wib.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+    // Main line in the chosen zone (browser-local by default); the other zone
+    // sits underneath, with its date only when it differs.
+    const main = tzParts(d, this.useUTC), other = tzParts(d, !this.useUTC);
     const hasSat = this.axis.some((e) => e.kind === "sat");
     const tag = hasSat
       ? `<small class="${entry.kind === "sat" ? "obs" : ""}">${entry.kind === "sat" ? "Satellite observation" : "Forecast"}</small>` : "";
     document.getElementById("stamp").innerHTML =
-      `${day} ${two(d.getUTCHours())}:${two(d.getUTCMinutes())} UTC` +
-      `<small>${wibDay === day ? "" : wibDay + " "}${two(wib.getUTCHours())}:${two(wib.getUTCMinutes())} WIB</small>${tag}`;
+      `${main.day} ${main.hm} ${main.label}` +
+      `<small>${other.day === main.day ? "" : other.day + " "}${other.hm} ${other.label}</small>${tag}`;
     this.applySatelliteTime(entry);
     this.textureFor(this.layer, Math.floor(this.stepIndex) + 1);  // prefetch
     this.writeURL();
