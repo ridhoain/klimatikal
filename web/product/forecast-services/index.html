@@ -91,7 +91,10 @@ aside h2{font-size:16px;margin:0 0 4px;color:var(--kl-lime);font-weight:600}
 .dot.d{border-radius:3px;transform:rotate(45deg)}
 .dot.d span{transform:rotate(-45deg)}
 .back{margin:0 0 6px}.back button,.pick button{font:inherit;background:none;border:0;color:var(--kl-lime);cursor:pointer;padding:0;text-align:left}.back button{font-size:12.5px;color:var(--kl-teal)}.back button:hover,.pick button:hover{color:#fff;text-decoration:underline}.pick{list-style:none;padding:0;margin:2px 0 0}.pick li{margin:5px 0}.pick .mu{display:block;font-size:12px;color:var(--mute)}
-.how dl{margin:6px 0 2px;columns:2 320px;column-gap:28px}.how dt{font-weight:600;color:var(--text);break-after:avoid}.how dd{margin:0 0 7px;break-inside:avoid}
+.glos{flex:none;position:relative;background:#fff;border-top:1px solid #d5dde5;padding:6px 12px;color:#3b4a5c;font-size:13px}
+.glos summary{cursor:pointer;color:#0D0630;font-weight:600;width:max-content}
+.glos dl{position:absolute;left:0;right:0;bottom:100%;margin:0;padding:10px 14px 4px;max-height:min(52vh,360px);overflow:auto;columns:2 300px;column-gap:28px;background:#fff;border-top:1px solid #d5dde5;box-shadow:0 -6px 14px rgba(13,6,48,.12);z-index:4}
+.glos dt{font-weight:600;color:#0D0630;break-after:avoid}.glos dd{margin:0 0 7px;break-inside:avoid}
 abbr.gl{text-decoration:underline dotted;text-underline-offset:3px;cursor:help}
 .plain{margin:2px 0 8px;font-size:13.5px}
 .foot{margin-top:16px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;color:var(--mute)}
@@ -142,10 +145,6 @@ abbr.gl{text-decoration:underline dotted;text-underline-offset:3px;cursor:help}
       <li data-id="<b>Lingkup.</b> Ini panduan memilih pendekatan, bukan prakiraan, dan bukan rekomendasi untuk keputusan tertentu."><b>Scope.</b> This is a guide to choosing an approach, not a forecast, and not a recommendation for any specific decision.</li>
     </ul>
   </details>
-  <details class="how" id="glos">
-    <summary data-id="Daftar istilah">Glossary</summary>
-    <dl id="glossary"></dl>
-  </details>
 </div>
 <noscript><p data-id="Panduan ini interaktif dan memerlukan JavaScript. Tanpa itu, hubungi kami melalui <a href=&quot;/contact-us/&quot;>halaman kontak</a> dan kami akan membantu Anda memilih pendekatan.">This guide is interactive and needs JavaScript. Without it, contact us at <a href="/contact-us/">our contact page</a> and we will help you choose an approach.</p></noscript>
 <div class="app">
@@ -165,6 +164,10 @@ abbr.gl{text-decoration:underline dotted;text-underline-offset:3px;cursor:help}
     <div class="hint" id="hint"></div>
     <div class="legend" id="legend"><button type="button" id="lgtoggle" aria-expanded="true" aria-controls="lgbody">Legend ▾</button><div class="lgbody" id="lgbody"></div></div>
   </div>
+  <details class="glos" id="glos">
+    <summary data-id="Daftar istilah">Glossary</summary>
+    <dl id="glossary"></dl>
+  </details>
 </div>
 <aside>
   <div id="detail"><p class="empty"></p></div>
