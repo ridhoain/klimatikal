@@ -916,7 +916,7 @@ function draw(){
     var g=ctx.createRadialGradient(mx-rr*0.35,my-rr*0.4,rr*0.05,mx,my,rr*1.05);
     g.addColorStop(0,hexA(col,on?0.62:0.46));g.addColorStop(1,hexA(col,on?0.20:0.10));
     ctx.globalAlpha=dim;ctx.fillStyle=g;ctx.fill();
-    ctx.strokeStyle=col;ctx.lineWidth=on?2.4:1.3;ctx.setLineDash(it.m==='x'?[5,4]:[]);ctx.stroke();
+    ctx.globalAlpha=dim*(on?0.9:0.45);ctx.strokeStyle=col;ctx.lineWidth=on?1.6:0.8;ctx.setLineDash(it.m==='x'?[4,4]:[]);ctx.stroke();ctx.globalAlpha=dim;
     // three principal rings give the sphere its volume
     ctx.lineWidth=1;ctx.globalAlpha=dim*(on?0.7:0.4);
     [0,1,2].forEach(function(ax){
