@@ -297,6 +297,19 @@ const WIND_TRAIL_STEPS = 24;
 
 // Fields pale enough that white coastlines disappear on them.
 const LIGHT_FIELDS = new Set(["cloud", "msl", "precip"]);
+// A satellite manifest comes in two shapes: sat/global.json (frames split into
+// longitude tiles) and the older sat/manifest.json (one image per frame). Make
+// both look the same: every frame gets `tiles`, and `image` becomes a key that
+// identifies the whole set (the rest of the code compares and blacklists by it).
+function satNormalise(m) {
+  for (const f of m.frames || []) {
+    if (!f.tiles) f.tiles = [{ image: f.image, bounds: f.bounds || m.bounds }];
+    f.image = f.tiles.map((t) => t.image).join("|");
+    f.bounds = f.bounds || m.bounds;
+  }
+  return m;
+}
+
 // Layers whose colours come from a different (higher-precision) PNG than their own.
 const FIELD_SOURCE = { wind: "windspeed" };
 const ENCODING_ID = { scalar8: 0, scalar16: 1, vector8: 2 };
@@ -1029,7 +1042,8 @@ class App {
     satOp.title = "Satellite opacity";
     satOp.hidden = !this.satOn;
     satOp.oninput = () => {
-      if (this.map && this.map.getLayer("sat")) this.map.setPaintProperty("sat", "raster-opacity", +satOp.value / 100);
+      if (this.map) for (const id of this.satLayerIds || [])
+        if (this.map.getLayer(id)) this.map.setPaintProperty(id, "raster-opacity", +satOp.value / 100);
     };
     box.appendChild(satOp);
     this.satOpacity = satOp;
@@ -1624,14 +1638,22 @@ class App {
   }
 
   showSatellite(visible) {
-    if (this.map.getLayer("sat"))
-      this.map.setLayoutProperty("sat", "visibility", visible ? "visible" : "none");
+    for (const id of this.satLayerIds || [])
+      if (this.map.getLayer(id)) this.map.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
   }
 
-  satCoordinates(frame) {
-    // Each frame carries its own corners; the manifest's are the fallback.
-    const { west, south, east, north } = (frame && frame.bounds) || this.satManifest.bounds;
+  satCoordinates(bounds) {
+    const { west, south, east, north } = bounds;
     return [[west, north], [east, north], [east, south], [west, south]];
+  }
+
+  // Newest manifest: the global mosaic when it is published, else the
+  // Himawari-only one.
+  async fetchSatManifest() {
+    let m;
+    try { m = await this.fetchJSON(`${DATA}/sat/global.json`); }
+    catch (err) { m = await this.fetchJSON(`${DATA}/sat/manifest.json`); }
+    return satNormalise(m);
   }
 
   // Show the satellite frame that belongs to this slider entry, or hide the
@@ -1653,44 +1675,58 @@ class App {
       return;
     }
     const token = ++this.satSwap;
-    const url = `${DATA}/sat/${frame.image}`;
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
+    // Every tile of the frame is fetched first and they are swapped in together,
+    // so the mosaic never shows half of one time and half of another.
+    const loads = frame.tiles.map((t) => new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => resolve(`${DATA}/sat/${t.image}`);
+      img.onerror = () => reject(new Error(`failed to load ${t.image}`));
+      img.src = `${DATA}/sat/${t.image}`;
+    }));
+    Promise.all(loads).then((urls) => {
       if (token !== this.satSwap) return;                // a newer request superseded this one
-      this.map.getSource("sat").updateImage({ url, coordinates: this.satCoordinates(frame) });
+      frame.tiles.forEach((t, i) => {
+        const src = this.map.getSource(`sat-${i}`);
+        if (src) src.updateImage({ url: urls[i], coordinates: this.satCoordinates(t.bounds) });
+      });
       this.satShown = frame;
       this.satFrame = frame;
       this.paintLegend();
-    };
-    img.onerror = () => {
+    }).catch(() => {
       if (token !== this.satSwap) return;
       console.warn("satellite frame failed to load, dropping it from the slider", frame.image);
       this.satBad.add(frame.image);
       this.rebuildAxis();
-    };
-    img.src = url;
+    });
   }
 
   async loadSatellite({ toLatestSat = false } = {}) {
     this.satLoading = true;
     try {
-      const m = await this.fetchJSON(`${DATA}/sat/manifest.json`);
+      const m = await this.fetchSatManifest();
       if (!m.frames || !m.frames.length) throw new Error("no satellite frames published yet");
       this.satManifest = m;
       const latest = m.frames[m.frames.length - 1];
       this.satShown = latest;
-      this.map.addSource("sat", {
-        type: "image", url: `${DATA}/sat/${latest.image}`, coordinates: this.satCoordinates(latest),
-      });
       const before = this.radarLayerIds.length && this.map.getLayer(this.radarLayerIds[0])
         ? this.radarLayerIds[0]
         : (this.map.getLayer("coast-casing") ? "coast-casing" : undefined);
-      this.map.addLayer({
-        id: "sat", type: "raster", source: "sat",
-        paint: { "raster-opacity": this.satOpacity ? +this.satOpacity.value / 100 : 1, "raster-fade-duration": 0 },
-        layout: { visibility: "none" },     // applySatelliteTime shows it on a satellite entry
-      }, before);
+      // One image source and layer per tile; a single-image manifest has one.
+      const tileCount = Math.max(...m.frames.map((f) => f.tiles.length));
+      this.satLayerIds = [];
+      for (let i = 0; i < tileCount; i++) {
+        const t = latest.tiles[Math.min(i, latest.tiles.length - 1)];
+        this.map.addSource(`sat-${i}`, {
+          type: "image", url: `${DATA}/sat/${t.image}`, coordinates: this.satCoordinates(t.bounds),
+        });
+        this.map.addLayer({
+          id: `sat-${i}`, type: "raster", source: `sat-${i}`,
+          paint: { "raster-opacity": this.satOpacity ? +this.satOpacity.value / 100 : 1, "raster-fade-duration": 0 },
+          layout: { visibility: "none" },     // applySatelliteTime shows it on a satellite entry
+        }, before);
+        this.satLayerIds.push(`sat-${i}`);
+      }
       this.satLoaded = true;
       // On a plain page load (no time in the URL) start at the newest image.
       this.rebuildAxis({ toLatestSat: toLatestSat || !this.stepFromURL });
@@ -1715,7 +1751,7 @@ class App {
   async refreshSatellite() {
     if (!this.satOn || !this.satLoaded) return;
     try {
-      const m = await this.fetchJSON(`${DATA}/sat/manifest.json`);
+      const m = await this.fetchSatManifest();
       const last = (x) => x.frames && x.frames[x.frames.length - 1];
       const before = last(this.satManifest), after = last(m);
       if (!after || (before && after.t === before.t)) return;

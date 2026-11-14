@@ -76,3 +76,17 @@ travels in the manifest, so the legend is drawn from the numbers that coloured
 the image. Credit: Himawari-9 (JMA), via NOAA Open Data.
 
     python3 himawari.py --dry-run --dest ../web/data    # local test, no R2
+
+### Global mosaic (Himawari-9 + GOES-West + GOES-East)
+
+`pipeline/satglobal.py` merges band 13 from Himawari-9, GOES-18 and GOES-19
+(all public NOAA buckets) into one Web Mercator mosaic, 60°S–60°N, cut into four
+longitude tiles, and publishes `sat/ir_g/…webp` plus `sat/global.json`
+(`.github/workflows/satellite-global.yml`, every 10 minutes, dependencies in
+`requirements-satglobal.txt`). Each pixel comes from the satellite looking most
+nearly straight down on it. Roughly 0°E–65°E (Africa, Europe, the western Indian
+Ocean) has no coverage until Meteosat is added (EUMETSAT account and licence
+check needed). The site reads `sat/global.json` first and falls back to
+`sat/manifest.json`, so `satellite.yml` can be retired once the mosaic is proven.
+
+    python3 satglobal.py --dry-run --dest ../web/data  # local test, no R2

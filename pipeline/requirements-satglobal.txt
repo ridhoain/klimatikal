@@ -1,0 +1,10 @@
+# Global satellite mosaic (satglobal.py). Same stack as himawari.py plus the
+# NetCDF readers the GOES-R ABI files need. Separate from requirements.txt on
+# purpose: the forecast job must not pay for (or break on) the satellite stack.
+satpy>=0.51
+pyresample>=1.28
+numpy>=1.26
+pillow>=10.0
+boto3>=1.34
+h5netcdf>=1.3
+netCDF4>=1.6
