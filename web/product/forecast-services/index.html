@@ -117,7 +117,7 @@ aside h2{font-size:16px;margin:0 0 4px;color:var(--kl-lime);font-weight:600}
       <li><b>Position.</b> The default view is two-dimensional: planning horizon across and spatial extent upward, both logarithmic, with items numbered along the diagonal from small and short-range to large and long-range. Selecting an impact variable filters the items that forecast it and opens the three-dimensional view, where each sphere is also stretched to the impact proximity that approach typically covers.</li>
       <li><b>Variables and use cases.</b> Each entry lists the variables the approach can forecast and one example of use by another institution or company. Examples are described as the sources report them; vendor and research examples are labelled as such.</li>
       <li><b>Placement and maturity.</b> These are Klimatikal's assessments as of 14 November 2026 and will change as evidence does. Established means routine in operational use; experimental means early, limited or still being verified.</li>
-      <li><b>Skill evidence.</b> Figures are quoted from the cited sources for the metric, region and period each used. They are not comparable across approaches. Where a source is a poster, preprint or vendor material, the entry says so, and where nothing was found for Indonesia, it says that too.</li>
+      <li><b>Skill evidence.</b> The tags show where the cited skill was measured: Indonesia or Southeast Asia, other tropical regions, or global and mid-latitude studies. An item can carry several. Items with no figure are marked either as having none found or as not verifiable, because they are projections or loss models. Figures are quoted from the cited sources for the metric, region and period each used. They are not comparable across approaches. Where a source is a poster, preprint or vendor material, the entry says so, and where nothing was found for Indonesia, it says that too.</li>
       <li><b>Scope.</b> This is a guide to choosing an approach, not a forecast, and not a recommendation for any specific decision.</li>
     </ul>
   </details>
@@ -130,7 +130,7 @@ aside h2{font-size:16px;margin:0 0 4px;color:var(--kl-lime);font-weight:600}
     <div class="grp" id="ivgrp"><span>Impact variable</span><button class="chip on" data-iv="all">None</button></div>
     <div class="grp"><span>Colour</span><button class="chip on" data-color="mat">Maturity</button><button class="chip" data-color="cov">Skill evidence</button></div>
     <div class="grp"><span>Maturity</span><button class="chip on" data-fm="all">All</button><button class="chip" data-fm="e">Established</button><button class="chip" data-fm="x">Experimental</button></div>
-    <div class="grp"><span>Evidence</span><button class="chip on" data-fc="all">All</button><button class="chip" data-fc="I">Indonesia / SE Asia</button><button class="chip" data-fc="T">Tropics</button><button class="chip" data-fc="G">Global</button><button class="chip" data-fc="C">Context only</button></div>
+    <div class="grp"><span>Evidence</span><button class="chip on" data-fc="all">All</button><button class="chip" data-fc="I">Indonesia / SE Asia</button><button class="chip" data-fc="T">Other tropics</button><button class="chip" data-fc="G">Global or mid-latitude</button><button class="chip" data-fc="N">No skill figure</button><button class="chip" data-fc="P">Not verifiable</button></div>
     <div class="grp"><button class="chip" id="zin">+</button><button class="chip" id="zout">−</button><button class="chip" id="reset">Reset</button></div>
   </div>
   <div class="canvaswrap" id="wrap">
@@ -151,12 +151,12 @@ aside h2{font-size:16px;margin:0 0 4px;color:var(--kl-lime);font-weight:600}
 (function(){
 "use strict";
 /* ---------- data ---------- */
-// [id, name, type(p|d), h0h, h1h, horizonLabel, s0km, s1km, scaleLabel, a0, a1, abstractionLabel, maturity(e|x), coverage(I|T|G|C), note, skill, sources, variables [group, text], use case [text, source label, url] or null]
+// [id, name, type(p|d), h0h, h1h, horizonLabel, s0km, s1km, scaleLabel, a0, a1, abstractionLabel, maturity(e|x), evidence regions (letters: I Indonesia or SE Asia, T other tropics, G global or mid-latitude; N no skill figure found; P not verifiable projection or loss model), note, skill, sources, variables [group, text], use case [text, source label, url] or null]
 // Numbering follows the diagonal from small and short-range to large and long-range: the mean of the normalised log centres of spatial extent and planning horizon.
 function I(id,name,type,h0,h1,hl,s0,s1,sl,a0,a1,al,m,c,note,skill,src,vars,uc){return {id:id,name:name,type:type,h:[h0,h1],hl:hl,s:[s0,s1],sl:sl,a:[a0,a1],al:al,m:m,c:c,note:note,skill:skill,src:src,vars:vars,uc:uc};}
 var D=6570, Y=8760;
 var ITEMS=[
-I(1,`Nowcasting (radar, satellite)`,'p',0.5,6,`0-6 h`,1,10,`1-10 km`,3.5,4.5,`3.5-4.5, physical`,'e','T',`Extrapolation routine; ML versions newer.`,
+I(1,`Nowcasting (radar, satellite)`,'p',0.5,6,`0-6 h`,1,10,`1-10 km`,3.5,4.5,`3.5-4.5, physical`,'e','TG',`Extrapolation routine; ML versions newer.`,
  `Forecasters judged a deep generative radar model more useful than older methods at 0-2 h (UK radar, not tropics). Extrapolation is useful for about 1-4 h for convective rain. In Zambia an ML satellite product beat two alternatives for rain occurrence, but all lose skill for extreme rain. A 2026 preprint says skill at 2-6 h decays fast.`,
  [[`Ravuri 2021`,`https://pmc.ncbi.nlm.nih.gov/articles/PMC8481123`],[`Zambia verification`,`https://nora.nerc.ac.uk/id/eprint/542583/1/N542583JA.pdf`]],
  [[`R`,`Rain rate and rain occurrence on a radar grid, 0-6 h`],[`R`,`Rain-cell position and movement`]],
@@ -171,7 +171,7 @@ I(3,`Ensemble post-processing`,'p',24,240,`1-10 d`,1,5,`station-5 km`,2.5,4,`2.5
  [[`Rapid adjustment, arXiv`,`https://arxiv.org/pdf/1910.05101`],[`ECMWF multivariate comparison`,`https://arxiv.org/pdf/2206.10237`]],
  [[`T`,`Calibrated 2 m temperature at stations, as probabilities`],[`W`,`Calibrated 10 m wind speed at stations`],[`R`,`Probability of precipitation at stations`]],
  [`The UK Met Office calibrates site forecasts of temperature and wind with ensemble model output statistics in its IMPROVER system, which produces its operational public forecasts.`,`Met Office IMPROVER, EGU 2022`,`https://meetingorganizer.copernicus.org/EGU22/EGU22-8706.html`]),
-I(4,`Flood forecasting (hydrological)`,'p',24,240,`1-10 d`,1,10,`1-10 km`,5,7,`5-7, physical`,'e','G',`Needs gauges and models.`,
+I(4,`Flood forecasting (hydrological)`,'p',24,240,`1-10 d`,1,10,`1-10 km`,5,7,`5-7, physical`,'e','TG',`Needs gauges and models.`,
  `GloFAS ensemble: skilful (CRPSS vs persistence) in over 93% of catchments at days 1-15 and over 80% out to day 30, but no or negative skill at longer leads in tropical Africa and the west coast of South America. Global median CRPSS is 0.78 at 3 days, falling to 0.47 at 10 days. No Indonesia-specific number found.`,
  [[`Harrigan et al. 2021`,`https://centaur.reading.ac.uk/106766`]],
  [[`H`,`River discharge`],[`H`,`Probability of exceeding flood-threshold discharge`],[`H`,`River water level (where local models exist)`]],
@@ -181,7 +181,7 @@ I(5,`Heat stress forecasts`,'p',6,120,`6 h-5 d`,3,20,`3-20 km`,4.5,6.5,`4.5-6.5,
  [[`ECMWF S2S WBGT poster`,`https://events.ecmwf.int/event/95/contributions/363/contribution.pdf`],[`US WBGT accuracy`,`https://repository.library.noaa.gov/view/noaa/65112`]],
  [[`T`,`Wet bulb globe temperature (WBGT)`],[`T`,`Heat index`],[`T`,`Heat-stress category`]],
  [`The Meteorological Service Singapore publishes a national heat stress advisory based on WBGT, with high at 33 degrees C or above, moderate from 31 to below 33 and low below 31.`,`Asia News Network`,`https://asianews.network/singapore-launches-national-heat-stress-advisory-as-world-hots-up`]),
-I(6,`Impact-based forecasting`,'p',24,168,`1-7 d`,1,30,`1-30 km`,5,8,`5-8, physical to socioeconomic`,'e','C',`Patchy across the tropics.`,
+I(6,`Impact-based forecasting`,'p',24,168,`1-7 d`,1,30,`1-30 km`,5,8,`5-8, physical to socioeconomic`,'e','N',`Patchy across the tropics.`,
  `No skill figure found. Sources describe the gap: how well forecast impacts match observed damage is an open question, and verification is limited by fragmented, biased impact data.`,
  [[`UT Twente topic note`,`https://mscresearch.itc.utwente.nl/node/707`],[`Wyatt and Robbins, EMS 2023`,`https://meetingorganizer.copernicus.org/EMS2023/EMS2023-28.html`]],
  [[`I`,`Expected damage to housing and infrastructure`],[`I`,`Population exposed to the hazard`],[`I`,`Impact level for each area (warning category)`]],
@@ -191,22 +191,22 @@ I(7,`Drought index and yield outlook`,'p',730,4380,`1-6 mo`,1,10,`1-10 km`,5,7.5
  [[`Drought forecasting review`,`https://iris.polito.it/retrieve/handle/11583/3005898/954441`],[`AADI, NHESS 2025`,`https://nhess.copernicus.org/articles/25/4053/2025/`]],
  [[`H`,`Standardised Precipitation Index (SPI)`],[`H`,`Standardised Precipitation Evapotranspiration Index (SPEI)`],[`H`,`Soil moisture anomaly`],[`H`,`Crop water stress (water requirement satisfaction index)`],[`I`,`Crop yield or pasture outlook`]],
  [`FEWS NET couples seasonal climate forecasts with a hydrological model and the water requirement satisfaction index to estimate crop stress; in December 2025 it linked a possible below-average March to May season to worsening food insecurity in Somalia, Ethiopia and Kenya.`,`USGS publication; FEWS NET alert`,`https://www.usgs.gov/publications/a-seasonal-agricultural-drought-forecast-system-food-insecure-regions-east-africa`]),
-I(8,`ML weather models`,'p',6,336,`6 h-14 d`,25,100,`25-100 km`,3,4.5,`3-4.5, physical`,'x','T',`Operational at ECMWF since 2025; tropical rain and extremes still being verified.`,
+I(8,`ML weather models`,'p',6,336,`6 h-14 d`,25,100,`25-100 km`,3,4.5,`3-4.5, physical`,'x','TG',`Operational at ECMWF since 2025; tropical rain and extremes still being verified.`,
  `GraphCast beat ECMWF HRES on 90% of 1,380 verification targets (global, scored against reanalysis, medium range). In Ecuador (station data) ML models had better broad-scale scores and physical models were better for extreme rain. For record-breaking heat, cold and wind, HRES still beat GraphCast, Pangu and FuXi.`,
  [[`GraphCast`,`https://arxiv.org/pdf/2212.12794`],[`ECMWF Ecuador blog`,`https://www.ecmwf.int/en/about/media-centre/science-blog/2025/evaluating-rainfall-forecasts-ecuador`],[`Zhang et al. records`,`https://publikationen.bibliothek.kit.edu/1000192852/180384477`]],
  [[`T`,`2 m temperature`],[`W`,`10 m wind speed and direction`],[`R`,`Accumulated precipitation`],[`C`,`Mean sea-level pressure and 500 hPa geopotential height`]],
  [`ECMWF made its AI ensemble (AIFS ENS, 51 members) operational on 1 July 2025, running alongside its physics-based forecast.`,`ECMWF news, 2025`,`https://www.ecmwf.int/en/about/media-centre/news/2025/ecmwfs-ensemble-ai-forecasts-become-operational`]),
-I(9,`Fire danger rating`,'p',24,336,`1-14 d`,10,100,`10-100 km`,4.5,6,`4.5-6, physical`,'e','T',`FWI-based systems.`,
+I(9,`Fire danger rating`,'p',24,336,`1-14 d`,10,100,`10-100 km`,4.5,6,`4.5-6, physical`,'e','ITG',`FWI-based systems.`,
  `ECMWF ensemble FWI forecasts beat mean climate for more than 10 days, but accurate FWI does not translate into accurate fire activity. An earlier assessment found skill peaking in boreal forests, the Mediterranean, the Amazon and Southeast Asia. Seasonal FWI anomalies are predictable about 1 month ahead, sometimes 2.`,
  [[`Di Giuseppe et al. 2020`,`https://doaj.org/article/bae2477232a943aca3d15c42263a5c57`],[`Di Giuseppe et al. 2024`,`https://doaj.org/article/8375430e28cb4b73b2638d248ebffc13`]],
  [[`F`,`Fire Weather Index and its moisture-code components`],[`F`,`Fire danger class for each area`]],
  [`Indonesia's BMKG publishes Fire Weather Index forecasts for the country up to 7 days ahead, based on the Canadian Fire Weather Index system adapted to local conditions.`,`BMKG Fire Weather Index`,`https://www.bmkg.go.id/cuaca/karhutla/fwi`]),
-I(10,`Tropical cyclone forecasts (physics)`,'p',6,168,`6 h-7 d`,25,1000,`25-1,000 km`,3.5,6,`3.5-6, physical`,'e','G',`Track good, intensity harder.`,
+I(10,`Tropical cyclone forecasts (physics)`,'p',6,168,`6 h-7 d`,25,1000,`25-1,000 km`,3.5,6,`3.5-6, physical`,'e','T',`Track good, intensity harder.`,
  `US National Hurricane Center (Atlantic): 2024 track errors at all lead times were records low; intensity errors keep falling slowly and rapid intensification stays hard. Older averages for scale: track about 160 km at 24 h and 370 km at 72 h. Atlantic evidence only; not verified for Indonesia's surrounding basins.`,
  [[`NHC verification preview 2024`,`https://nhc.noaa.gov/pdf/NHC_Verification_Report_Preview.pdf`],[`AOML FAQ (dated)`,`https://www.aoml.noaa.gov/hrd/tcfaq/F6.html`]],
  [[`W`,`Cyclone track`],[`W`,`Cyclone intensity (maximum wind)`],[`W`,`Size (radius of winds)`],[`R`,`Storm rainfall`]],
  [`The Hong Kong Observatory verifies its tropical cyclone track forecasts each year; in 2024 its average error was about 63 km at 24 h and about 307 km at 120 h.`,`Hong Kong Observatory, 2024`,`https://www.hko.gov.hk/en/publica/tc/tc2024/table412.html`]),
-I(11,`AI tropical cyclone models`,'p',12,360,`12 h-15 d`,25,1000,`25-1,000 km`,3.5,6,`3.5-6, physical`,'x','G',`Evidence mostly for NHC basins.`,
+I(11,`AI tropical cyclone models`,'p',12,360,`12 h-15 d`,25,1000,`25-1,000 km`,3.5,6,`3.5-6, physical`,'x','T',`Evidence mostly for NHC basins.`,
  `DeepMind WeatherNext Cyclones: about 24 h average lead-time gain on 2023-2025 storms, run alongside NHC in 2025. Limits: a model trained without Category 3-5 storms could not forecast unseen Category 5 storms; AI models tend to underpredict intensity of the strongest storms.`,
  [[`Gray swan study`,`https://climate.uchicago.edu/working-papers/can-ai-weather-models-predict-out-of-distribution-gray-swan-tropical-cyclones-2/`],[`WeatherNext Cyclones coverage`,`https://www.unite.ai/?p=449527`]],
  [[`W`,`Cyclone track`],[`W`,`Cyclone intensity`],[`W`,`Size and shape of the storm`]],
@@ -226,17 +226,17 @@ I(14,`Catastrophe modelling`,'p',4380,17520,`6 mo-2 yr`,1,100,`1-100 km`,6,10,`6
  [[`Dusseau et al. 2026`,`https://journalofcrr.com/research/04-01-Dusseau-et-al/`],[`Styles, ESC 2016`,`https://meetingorganizer.copernicus.org/ESC2016/ESC2016-204.pdf`]],
  [[`I`,`Average annual loss`],[`I`,`Loss for a given return period (for example 1-in-250 years)`],[`I`,`Event loss estimate`]],
  [`Verisk estimated insured industry losses from Hurricane Milton (2024) at US$30 billion to US$50 billion for onshore property.`,`Claims Journal, 2024`,`https://amp.claimsjournal.com/news/national/2024/10/16/326859.htm`]),
-I(15,`Borneo vortex, cold surges`,'d',24,336,`1-14 d`,100,1000,`100-1,000 km`,3,4.5,`3-4.5, physical`,'e','C',`Used by regional services. Southeast Asia context only.`,
+I(15,`Borneo vortex, cold surges`,'d',24,336,`1-14 d`,100,1000,`100-1,000 km`,3,4.5,`3-4.5, physical`,'e','N',`Used by regional services. Southeast Asia context only.`,
  `No forecast-skill figure found. Borneo vortices need model resolution of at least about 65 km to be simulated; CMIP6 models at 100-300 km cannot adequately resolve them. Equatorial waves, which interact with these systems, are relatively well forecast in Southeast Asia (see item 28).`,
  [[`Borneo Vortices in a warmer climate, npj 2023`,`https://www.nature.com/articles/s41612-023-00326-1`]],
  [[`W`,`Cold-surge strength (lower-level northerly wind)`],[`R`,`Heavy-rain probability over Borneo, Peninsular Malaysia and the South China Sea coast`],[`W`,`Presence and position of a Borneo vortex (low-level circulation)`]],
  [`After MetMalaysia forecast a monsoon surge in December 2021 and January 2022, Malaysia's disaster agency NADMA ordered its disaster control centres in Sabah and Sarawak to prepare for floods.`,`Malay Mail, 5 January 2022`,`https://www.malaymail.com/news/malaysia/2022/01/05/nadma-orders-disaster-control-centres-in-sabah-sarawak-to-brace-for-floods/2033197`]),
-I(16,`S2S rain and temperature terciles`,'p',336,1008,`2-6 wk`,50,200,`50-200 km`,2,4,`2-4, mathematical to physical`,'e','I',`Skill modest in the tropics.`,
+I(16,`S2S rain and temperature terciles`,'p',336,1008,`2-6 wk`,50,200,`50-200 km`,2,4,`2-4, mathematical to physical`,'e','IT',`Skill modest in the tropics.`,
  `A multimodel week 3-4 system showed moderate rain skill over many tropical land regions including Southeast Asia, with gains over single models over Indonesia. ECMWF reforecasts for East Nusa Tenggara: anomaly correlation peaks at weeks 2-3 in Jan-Feb, week 6 not significant (conference poster, not peer reviewed). Treat Indonesia rain skill as modest.`,
  [[`Multimodel week 3-4`,`https://repository.library.noaa.gov/view/noaa/54496/noaa_54496_DS1.pdf`],[`NTT poster 2026`,`https://epic.noaa.gov/wp-content/uploads/2026/07/8.-UIFCW26_VirtualPosterSlam_MuhammadIndraBendi.pdf`],[`Frontiers 2022`,`https://www.frontiersin.org/journals/earth-science/articles/10.3389/feart.2022.970791/text`]],
  [[`R`,`Weekly rainfall anomaly, tercile probabilities`],[`T`,`Weekly 2 m temperature anomaly, tercile probabilities`]],
  [`The US NOAA Climate Prediction Center issues operational week 3-4 temperature and precipitation outlooks, which began as experimental products in 2015.`,`NOAA CPC presentation, 2026`,`https://www.weather.gov/media/climateservices/S2S-CDPW49th-W34-20260429-Gottschalck.pdf`]),
-I(17,`Soil moisture and land surface`,'d',120,4380,`5 d-6 mo`,25,300,`25-300 km`,3,4.5,`3-4.5, physical`,'e','T',`Monitoring routine; tropical S2S predictor use still tested.`,
+I(17,`Soil moisture and land surface`,'d',120,4380,`5 d-6 mo`,25,300,`25-300 km`,3,4.5,`3-4.5, physical`,'e','TG',`Monitoring routine; tropical S2S predictor use still tested.`,
  `CESM2 sub-seasonal experiments (US): land initialisation gives 91 ± 3% of root-zone soil moisture forecast skill, mostly from soil moisture memory. Sri Lanka: soil moisture initialisation adds streamflow skill at monthly timescale, up to 2 months.`,
  [[`Duan et al. 2025`,`https://impacts.ucar.edu/en/publications/enhancing-sub-seasonal-soil-moisture-forecasts-through-land-initi/`],[`Sri Lanka streamflow`,`https://core.ac.uk/download/161438538.pdf`]],
  [[`H`,`Root-zone soil moisture`],[`H`,`Evapotranspiration`],[`H`,`Monthly streamflow`]],
@@ -246,12 +246,12 @@ I(18,`Seasonal models plus downscaling`,'p',730,5110,`1-7 mo`,25,100,`25-100 km`
  [[`NMME Indonesia abstract`,`https://ui.adsabs.harvard.edu/abs/2018AGUFM.H41I2161K`],[`SEAS5 Java bias correction`,`https://meetingorganizer.copernicus.org/EGU2018/EGU2018-17339.pdf`]],
  [[`R`,`Monthly and seasonal rainfall, tercile probabilities`],[`T`,`Seasonal mean temperature anomaly`],[`R`,`Rainy-season rainfall total`]],
  [`The IGAD Climate Prediction and Applications Centre (ICPAC) offers a seasonal rainfall forecast Maproom where a user selects a grid cell to see downscaled forecast information for that location; the system was launched in 2019 with CCAFS and IRI.`,`CGIAR news`,`https://www.cgiar.org/news-events/news/a-new-seasonal-climate-forecast-system-supports-east-african-agriculture`]),
-I(19,`Warm-conditioned catastrophe models`,'p',17520,43800,`2-5 yr`,1,100,`1-100 km`,6,10,`6-10, physical to socioeconomic`,'x','C',`Few validated examples.`,
+I(19,`Warm-conditioned catastrophe models`,'p',17520,43800,`2-5 yr`,1,100,`1-100 km`,6,10,`6-10, physical to socioeconomic`,'x','N',`Few validated examples.`,
  `No independent skill figure. Vendor and industry material only: a climate-conditioned hurricane model raised US average annual loss about 20% versus historical rates (conference abstract); a Reask/LGT backtest of seasonally conditioned event sets over 1985-2024 beat a static benchmark in simulated reinsurance pricing (industry write-up). No tropical Asia example.`,
  [[`EGU 2025 abstract`,`https://meetingorganizer.copernicus.org/EGU25/EGU25-9927.html`],[`Inigo/Reask write-up`,`https://inigoinsurance.com/catastrophe-research/insight-to-action-making-seasonal-hurricane-forecasts-pay-off-in-risk-transfer-markets/`]],
  [[`I`,`Tropical cyclone landfall rate over the next 5 years`],[`I`,`Expected loss conditioned on warm sea-surface temperature`],[`I`,`Hazard event frequency for risk pricing`]],
  [`Risk Management Solutions (now part of Moody's) has offered a medium-term rate since 2006, a rolling 5-year hurricane frequency forecast from 13 statistical models that use sea-surface temperature and other inputs.`,`RMS blog, 2019`,`https://rms.com/blog/2019/07/09/how-did-the-2017-2018-hurricanes-affect-medium-term-rates`]),
-I(20,`Marine heatwave and ocean-state forecasts`,'p',1008,4380,`6 wk-6 mo`,25,300,`25-300 km`,3.5,6,`3.5-6, physical`,'x','T',`Few centres; not routine for Indonesia.`,
+I(20,`Marine heatwave and ocean-state forecasts`,'p',1008,4380,`6 wk-6 mo`,25,300,`25-300 km`,3.5,6,`3.5-6, physical`,'x','TG',`Few centres; not routine for Indonesia.`,
  `Six seasonal systems, 1991-2020: significant skill everywhere out to about 2 months; at 3-6 months in large areas; at 10.5 months only in parts of the eastern tropical Pacific, Indian Ocean and Indo-Pacific. Skill is highest in the tropics and poor in the Southern Ocean and western boundary currents.`,
  [[`Jacox et al. 2022`,`https://repository.library.noaa.gov/view/noaa/45151/noaa_45151_DS1.pdf`],[`Carbon Brief summary`,`https://www.carbonbrief.org/marine-heatwaves-can-be-predicted-up-to-a-year-ahead`]],
  [[`O`,`Sea-surface and subsurface temperature anomaly`],[`O`,`Marine heatwave occurrence and category`],[`O`,`Probability of exceeding the 90th-percentile temperature`]],
@@ -266,12 +266,12 @@ I(22,`AI-based S2S forecasts`,'p',336,1008,`2-6 wk`,100,500,`100-500 km`,3,4.5,`
  [[`FuXi-S2S, Nature Comms 2024`,`https://doaj.org/article/4fb0d812e0774d9faa1648e9dc01dcf4`],[`AIFS-SUBS preprint`,`https://arxiv.org/pdf/2607.05100`]],
  [[`R`,`Weekly rainfall`],[`T`,`Weekly mean 2 m temperature`],[`C`,`MJO index`]],
  [`ECMWF developed an AI sub-seasonal system, AIFS-SUBS, and runs the AI Weather Quest; a preprint reports it matching ECMWF's physics-based system in probabilistic skill for weeks 2-6. This is a trial, not routine service.`,`AIFS-SUBS preprint`,`https://arxiv.org/abs/2607.05100`]),
-I(23,`Near-term projections, downscaled`,'p',43800,175200,`5-20 yr`,5,25,`5-25 km`,3,4.5,`3-4.5, physical`,'x','C',`Signal small against variability.`,
+I(23,`Near-term projections, downscaled`,'p',43800,175200,`5-20 yr`,5,25,`5-25 km`,3,4.5,`3-4.5, physical`,'x','P',`Signal small against variability.`,
  `No skill figure; the evidence is about signal against noise. Downscaled 2026-2035 rainfall for Hawai'i: natural variability will keep masking the forced signal. For monsoon regions, internal variability dominates uncertainty before about 2050.`,
  [[`Hawai'i downscaling`,`https://researchconnect.suny.edu/en/publications/dynamical-downscaling-of-near-term-20262035-climate-variability-a/`],[`Monsoon emergence, CAS 2026`,`https://english.cas.cn/newsroom/research-news/202603/t20260304_1151431.shtml`]],
  [[`T`,`Temperature change, 5-20 years`],[`R`,`Rainfall change, 5-20 years`],[`T`,`Frequency of hot days`]],
  [`Closest example found: the NGFS five-year-horizon short-term scenarios for central banks and supervisors model compound hazards and cross-border supply-chain effects. They are not downscaled.`,`Sustainability Online on NGFS`,`https://sustainabilityonline.net/news/ngfs-explores-short-term-climate-scenarios-for-financial-policymakers/`]),
-I(24,`Projected risk with exposure`,'p',87600,876000,`10-100 yr`,1,30,`1-30 km`,6.5,9.5,`6.5-9.5, physical to socioeconomic`,'x','C',`Methods and data not standardised.`,
+I(24,`Projected risk with exposure`,'p',87600,876000,`10-100 yr`,1,30,`1-30 km`,6.5,9.5,`6.5-9.5, physical to socioeconomic`,'x','P',`Methods and data not standardised.`,
  `No skill figure found. Risk combines hazard, exposure and vulnerability, each with its own uncertainty; commercial climate risk metrics under-represent uncertainty, and one analysis (Aon) calls address-level financial decisions almost always misguided; exposure data is often coarser than hazard grids.`,
  [[`Meiler et al. 2025`,`https://texmex.mit.edu/pub/emanuel/PAPERS/Meiler_etal_2025.pdf`],[`Aon`,`https://aon.com/apac/insights/blog/embracing-uncertainty-why-climate-risk-modelling-needs-to-change`]],
  [[`I`,`Expected annual loss`],[`I`,`Assets and population exposed to each hazard`],[`I`,`Combined hazard, exposure and vulnerability risk score`]],
@@ -281,12 +281,12 @@ I(25,`Downscaled projections`,'p',87600,876000,`10-100 yr`,5,25,`5-25 km`,3,4.5,
  [[`CORDEX-SEA ensemble`,`https://www.apn-gcr.org/?p=36591`],[`Sumatra bias correction`,`https://journal.ipb.ac.id/agromet/article/download/63609/30845/342585`]],
  [[`T`,`Change in daily maximum and minimum temperature`],[`R`,`Change in daily rainfall`],[`R`,`Change in rainfall seasonality`]],
  [`The City of London Corporation used UK Climate Projections (UKCP18) in its climate risk assessment and built adaptation pathways for six priority risks.`,`City of London technical report`,`https://www.cityoflondon.gov.uk/assets/Services-Environment/260630-CAS-2027-Climate-Resilience-Technical-Report-Public-Version-P03-with-accessibility.pdf`]),
-I(26,`Projected hazard indices`,'p',87600,876000,`10-100 yr`,10,50,`10-50 km`,4.5,6.5,`4.5-6.5, physical`,'e','C',`ETCCDI-type indices. Southeast Asia context only.`,
+I(26,`Projected hazard indices`,'p',87600,876000,`10-100 yr`,10,50,`10-50 km`,4.5,6.5,`4.5-6.5, physical`,'e','P',`ETCCDI-type indices. Southeast Asia context only.`,
  `No skill figure possible (projections cannot be verified against the future). Ensemble medians characterised historical precipitation extremes in Southeast Asia better than individual models; extremes are projected to increase over Indochina and the Maritime Continent. For compound wind and rain extremes, model uncertainty in rain falls from 73.9% to 42.7% over the century while scenario uncertainty rises from 20.3% to 55.0%.`,
  [[`Ge et al. 2021`,`https://doaj.org/article/bb8d49186bbb4659b6bf5ca7e35dfc8b`],[`Jiang et al. 2025`,`https://doaj.org/article/3d9cbd2dfbcc47cbbbfdca1be76173f6`],[`Hariadi et al. 2024`,`https://edepot.wur.nl/658981`]],
  [[`T`,`Number of hot days and heatwave days`],[`R`,`Maximum 1-day and 5-day rainfall`],[`H`,`Consecutive dry days`]],
  [`The World Bank Climate Change Knowledge Portal provides CMIP6-based projections of heat waves, droughts and floods at country and subnational level, and World Bank country climate and development reports map each hazard to indices such as maximum 5-day precipitation.`,`World Bank CCDR tools`,`https://gfdrr.github.io/CCDR-tools/docs/climate-risk.html`]),
-I(27,`Equatorial waves`,'d',48,336,`2 d-2 wk`,2000,10000,`2,000-10,000 km`,1,3.5,`1-3.5, mathematical to physical`,'x','T',`Wave-phase diagnostics are monitored; forecast use is still maturing.`,
+I(27,`Equatorial waves`,'d',48,336,`2 d-2 wk`,2000,10000,`2,000-10,000 km`,1,3.5,`1-3.5, mathematical to physical`,'x','TG',`Wave-phase diagnostics are monitored; forecast use is still maturing.`,
  `Skill falls quickly with lead time and differs by wave type. In NOAA's UFS tests Kelvin and mixed Rossby-gravity wave skill drops below 0.5 within about 2 days, while equatorial Rossby wave skill lasts about 4-6 days (presentations, not peer reviewed). A 2025 study over Australia put wind-based predictability at about 11 days for equatorial Rossby waves against 18 days for the MJO (conference abstract). Southeast Asia heavy rain is 2-4 times more likely given wave phase, as in item 28. No Indonesia-specific verification found.`,
  [[`UFS wave skill, UIFCW 2023`,`https://epic.noaa.gov/wp-content/uploads/2023/08/UIFCW-2023-Tue-5.-Gehne_UIFCW2023_CCEWs_in_UFS.pdf`],[`EGU 2025 abstract`,`https://meetingorganizer.copernicus.org/EGU25/EGU25-5407.html`]],
  [[`C`,`Phase and amplitude of Kelvin, equatorial Rossby and mixed Rossby-gravity waves`],[`R`,`Rainfall probability conditioned on wave phase`],[`W`,`Lower-level wind (850 hPa zonal wind)`]],
@@ -301,7 +301,7 @@ I(29,`Phase-conditioned multi-year risk`,'p',8760,43800,`1-5 yr`,100,1000,`100-1
  [[`Liu et al. 2023`,`https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10567839/`]],
  [[`T`,`Multi-year temperature anomaly probability by ENSO phase`],[`R`,`Multi-year rainfall anomaly probability by ENSO phase`]],
  null),
-I(30,`MJO, moisture mode, BSISO`,'d',168,1008,`1-6 wk`,1000,20000,`1,000-20,000 km`,1,3.5,`1-3.5, mathematical to physical`,'e','I',`Skill depends on season and phase. Grouped as one tropical intraseasonal family; equatorial waves are item 27.`,
+I(30,`MJO, moisture mode, BSISO`,'d',168,1008,`1-6 wk`,1000,20000,`1,000-20,000 km`,1,3.5,`1-3.5, mathematical to physical`,'e','IT',`Skill depends on season and phase. Grouped as one tropical intraseasonal family; equatorial waves are item 27.`,
  `In S2S models the OLR-based MJO index stays skilful (correlation above 0.6) for about 15-36 days in boreal winter, 5-10 days less in summer. The RMM index gives about 3 weeks (ACC above 0.5) against potential predictability of 6-7 weeks. The Maritime Continent barrier costs about 10 days. ECMWF reached about 27 days (older study). No skill figure found for BSISO or for moisture-mode forecasts as such. Moisture modes are a way of classifying systems, not a forecast product: in 1984-2016 observations they are associated with about 45-75% of extreme 3-hourly rainfall events at 15-20 degrees N/S, where extreme means above the local 99th percentile and association means within 1,000 km of the system centre (diagnostic study, no forecast skill).`,
  [[`Kim et al. 2018 (ROMI)`,`https://link.springer.com/doi/10.1007/s00382-018-4492-9`],[`Roy et al. 2026`,`https://wcd.copernicus.org/articles/7/1385/2026/`],[`Respati et al. 2026`,`https://wcd.copernicus.org/articles/7/2171/2026/`]],
  [[`C`,`MJO phase and amplitude (RMM and OLR-based indices)`],[`C`,`BSISO phase and amplitude (boreal summer)`],[`R`,`Weekly rainfall anomaly linked to MJO phase`]],
@@ -327,7 +327,9 @@ I(34,`Decadal predictions`,'p',8760,87600,`1-10 yr`,500,5000,`500-5,000 km`,3,4,
  [[`T`,`Annual mean temperature`],[`R`,`Multi-year rainfall anomaly (large regions)`],[`C`,`Probability that a year exceeds the previous record`]],
  [`The WMO Global Annual to Decadal Climate Update, led by the UK Met Office as WMO Lead Centre, reported in its 2026-2035 edition an 86% chance that one year in 2026-2030 will exceed 2024 as the warmest on record.`,`WMO, 2026`,`https://wmo.int/ar/node/38647`])
 ];
-var COV={I:{n:`Indonesia / SE Asia evidence`,c:'#8FAF1A'},T:{n:`Other tropics`,c:'#2E9C8A'},G:{n:`Global or mid-latitude only`,c:'#6B7FB8'},C:{n:`Context only, no skill figure`,c:'#D9568F'}};
+var COV={I:{n:`Evidence from Indonesia or Southeast Asia`,c:'#8FAF1A'},T:{n:`Evidence from other tropical regions`,c:'#2E9C8A'},G:{n:`Evidence from global or mid-latitude studies`,c:'#6B7FB8'},N:{n:`No skill figure found`,c:'#D9568F'},P:{n:`Not verifiable: projection or loss model`,c:'#8E6BBF'}};
+var COVLEG={I:`Indonesia or Southeast Asia`,T:`Other tropics (no Indonesian evidence)`,G:`Global or mid-latitude only`,N:`No skill figure found`,P:`Not verifiable (projection or loss model)`};
+function covOf(it){return ['I','T','G','N','P'].filter(function(k){return it.c.indexOf(k)>=0;})[0];}
 var IV={R:`Rainfall`,T:`Temperature and heat`,W:`Wind and storms`,H:`Water and land`,O:`Ocean`,F:`Fire`,C:`Climate drivers`,I:`Losses and exposure`};
 var MAT={e:{n:`Established`,c:'#2E9C8A'},x:{n:`Experimental`,c:'#E8832A'}};
 
@@ -362,11 +364,11 @@ function pal(){ return {fg:'#0D0630',mute:'#52667a',grid:'rgba(13,6,48,0.30)',pl
 
 function visible(it){
   if(S.fm!=='all' && it.m!==S.fm) return false;
-  if(S.fc!=='all' && it.c!==S.fc) return false;
+  if(S.fc!=='all' && it.c.indexOf(S.fc)<0) return false;
   if(S.iv!=='all' && !it.vars.some(function(v){return v[0]===S.iv;})) return false;
   return true;
 }
-function colorOf(it){ return S.color==='mat'?MAT[it.m].c:COV[it.c].c; }
+function colorOf(it){ return S.color==='mat'?MAT[it.m].c:COV[covOf(it)].c; }
 
 /* ---------- drawing ---------- */
 function draw(){
@@ -422,7 +424,7 @@ function draw(){
   ve.forEach(function(e){var s=pr([e[0],fy,e[1]])[0]; if(s<bx){bx=s;best=e;}});
   if(slen([best[0],-hy,best[1]],[best[0],hy,best[1]])>40){
   [[0,'0'],[3,'3'],[7,'7'],[10,'10']].forEach(function(t){var y=(t[0]/10-0.5)*DIM.y,p=away(pr([best[0],y,best[1]]),12);txt(t[1],p[0],p[1],P.mute,'right',10.5);});
-  [[1.5,'indices'],[5,'weather, hazards'],[8.5,'people, money']].forEach(function(t){var y=(t[0]/10-0.5)*DIM.y,p=away(pr([best[0],y,best[1]]),W<600?30:44);txt(t[1],p[0],p[1],P.mute,'right',10.5);});
+  [[1.5,'Climate indices'],[5,'Weather and hazards'],[8.5,'Socioeconomic']].forEach(function(t){var y=(t[0]/10-0.5)*DIM.y,p=away(pr([best[0],y,best[1]]),W<600?30:44);txt(t[1],p[0],p[1],P.mute,'right',10.5);});
   var at=away(pr([best[0],hy,best[1]]),26);txt(nar?'Impact':'Impact proximity',at[0]-4,at[1]-10,P.fg,'right',11.5,true);}
 
   // boxes
@@ -580,9 +582,9 @@ function select(id,fromList){
 function renderDetail(){
   var d=document.getElementById('detail');
   if(S.sel===null){d.innerHTML='<p class="empty">Select a sphere on the map or an item in the list to see its skill and evidence.</p>';return;}
-  var it=byId(S.sel), m=MAT[it.m], c=COV[it.c];
+  var it=byId(S.sel), m=MAT[it.m];
   var h='<h2>'+it.id+'. '+esc(it.name)+'</h2>';
-  h+='<div class="tags"><span class="tag" style="background:'+m.c+'">'+m.n+'</span><span class="tag" style="background:'+c.c+'">'+esc(c.n)+'</span><span class="tag" style="background:#9fb7c9">'+(it.type==='d'?'Driver or method':'Product')+'</span></div>';
+  h+='<div class="tags"><span class="tag" style="background:'+m.c+'">'+m.n+'</span>'+it.c.split('').map(function(k){return '<span class="tag" style="background:'+COV[k].c+'">'+esc(COV[k].n)+'</span>';}).join('')+'<span class="tag" style="background:#9fb7c9">'+(it.type==='d'?'Driver or method':'Product')+'</span></div>';
   h+='<div class="kv"><b>Planning horizon</b><span>'+esc(it.hl)+'</span><b>Spatial extent</b><span>'+esc(it.sl)+'</span><b>Impact proximity</b><span>'+esc(it.al)+'</span></div>';
   h+='<div class="sec"><h3>Note</h3><div>'+esc(it.note)+'</div></div>';
   h+='<div class="sec"><h3>Variables it can forecast</h3><ul>'+it.vars.map(function(v){return '<li><b>'+esc(IV[v[0]])+'</b> '+esc(v[1])+'</li>';}).join('')+'</ul></div>';
@@ -607,7 +609,7 @@ document.getElementById('list').addEventListener('click',function(e){
 function renderLegend(){
   var g=document.getElementById('legend'), h='';
   if(S.color==='mat') h+='<span><i style="background:'+MAT.e.c+'"></i>Established</span><span><i style="background:'+MAT.x.c+'"></i>Experimental (dashed)</span>';
-  else Object.keys(COV).forEach(function(k){h+='<span><i style="background:'+COV[k].c+'"></i>'+esc(COV[k].n)+'</span>';});
+  else Object.keys(COV).forEach(function(k){h+='<span><i style="background:'+COV[k].c+'"></i>'+esc(COVLEG[k])+'</span>';});
   h+='<span>● product ◆ driver or method</span>';
   g.innerHTML=h;
 }
