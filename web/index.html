@@ -92,6 +92,8 @@
   #stamp small { display: block; font-size: 11px; color: #8e9ab8; text-align: right; }
   #stamp { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 13px; }
   #play { all: unset; cursor: pointer; padding: 4px 10px; border-radius: 7px; background: #243156; }
+  #play[data-wait] { animation: playwait 0.9s ease-in-out infinite; }  /* playing, but waiting for data */
+  @keyframes playwait { 50% { opacity: 0.45; } }
   #layers input.op { width: 70px; accent-color: #2d6cf6; align-self: center; }
   #layers input.op[hidden] { display: none; }
   #layers .sep { width: 1px; background: rgba(255,255,255,.18); margin: 2px 4px; }
@@ -1075,6 +1077,7 @@ class App {
     play.onclick = () => {
       this.playing = !this.playing;
       play.textContent = this.playing ? "❚❚" : "▶";
+      if (!this.playing) delete play.dataset.wait;
       if (this.playing) this.tick();
     };
 
@@ -1226,8 +1229,17 @@ class App {
     if (!this.playing) return;
     let p = this.pos + 0.08;
     if (p > this.axis.length - 1) p = 0;
-    this.setPos(p);
-    this.onTimeChange();
+    // Hold the slider where it is until the next picture has arrived, then
+    // carry on; a short look-ahead keeps slow connections from stalling often.
+    const play = document.getElementById("play");
+    if (!this.readyAt(p)) {
+      play.dataset.wait = "1";
+    } else {
+      delete play.dataset.wait;
+      for (let k = 1; k <= 3; k++) this.readyAt(Math.min(this.axis.length - 1, Math.round(p) + k));
+      this.setPos(p);
+      this.onTimeChange();
+    }
     requestAnimationFrame(() => this.tick());
   }
 
@@ -1661,6 +1673,53 @@ class App {
   // future). Frames are fetched and decoded off-screen first and the latest
   // request wins, so dragging the slider does not queue up a stack of 4 MB
   // downloads and never shows a half-loaded picture.
+  // Fetch and decode every tile of a frame once; the promise is kept so the
+  // slider, the play loop and the prefetch all share one download. satReady
+  // holds the frames that are fully in the browser cache.
+  satFetch(frame) {
+    if (!this.satFetched) { this.satFetched = new Map(); this.satReady = new Set(); }
+    let p = this.satFetched.get(frame.image);
+    if (!p) {
+      p = Promise.all(frame.tiles.map((t) => new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => resolve(`${DATA}/sat/${t.image}`);
+        img.onerror = () => reject(new Error(`failed to load ${t.image}`));
+        img.src = `${DATA}/sat/${t.image}`;
+      })));
+      p.then(() => this.satReady.add(frame.image), () => this.satFetched.delete(frame.image));
+      this.satFetched.set(frame.image, p);
+    }
+    return p;
+  }
+
+  // Is everything needed to draw slider position p already loaded? Starts the
+  // missing downloads as a side effect. Forecast fields need the step below and
+  // the step above (they are blended); a satellite entry needs its whole frame.
+  readyAt(p) {
+    const n = this.axis.length;
+    const entry = this.axis[Math.max(0, Math.min(n - 1, Math.round(p)))];
+    let ok = true;
+    if (entry.kind === "sat" && this.satOn && this.satLoaded) {
+      this.satFetch(entry.frame).catch(() => {
+        if (this.satBad.has(entry.frame.image)) return;
+        this.satBad.add(entry.frame.image);
+        this.rebuildAxis();
+      });
+      if (!this.satReady.has(entry.frame.image)) ok = false;
+    }
+    const i = Math.floor(p), j = Math.min(i + 1, n - 1);
+    const si = this.axis[i].si + (this.axis[j].si - this.axis[i].si) * (p - i);
+    const lo = Math.floor(si);
+    const names = new Set([this.fieldSource(this.layer), this.layer]);
+    for (const name of names) {
+      if (!this.manifest.layers[name]) continue;
+      if (!this.textureFor(name, lo)) ok = false;
+      if (!this.textureFor(name, lo + 1)) ok = false;
+    }
+    return ok;
+  }
+
   applySatelliteTime(entry) {
     if (!this.satOn || !this.satLoaded || !this.map) return;
     const frame = entry && entry.kind === "sat" ? entry.frame : null;
@@ -1677,14 +1736,7 @@ class App {
     const token = ++this.satSwap;
     // Every tile of the frame is fetched first and they are swapped in together,
     // so the mosaic never shows half of one time and half of another.
-    const loads = frame.tiles.map((t) => new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => resolve(`${DATA}/sat/${t.image}`);
-      img.onerror = () => reject(new Error(`failed to load ${t.image}`));
-      img.src = `${DATA}/sat/${t.image}`;
-    }));
-    Promise.all(loads).then((urls) => {
+    this.satFetch(frame).then((urls) => {
       if (token !== this.satSwap) return;                // a newer request superseded this one
       frame.tiles.forEach((t, i) => {
         const src = this.map.getSource(`sat-${i}`);
