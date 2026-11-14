@@ -5,3 +5,4 @@ web/data/
 .heartbeat
 .DS_Store
 .venv/
+.wrangler/

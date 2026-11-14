@@ -1,0 +1,24 @@
+{
+  "atlas-cuaca/": {
+    "title": "Indonesian Weather Atlas · Klimatikal",
+    "description": "A catalogue of weather and climate phenomena across Indonesia, from well documented to rarely recorded, local and regional. Each phenomenon has its own page: the name, the scientific explanation, local knowledge and where it occurs."
+  },
+  "atlas-cuaca/angin-bahorok/": {
+    "description": "The Bahorok wind is a warm, dry downslope wind (the foehn effect) on the eastern side of the Bukit Barisan range in North Sumatra, blowing on the plains of Deli, Langkat and Serdang."
+  },
+  "atlas-cuaca/borneo-vortex/": {
+    "description": "The Borneo vortex is a cyclonic circulation (turning counter-clockwise in the northern hemisphere) in the lower atmosphere around Borneo and the equatorial South China Sea."
+  },
+  "atlas-cuaca/cens/": {
+    "description": "A low-level northerly flow that occasionally crosses the equator from the South China Sea into the Java Sea in northern-hemisphere winter, linked to heavy rain over Java and nearby areas."
+  },
+  "atlas-cuaca/embun-upas/": {
+    "description": "A thin layer of ice that covers grass and crops on the Dieng Plateau on clear, cold dry-season nights; residents call it “poison dew” because it can kill potato plants."
+  },
+  "atlas-cuaca/kabut-bromo/": {
+    "description": "Fog that blankets the Mount Bromo area and the Tengger caldera almost every morning and afternoon, limiting visibility for visitors."
+  },
+  "atlas-cuaca/musim-bediding/": {
+    "description": "Bediding (a Javanese word) names a sharp temperature swing at the start of the dry season in Java and other places south of the equator: nights and early mornings turn very cold while daytime stays hot."
+  }
+}

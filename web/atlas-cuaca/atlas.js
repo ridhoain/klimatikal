@@ -1,12 +1,14 @@
 /* Atlas cuaca: language switch, filters and search.
    The cards are plain HTML and read fine without this; the script only adds
-   interaction. The initial language is set by a tiny inline script in <head>. */
+   interaction. Each language has its own page (/atlas-cuaca/ is Indonesian,
+   /en/atlas-cuaca/ is English), built by i18n/build.py; <html data-lang> is
+   fixed in the markup. */
 (function () {
   // Old links to /atlas-cuaca/#some-id (from when every phenomenon was a full
   // card on this page) now go to that phenomenon's own page.
   if (document.body.getAttribute("data-page") === "index" && location.hash.length > 1) {
     var hit = document.getElementById(decodeURIComponent(location.hash.slice(1)));
-    if (hit && hit.classList.contains("card")) { location.replace("/atlas-cuaca/" + hit.id + "/"); return; }
+    if (hit && hit.classList.contains("card")) { location.replace((document.documentElement.lang === "en" ? "/en" : "") + "/atlas-cuaca/" + hit.id + "/"); return; }
   }
 
   var root = document.documentElement;

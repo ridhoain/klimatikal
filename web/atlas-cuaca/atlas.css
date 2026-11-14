@@ -13,12 +13,12 @@ main.atlas { max-width: 1180px; }
 
 /* header: language switch */
 .lang { display: inline-flex; margin-left: 4px; border: 1px solid rgba(139, 190, 178, .35); border-radius: 8px; overflow: hidden; }
-.lang button {
+.lang button, .lang a {
   all: unset; cursor: pointer; padding: 3px 10px; font-size: 12px; letter-spacing: .06em;
   color: var(--kl-teal);
 }
-.lang button[aria-pressed="true"] { background: var(--kl-lime); color: var(--kl-amethyst); font-weight: 600; }
-.lang button:focus-visible { outline: 2px solid var(--kl-lime); outline-offset: 2px; }
+.lang button[aria-pressed="true"], .lang a[aria-current="true"] { background: var(--kl-lime); color: var(--kl-amethyst); font-weight: 600; }
+.lang button:focus-visible, .lang a:focus-visible { outline: 2px solid var(--kl-lime); outline-offset: 2px; }
 @media (max-width: 600px) { .site-header nav { gap: 12px; flex-wrap: wrap; justify-content: flex-end; } }
 
 /* ---- locator maps (inline SVG, one shared land shape) -------------------- */

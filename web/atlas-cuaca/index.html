@@ -1,17 +1,22 @@
 <!doctype html>
-<html lang="id">
+<html lang="id" data-lang="id">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Atlas Cuaca Indonesia · Klimatikal</title>
 <meta name="description" content="Katalog fenomena cuaca dan iklim di Indonesia, dari yang terdokumentasi baik hingga yang masih jarang dicatat, baik lokal maupun regional. Setiap fenomena punya halamannya sendiri: nama, penjelasan ilmiah, pengetahuan lokal, dan lokasi kejadiannya.">
 <link rel="canonical" href="https://klimatikal.com/atlas-cuaca/">
+<link rel="alternate" hreflang="id" href="https://klimatikal.com/atlas-cuaca/">
+<link rel="alternate" hreflang="en" href="https://klimatikal.com/en/atlas-cuaca/">
+<link rel="alternate" hreflang="x-default" href="https://klimatikal.com/atlas-cuaca/">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="theme-color" content="#0D0630">
 <meta property="og:type" content="website">
+<meta property="og:locale" content="id_ID">
+<meta property="og:locale:alternate" content="en_US">
 <meta property="og:title" content="Atlas Cuaca Indonesia · Klimatikal">
 <meta property="og:description" content="Katalog fenomena cuaca dan iklim di Indonesia, dari yang terdokumentasi baik hingga yang masih jarang dicatat, baik lokal maupun regional. Setiap fenomena punya halamannya sendiri: nama, penjelasan ilmiah, pengetahuan lokal, dan lokasi kejadiannya.">
 <meta property="og:url" content="https://klimatikal.com/atlas-cuaca/">
@@ -22,16 +27,7 @@
 <link rel="stylesheet" href="/about-us/about.css?v=ac015dc015">
 <link rel="stylesheet" href="/nav-product.css?v=ad7cdfd152">
 <link rel="stylesheet" href="/atlas-cuaca/atlas.css?v=616239fa46">
-<script>
-/* Language is chosen before first paint so the page never flashes the wrong one. */
-(function () {
-  var l = null;
-  try { l = localStorage.getItem("kl-lang"); } catch (e) {}
-  if (l !== "id" && l !== "en") l = (navigator.language || "id").toLowerCase().indexOf("id") === 0 ? "id" : "en";
-  var d = document.documentElement; d.setAttribute("data-lang", l); d.lang = l;
-})();
-</script>
-<script src="/atlas-cuaca/atlas.js?v=c5bc9ad969" defer></script>
+<script src="/atlas-cuaca/atlas.js?v=7142a9e367" defer></script>
 </head>
 <body class="atlas-page" data-page="index">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -50,21 +46,19 @@
     </picture>
   </a>
   <nav aria-label="Main">
-    <a href="/"><span lang="id">Peta cuaca</span><span lang="en">Weather map</span></a>
+    <a href="/"><span lang="id">Peta cuaca</span></a>
     <a href="/atlas-cuaca/" aria-current="page">Atlas Cuaca</a>
-    <div class="navdd"><button type="button" aria-haspopup="true"><span lang="id">Produk</span><span lang="en">Product</span></button><div class="menu"><a href="/product/forecast-services/"><span lang="id">Layanan prakiraan cuaca dan iklim</span><span lang="en">Forecast services</span></a></div></div>
-    <a href="/about-us/"><span lang="id">Tentang kami</span><span lang="en">About us</span></a>
-    <a href="/contact-us/"><span lang="id">Kontak</span><span lang="en">Contact us</span></a>
-    <span class="lang" role="group" aria-label="Language">
-      <button type="button" data-set-lang="id" aria-pressed="true">ID</button><button type="button" data-set-lang="en" aria-pressed="false">EN</button>
-    </span>
+    <div class="navdd"><button type="button" aria-haspopup="true"><span lang="id">Produk</span></button><div class="menu"><a href="/product/forecast-services/"><span lang="id">Layanan prakiraan cuaca dan iklim</span></a></div></div>
+    <a href="/about-us/"><span lang="id">Tentang kami</span></a>
+    <a href="/contact-us/"><span lang="id">Kontak</span></a>
+    <span class="lang" role="group" aria-label="Language"><a href="/atlas-cuaca/" hreflang="id" aria-current="true">ID</a><a href="/en/atlas-cuaca/" hreflang="en">EN</a></span>
   </nav>
 </header>
 
 <main class="atlas">
   <p class="eyebrow">Klimatikal</p>
-  <h1><span lang="id">Atlas Cuaca Indonesia</span><span lang="en">Indonesian Weather Atlas</span></h1>
-  <p class="lede"><span lang="id">Katalog fenomena cuaca dan iklim di Indonesia, dari yang terdokumentasi baik hingga yang masih jarang dicatat, baik lokal maupun regional. Setiap fenomena punya halamannya sendiri: nama, penjelasan ilmiah, pengetahuan lokal, dan lokasi kejadiannya.</span><span lang="en">A catalogue of weather and climate phenomena across Indonesia, from well documented to rarely recorded, local and regional. Each phenomenon has its own page: the name, the scientific explanation, local knowledge and where it occurs.</span></p>
+  <h1><span lang="id">Atlas Cuaca Indonesia</span></h1>
+  <p class="lede"><span lang="id">Katalog fenomena cuaca dan iklim di Indonesia, dari yang terdokumentasi baik hingga yang masih jarang dicatat, baik lokal maupun regional. Setiap fenomena punya halamannya sendiri: nama, penjelasan ilmiah, pengetahuan lokal, dan lokasi kejadiannya.</span></p>
 
   <section class="overview" aria-label="Sebaran lokasi">
     <svg class="locator wide" viewBox="0 0 940 360" role="group" aria-label="Sebaran lokasi">
@@ -73,85 +67,85 @@
   </section>
 
   <div class="controls">
-    <div class="group"><span class="glabel"><span lang="id">Skala</span><span lang="en">Scale</span></span><button type="button" data-group="scale" data-value="all" aria-pressed="true"><span lang="id">Semua</span><span lang="en">All</span></button><button type="button" data-group="scale" data-value="local" aria-pressed="false"><span lang="id">Lokal</span><span lang="en">Local</span></button><button type="button" data-group="scale" data-value="regional" aria-pressed="false"><span lang="id">Regional</span><span lang="en">Regional</span></button></div>
-    <div class="group"><span class="glabel"><span lang="id">Dokumentasi</span><span lang="en">Documentation</span></span><button type="button" data-group="doc" data-value="all" aria-pressed="true"><span lang="id">Semua</span><span lang="en">All</span></button><button type="button" data-group="doc" data-value="well" aria-pressed="false"><span lang="id">Terdokumentasi baik</span><span lang="en">Well documented</span></button><button type="button" data-group="doc" data-value="poor" aria-pressed="false"><span lang="id">Kurang terdokumentasi</span><span lang="en">Poorly documented</span></button></div>
+    <div class="group"><span class="glabel"><span lang="id">Skala</span></span><button type="button" data-group="scale" data-value="all" aria-pressed="true"><span lang="id">Semua</span></button><button type="button" data-group="scale" data-value="local" aria-pressed="false"><span lang="id">Lokal</span></button><button type="button" data-group="scale" data-value="regional" aria-pressed="false"><span lang="id">Regional</span></button></div>
+    <div class="group"><span class="glabel"><span lang="id">Dokumentasi</span></span><button type="button" data-group="doc" data-value="all" aria-pressed="true"><span lang="id">Semua</span></button><button type="button" data-group="doc" data-value="well" aria-pressed="false"><span lang="id">Terdokumentasi baik</span></button><button type="button" data-group="doc" data-value="poor" aria-pressed="false"><span lang="id">Kurang terdokumentasi</span></button></div>
     <input id="q" type="search" autocomplete="off" placeholder="Cari fenomena…" data-ph-id="Cari fenomena…" data-ph-en="Search phenomena…" aria-label="Cari fenomena…">
   </div>
-  <p class="count" aria-live="polite"><span lang="id">Menampilkan</span><span lang="en">Showing</span> <b data-shown>6</b> <span lang="id">dari</span><span lang="en">of</span> <b data-total>6</b></p>
+  <p class="count" aria-live="polite"><span lang="id">Menampilkan</span> <b data-shown>6</b> <span lang="id">dari</span> <b data-total>6</b></p>
 
   <div class="grid">
     <article class="card" id="angin-bahorok" data-scale="local" data-doc="well" data-search="angin bahorok  bahorok wind (foehn wind) kec. bahorok, kab. langkat, sumatera utara bahorok district, langkat regency, north sumatra">
       
       <div class="body">
-        <div class="badges"><span class="badge scale"><span lang="id">Lokal</span><span lang="en">Local</span></span><span class="badge doc well"><span lang="id">Terdokumentasi baik</span><span lang="en">Well documented</span></span></div>
+        <div class="badges"><span class="badge scale"><span lang="id">Lokal</span></span><span class="badge doc well"><span lang="id">Terdokumentasi baik</span></span></div>
         <h3><a class="card-link" href="/atlas-cuaca/angin-bahorok/">Angin Bahorok</a></h3>
-        <p class="alt"><small><span lang="id">Nama Inggris</span><span lang="en">English name</span></small> <i>Bahorok wind (foehn wind)</i></p>
-        <p class="summary"><span lang="id">Angin Bahorok adalah angin jatuh yang hangat dan kering (efek foehn) di sisi timur Pegunungan Bukit Barisan, Sumatera Utara, yang bertiup di dataran Deli, Langkat, dan Serdang.</span><span lang="en">The Bahorok wind is a warm, dry downslope wind (the foehn effect) on the eastern side of the Bukit Barisan range in North Sumatra, blowing on the plains of Deli, Langkat and Serdang.</span></p>
-        <p class="place"><span lang="id">Kec. Bahorok, Kab. Langkat, Sumatera Utara</span><span lang="en">Bahorok District, Langkat Regency, North Sumatra</span></p>
-        <p class="more"><span lang="id">Baca selengkapnya</span><span lang="en">Read more</span> →</p>
+        <p class="alt"><small><span lang="id">Nama Inggris</span></small> <i>Bahorok wind (foehn wind)</i></p>
+        <p class="summary"><span lang="id">Angin Bahorok adalah angin jatuh yang hangat dan kering (efek foehn) di sisi timur Pegunungan Bukit Barisan, Sumatera Utara, yang bertiup di dataran Deli, Langkat, dan Serdang.</span></p>
+        <p class="place"><span lang="id">Kec. Bahorok, Kab. Langkat, Sumatera Utara</span></p>
+        <p class="more"><span lang="id">Baca selengkapnya</span> →</p>
       </div>
     </article>
     <article class="card" id="borneo-vortex" data-scale="regional" data-doc="well" data-search="borneo vortex  borneo vortex kalimantan bagian barat laut dan laut cina selatan bagian selatan north-western borneo and the southern south china sea">
       
       <div class="body">
-        <div class="badges"><span class="badge scale"><span lang="id">Regional</span><span lang="en">Regional</span></span><span class="badge doc well"><span lang="id">Terdokumentasi baik</span><span lang="en">Well documented</span></span></div>
+        <div class="badges"><span class="badge scale"><span lang="id">Regional</span></span><span class="badge doc well"><span lang="id">Terdokumentasi baik</span></span></div>
         <h3><a class="card-link" href="/atlas-cuaca/borneo-vortex/">Borneo Vortex</a></h3>
-        <p class="alt"><small><span lang="id">Nama Inggris</span><span lang="en">English name</span></small> <i>Borneo vortex</i></p>
-        <p class="summary"><span lang="id">Borneo Vortex adalah pusaran siklonik (berputar berlawanan arah jarum jam di belahan bumi utara) di lapisan bawah atmosfer di sekitar Pulau Kalimantan dan Laut Cina Selatan bagian ekuator.</span><span lang="en">The Borneo vortex is a cyclonic circulation (turning counter-clockwise in the northern hemisphere) in the lower atmosphere around Borneo and the equatorial South China Sea.</span></p>
-        <p class="place"><span lang="id">Kalimantan bagian barat laut dan Laut Cina Selatan bagian selatan</span><span lang="en">North-western Borneo and the southern South China Sea</span></p>
-        <p class="more"><span lang="id">Baca selengkapnya</span><span lang="en">Read more</span> →</p>
+        <p class="alt"><small><span lang="id">Nama Inggris</span></small> <i>Borneo vortex</i></p>
+        <p class="summary"><span lang="id">Borneo Vortex adalah pusaran siklonik (berputar berlawanan arah jarum jam di belahan bumi utara) di lapisan bawah atmosfer di sekitar Pulau Kalimantan dan Laut Cina Selatan bagian ekuator.</span></p>
+        <p class="place"><span lang="id">Kalimantan bagian barat laut dan Laut Cina Selatan bagian selatan</span></p>
+        <p class="more"><span lang="id">Baca selengkapnya</span> →</p>
       </div>
     </article>
     <article class="card" id="cens" data-scale="regional" data-doc="well" data-search="cross equatorial northerly surge (cens)  cross-equatorial northerly surge (cens) selat karimata dan laut jawa bagian utara (kotak indeks cens: 105–115°bt, 5°ls–ekuator) karimata strait and the northern java sea (cens index box: 105–115°e, 5°s–equator)">
       
       <div class="body">
-        <div class="badges"><span class="badge scale"><span lang="id">Regional</span><span lang="en">Regional</span></span><span class="badge doc well"><span lang="id">Terdokumentasi baik</span><span lang="en">Well documented</span></span></div>
+        <div class="badges"><span class="badge scale"><span lang="id">Regional</span></span><span class="badge doc well"><span lang="id">Terdokumentasi baik</span></span></div>
         <h3><a class="card-link" href="/atlas-cuaca/cens/">Cross Equatorial Northerly Surge (CENS)</a></h3>
-        <p class="alt"><small><span lang="id">Nama Inggris</span><span lang="en">English name</span></small> <i>Cross-equatorial northerly surge (CENS)</i></p>
-        <p class="summary"><span lang="id">Aliran angin utara di lapisan bawah atmosfer yang sesekali menembus khatulistiwa dari Laut Cina Selatan ke Laut Jawa pada musim dingin belahan bumi utara, dan berkaitan dengan hujan lebat di Jawa dan sekitarnya.</span><span lang="en">A low-level northerly flow that intermittently pushes across the equator from the South China Sea into the Java Sea in northern-hemisphere winter, linked to heavy rain over Java and nearby areas.</span></p>
-        <p class="place"><span lang="id">Selat Karimata dan Laut Jawa bagian utara (kotak indeks CENS: 105–115°BT, 5°LS–ekuator)</span><span lang="en">Karimata Strait and the northern Java Sea (CENS index box: 105–115°E, 5°S–equator)</span></p>
-        <p class="more"><span lang="id">Baca selengkapnya</span><span lang="en">Read more</span> →</p>
+        <p class="alt"><small><span lang="id">Nama Inggris</span></small> <i>Cross-equatorial northerly surge (CENS)</i></p>
+        <p class="summary"><span lang="id">Aliran angin utara di lapisan bawah atmosfer yang sesekali menembus khatulistiwa dari Laut Cina Selatan ke Laut Jawa pada musim dingin belahan bumi utara, dan berkaitan dengan hujan lebat di Jawa dan sekitarnya.</span></p>
+        <p class="place"><span lang="id">Selat Karimata dan Laut Jawa bagian utara (kotak indeks CENS: 105–115°BT, 5°LS–ekuator)</span></p>
+        <p class="more"><span lang="id">Baca selengkapnya</span> →</p>
       </div>
     </article>
     <article class="card" id="embun-upas" data-scale="local" data-doc="well" data-search="embun upas  upas frost (“poison dew”) dataran tinggi dieng, jawa tengah dieng plateau, central java">
       
       <div class="body">
-        <div class="badges"><span class="badge scale"><span lang="id">Lokal</span><span lang="en">Local</span></span><span class="badge doc well"><span lang="id">Terdokumentasi baik</span><span lang="en">Well documented</span></span></div>
+        <div class="badges"><span class="badge scale"><span lang="id">Lokal</span></span><span class="badge doc well"><span lang="id">Terdokumentasi baik</span></span></div>
         <h3><a class="card-link" href="/atlas-cuaca/embun-upas/">Embun Upas</a></h3>
-        <p class="alt"><small><span lang="id">Nama Inggris</span><span lang="en">English name</span></small> <i>Upas frost (“poison dew”)</i></p>
-        <p class="summary"><span lang="id">Lapisan es tipis yang menyelimuti rumput dan tanaman di Dataran Tinggi Dieng pada malam kemarau yang cerah dan dingin; warga menyebutnya “embun racun” karena dapat mematikan tanaman kentang.</span><span lang="en">A thin layer of ice on grass and crops on the Dieng Plateau on clear, cold dry-season nights; locals call it “poison dew” because it can kill potato plants.</span></p>
-        <p class="place"><span lang="id">Dataran Tinggi Dieng, Jawa Tengah</span><span lang="en">Dieng Plateau, Central Java</span></p>
-        <p class="more"><span lang="id">Baca selengkapnya</span><span lang="en">Read more</span> →</p>
+        <p class="alt"><small><span lang="id">Nama Inggris</span></small> <i>Upas frost (“poison dew”)</i></p>
+        <p class="summary"><span lang="id">Lapisan es tipis yang menyelimuti rumput dan tanaman di Dataran Tinggi Dieng pada malam kemarau yang cerah dan dingin; warga menyebutnya “embun racun” karena dapat mematikan tanaman kentang.</span></p>
+        <p class="place"><span lang="id">Dataran Tinggi Dieng, Jawa Tengah</span></p>
+        <p class="more"><span lang="id">Baca selengkapnya</span> →</p>
       </div>
     </article>
     <article class="card" id="kabut-bromo" data-scale="local" data-doc="poor" data-search="kabut bromo  bromo fog (tengger caldera) kaldera tengger, taman nasional bromo tengger semeru, jawa timur tengger caldera, bromo tengger semeru national park, east java">
       
       <div class="body">
-        <div class="badges"><span class="badge scale"><span lang="id">Lokal</span><span lang="en">Local</span></span><span class="badge doc poor"><span lang="id">Kurang terdokumentasi</span><span lang="en">Poorly documented</span></span></div>
+        <div class="badges"><span class="badge scale"><span lang="id">Lokal</span></span><span class="badge doc poor"><span lang="id">Kurang terdokumentasi</span></span></div>
         <h3><a class="card-link" href="/atlas-cuaca/kabut-bromo/">Kabut Bromo</a></h3>
-        <p class="alt"><small><span lang="id">Nama Inggris</span><span lang="en">English name</span></small> <i>Bromo fog (Tengger caldera)</i></p>
-        <p class="summary"><span lang="id">Kabut yang menyelimuti kawasan Gunung Bromo dan kaldera Tengger hampir setiap pagi dan sore, membatasi jarak pandang bagi pengunjung.</span><span lang="en">Fog that covers the Mount Bromo area and the Tengger caldera almost every morning and afternoon, limiting visibility for visitors.</span></p>
-        <p class="place"><span lang="id">Kaldera Tengger, Taman Nasional Bromo Tengger Semeru, Jawa Timur</span><span lang="en">Tengger caldera, Bromo Tengger Semeru National Park, East Java</span></p>
-        <p class="more"><span lang="id">Baca selengkapnya</span><span lang="en">Read more</span> →</p>
+        <p class="alt"><small><span lang="id">Nama Inggris</span></small> <i>Bromo fog (Tengger caldera)</i></p>
+        <p class="summary"><span lang="id">Kabut yang menyelimuti kawasan Gunung Bromo dan kaldera Tengger hampir setiap pagi dan sore, membatasi jarak pandang bagi pengunjung.</span></p>
+        <p class="place"><span lang="id">Kaldera Tengger, Taman Nasional Bromo Tengger Semeru, Jawa Timur</span></p>
+        <p class="more"><span lang="id">Baca selengkapnya</span> →</p>
       </div>
     </article>
     <article class="card" id="musim-bediding" data-scale="regional" data-doc="poor" data-search="musim bediding bediding bediding (cold season in java) pulau jawa java island">
       
       <div class="body">
-        <div class="badges"><span class="badge scale"><span lang="id">Regional</span><span lang="en">Regional</span></span><span class="badge doc poor"><span lang="id">Kurang terdokumentasi</span><span lang="en">Poorly documented</span></span></div>
+        <div class="badges"><span class="badge scale"><span lang="id">Regional</span></span><span class="badge doc poor"><span lang="id">Kurang terdokumentasi</span></span></div>
         <h3><a class="card-link" href="/atlas-cuaca/musim-bediding/">Musim Bediding</a></h3>
-        <p class="alt"><small><span lang="id">Nama lokal</span><span lang="en">Local name</span></small> Bediding</p><p class="alt"><small><span lang="id">Nama Inggris</span><span lang="en">English name</span></small> <i>Bediding (cold season in Java)</i></p>
-        <p class="summary"><span lang="id">Bediding (dari bahasa Jawa) menyebut perubahan suhu yang tajam pada awal musim kemarau di Jawa dan wilayah selatan khatulistiwa lain: malam dan dini hari terasa sangat dingin, sedangkan siang hari terik.</span><span lang="en">Bediding (a Javanese word) names a sharp temperature swing at the start of the dry season in Java and other places south of the equator: nights and early mornings turn very cold while daytime stays hot.</span></p>
-        <p class="place"><span lang="id">Pulau Jawa</span><span lang="en">Java Island</span></p>
-        <p class="more"><span lang="id">Baca selengkapnya</span><span lang="en">Read more</span> →</p>
+        <p class="alt"><small><span lang="id">Nama lokal</span></small> Bediding</p><p class="alt"><small><span lang="id">Nama Inggris</span></small> <i>Bediding (cold season in Java)</i></p>
+        <p class="summary"><span lang="id">Bediding (dari bahasa Jawa) menyebut perubahan suhu yang tajam pada awal musim kemarau di Jawa dan wilayah selatan khatulistiwa lain: malam dan dini hari terasa sangat dingin, sedangkan siang hari terik.</span></p>
+        <p class="place"><span lang="id">Pulau Jawa</span></p>
+        <p class="more"><span lang="id">Baca selengkapnya</span> →</p>
       </div>
     </article>
   </div>
-  <p class="none" hidden><span lang="id">Tidak ada fenomena yang cocok.</span><span lang="en">No phenomena match.</span></p>
+  <p class="none" hidden><span lang="id">Tidak ada fenomena yang cocok.</span></p>
 </main>
 
 <footer class="site-footer">
-  <a href="/"><span lang="id">← Kembali ke peta cuaca</span><span lang="en">← Back to the weather map</span></a>
+  <a href="/"><span lang="id">← Kembali ke peta cuaca</span></a>
   <span>© 2026 Klimatikal · Weather and Climate Intelligence · <a href="/privacy/">Privacy</a></span>
 </footer>
 </body>
