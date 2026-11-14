@@ -910,8 +910,12 @@ class App {
 
   paintCredit() {
     const sat = this.satOn && this.satManifest ? ` · ${escapeHTML(this.satManifest.attribution)}` : "";
+    // Radar credit comes from the radar manifest, so it appears only while the
+    // layer is on and the manifest names a source. The demo manifest has none.
+    const rm = this.radarManifest;
+    const radar = this.radarOn && rm && !rm.demo && rm.attribution ? ` · ${escapeHTML(rm.attribution)}` : "";
     document.getElementById("credit").innerHTML =
-      `© 2026 Klimatikal · ${escapeHTML(this.manifest.attribution)} · run ${escapeHTML(this.manifest.run)}${sat} · <a href="/privacy/">Privacy</a>`;
+      `© 2026 Klimatikal · ${escapeHTML(this.manifest.attribution)} · run ${escapeHTML(this.manifest.run)}${sat}${radar} · <a href="/privacy/">Privacy</a>`;
   }
 
   // Colour key for the active layer, built from the same RAMPS table the
@@ -1408,6 +1412,7 @@ class App {
     }
     this.writeURL();
     this.paintLegend();
+    this.paintCredit();
   }
 
   // --- satellite overlay (Himawari-9 infrared) ------------------------------
@@ -1574,6 +1579,7 @@ class App {
     } finally {
       this.radarLoading = false;
       this.paintLegend();
+      this.paintCredit();
     }
   }
 

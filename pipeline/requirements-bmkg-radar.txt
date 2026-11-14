@@ -1,0 +1,3 @@
+# Separate from the other pipelines on purpose (see requirements-himawari.txt).
+pillow>=10.0
+boto3>=1.34
