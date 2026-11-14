@@ -109,7 +109,8 @@ aside h2{font-size:16px;margin:0 0 4px;color:var(--kl-lime);font-weight:600}
 <div class="intro">
   <p class="eyebrow">Product · Forecast services</p>
   <h1>Which forecast fits your decision?</h1>
-  <p>34 weather and climate forecasting approaches, positioned by planning horizon and spatial extent. Select an impact variable to add the third axis, impact proximity.</p>
+  <p>Many activities and assets depend on the weather and climate, and decisions must be made to keep them running into the future. Many meteorological forecasts and services exist, but finding the one that fits a given need is not always easy. Use this guide to find a suitable forecast service and to develop your use case.</p>
+  <p>The guide positions 34 approaches by planning horizon and spatial extent. Select an impact variable to add a third axis, impact proximity.</p>
   <details class="how">
     <summary>How to read this guide</summary>
     <ul>
@@ -409,10 +410,10 @@ function draw(){
   // horizon axis: nearer of two floor edges
   var zE=(pr([0,fy,hz])[2]>=pr([0,fy,-hz])[2])?hz:-hz;
   if(slen([-hx,fy,zE],[hx,fy,zE])>40){
-  hT.forEach(function(t){var x=(nh(t[0])-0.5)*DIM.x,p=away(pr([x,fy,zE]),12);txt(t[1],p[0],p[1],P.mute,'center',10.5);});
+  hT.forEach(function(t){if(flat&&t[0]===1)return;var x=(nh(t[0])-0.5)*DIM.x,p=away(pr([x,fy,zE]),12);txt(t[1],p[0],p[1],P.mute,'center',10.5);});
   var tm=away(pr([0,fy,zE]),36);txt('Planning horizon (log)',tm[0],tm[1],P.fg,'center',11.5,true);}
   // scale axis
-  var xE=(pr([hx,fy,0])[2]>=pr([-hx,fy,0])[2])?hx:-hx;
+  var xE=(pr([hx,fy,0])[0]<=pr([-hx,fy,0])[0])?hx:-hx; // left-most floor edge on screen
   if(slen([xE,fy,-hz],[xE,fy,hz])>40){
   sT.forEach(function(t){var z=-(ns(t[0])-0.5)*DIM.z,p=away(pr([xE,fy,z]),12);txt(t[1],p[0],p[1],P.mute,'center',10.5);});
   var sm=away(pr([xE,fy,0]),42);txt('Spatial extent (log)',sm[0],sm[1],P.fg,'center',11.5,true);}
