@@ -104,7 +104,14 @@
   /* Coordinate grid: a canvas over the map, redrawn on every move so the
      spacing follows the zoom. It must never swallow a click or a hover. */
   .maplibregl-popup { z-index: 3; }   /* above the top-left brand panel, which is z-index 2 */
-  .maplibregl-popup-content { padding: 8px 10px; border-radius: 8px; }
+  /* Storm popup: same 70% transparent glass as the other panels. */
+  .maplibregl-popup-content { padding: 8px 10px; border-radius: 10px; color: #e9edf7;
+    background: rgba(12,18,34,.3); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.12);
+    box-shadow: none; text-shadow: 0 0 3px rgba(8,12,24,.9), 0 1px 2px rgba(8,12,24,.9); }
+  .maplibregl-popup-tip { display: none; }
+  .maplibregl-popup-close-button { color: #e9edf7; font-size: 18px; padding: 0 6px; }
+  .maplibregl-popup-close-button:hover { background: rgba(255,255,255,.12); }
+  .maplibregl-popup-content a { color: #bcc9e8; }
   #grid { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
     pointer-events: none; }
   /* Vertical colour key on the right edge, sitting just above the time panel
@@ -1150,7 +1157,7 @@ function stormIcon(color, solid, clockwise) {
   const arm = (phase) => {
     g.beginPath();
     for (let a = 0; a <= 4.6; a += 0.12) {
-      const r = 3 + a * 3.9, th = phase + (clockwise ? 1 : -1) * a;
+      const r = 3 + a * 3.9, th = phase + (clockwise ? -1 : 1) * a;   // arms trail the rotation: they curve out clockwise for an anticlockwise (northern) storm
       const x = c + r * Math.cos(th), y = c + r * Math.sin(th);
       a === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
     }
@@ -1872,7 +1879,7 @@ class App {
     // Tropical systems (JTWC invests and cyclones), icon only like the wind toggle.
     const storm = document.createElement("button");
     storm.className = "toggle";
-    storm.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="1.4"/><path d="M8 6.6C8 3.8 5.6 2.4 3 3.2c2.4.2 3.4 1.6 3.2 3.2"/><path d="M9.4 8c2.8 0 4.2 2.4 3.4 5-.2-2.4-1.6-3.4-3.2-3.2"/></svg>';
+    storm.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8.8 8.0 L9.1 8.3 L9.2 8.8 L9.1 9.4 L8.8 9.9 L8.2 10.4 L7.4 10.6 L6.5 10.6 L5.5 10.3 L4.7 9.6 L4.0 8.6 L3.7 7.3 L3.9 6.0 L4.4 4.6 L5.4 3.4 L6.8 2.5 M7.2 8.0 L6.9 7.7 L6.8 7.2 L6.9 6.6 L7.2 6.1 L7.8 5.6 L8.6 5.4 L9.5 5.4 L10.5 5.7 L11.3 6.4 L12.0 7.4 L12.3 8.7 L12.1 10.0 L11.6 11.4 L10.6 12.6 L9.2 13.5"/><circle cx="8" cy="8" r="1" fill="currentColor" stroke="none"/></svg>';
     storm.setAttribute("aria-label", "Tropical systems");
     storm.title = "Tropical cyclones and disturbances (Joint Typhoon Warning Center)";
     storm.setAttribute("aria-pressed", String(this.tropicalOn));
@@ -2455,7 +2462,7 @@ class App {
     if (!s) return;
     const when = (iso) => { const p = tzParts(new Date(iso), this.useUTC); return `${p.day} ${p.hm} ${p.label}`; };
     const kmh = (kt) => Math.round(kt * 1.852);
-    const row = (k, v) => `<div style="display:flex;justify-content:space-between;gap:14px"><span style="color:#5b6785">${k}</span><span>${v}</span></div>`;
+    const row = (k, v) => `<div style="display:flex;justify-content:space-between;gap:14px"><span style="color:#a9b5d0">${k}</span><span>${v}</span></div>`;
     const wind = s.wind_kt == null ? "—"
       : s.wind_kt === s.wind_kt_max ? `${s.wind_kt} kt (${kmh(s.wind_kt)} km/h)`
       : `${s.wind_kt}–${s.wind_kt_max} kt (${kmh(s.wind_kt)}–${kmh(s.wind_kt_max)} km/h)`;
@@ -2464,14 +2471,14 @@ class App {
     if (s.mslp) rows.push(row("Est. pressure", `${s.mslp} hPa`));
     if (s.move) rows.push(row("Moving", `${s.move.deg}° at ${s.move.kt} kt`));
     if (s.potential) rows.push(row("Chance of becoming a cyclone (24 h)", s.potential));
-    if (s.tcfa) rows.push(`<div style="color:#b3261e;margin-top:3px">Formation alert issued by JTWC</div>`);
+    if (s.tcfa) rows.push(`<div style="color:#ff9a8f;margin-top:3px">Formation alert issued by JTWC</div>`);
     const fc = (s.forecast || []).map((f) => `<tr><td>+${f.h} h</td><td>${when(f.t)}</td><td style="text-align:right">${f.kt} kt</td></tr>`).join("");
-    const html = `<div style="font:12px/1.35 ui-sans-serif,system-ui,sans-serif;color:#101a33;min-width:210px">` +
+    const html = `<div style="font:12px/1.35 ui-sans-serif,system-ui,sans-serif;color:#e9edf7;min-width:210px">` +
       `<div style="font-weight:600;font-size:13px">${escapeHTML(s.name)}</div>` +
-      `<div style="color:#5b6785;margin-bottom:4px">${escapeHTML(s.class)}${s.basin ? " · " + escapeHTML(s.basin) : ""}</div>` +
+      `<div style="color:#a9b5d0;margin-bottom:4px">${escapeHTML(s.class)}${s.basin ? " · " + escapeHTML(s.basin) : ""}</div>` +
       rows.join("") +
-      (fc ? `<table style="width:100%;margin-top:6px;border-collapse:collapse;font-size:11px"><caption style="text-align:left;color:#5b6785">JTWC forecast</caption>${fc}</table>` : "") +
-      `<div style="margin-top:5px;color:#5b6785">As of ${when(s.t)} · <a href="${s.url ? escapeHTML(s.url) : "https://www.metoc.navy.mil/jtwc/jtwc.html"}" target="_blank" rel="noopener">JTWC</a></div></div>`;
+      (fc ? `<table style="width:100%;margin-top:6px;border-collapse:collapse;font-size:11px"><caption style="text-align:left;color:#a9b5d0">JTWC forecast</caption>${fc}</table>` : "") +
+      `<div style="margin-top:5px;color:#a9b5d0">As of ${when(s.t)} · <a href="${s.url ? escapeHTML(s.url) : "https://www.metoc.navy.mil/jtwc/jtwc.html"}" target="_blank" rel="noopener">JTWC</a></div></div>`;
     if (this.tropicalPop) this.tropicalPop.remove();
     this.tropicalPop = new maplibregl.Popup({ maxWidth: "320px", closeButton: true })
       .setLngLat(e.features[0].geometry.coordinates).setHTML(html).addTo(this.map);
