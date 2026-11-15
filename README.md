@@ -80,6 +80,13 @@ An H / L is the biggest or smallest value within 4 degrees and at least 1.5 hPa
 off the surrounding ring; over high ground sea-level pressure is a reduction to
 a surface below the terrain, so centres there are not physical.
 
+The Day/Night button (time bar, next to Local / UTC; `#night=1`) shows where it is day and night, as
+lines only so no weather colour is tinted: a solid terminator with ticks on the
+dark side, dashed civil (6°) and nautical (12°) twilight lines, and a sun at the
+point where it is overhead. It is computed in the browser from the date of the
+time being shown (no pipeline data), follows the time slider, and adds
+"Day / Twilight / Night · sun elevation" to the hover box.
+
 A preset can also carry `hazard`: warning triangles where its field reaches a
 named level of the ramp's `marks` (Heat stress: Danger, 41 °C; purple triangle
 from Extreme danger, 54 °C). The browser bins the visible cells into blocks of
