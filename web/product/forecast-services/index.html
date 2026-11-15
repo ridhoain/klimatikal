@@ -180,7 +180,7 @@ abbr.gl{text-decoration:underline dotted;text-underline-offset:3px;cursor:help}
   <details class="how">
     <summary data-id="Cara membaca panduan ini">How to read this guide</summary>
     <ul>
-      <li data-id="<b>Posisi.</b> Tampilan bawaan dua dimensi: horizon perencanaan ke samping dan skala spasial ke atas: ukuran fitur yang diresolusi atau diprakirakan tiap pendekatan, dari detail halus hingga area terbesar yang dicakupnya, keduanya logaritmik, dengan item bernomor sepanjang diagonal dari skala kecil dan jangka pendek hingga skala besar dan jangka panjang. Strip rentang prakiraan bernama, dari nowcasting hingga proyeksi jangka panjang, membentang di sepanjang sumbu horizon perencanaan; arahkan kursor ke strip itu untuk melihat definisinya, dan pilih sebuah bola untuk melihat rentang yang dicakupnya. Sakelar 3D menambah kedekatan dampak sebagai sumbu ketiga yang menjauh ke dalam layar, tempat setiap bola juga direntangkan sesuai kedekatan dampak yang umumnya dicakup pendekatan itu. Memilih variabel dampak menyaring item yang memprakirakannya dan menyalakan 3D."><b>Position.</b> The default view is two-dimensional: planning horizon across and spatial scale upward: the size of features each approach resolves or forecasts, from fine detail up to the largest area it covers, both logarithmic, with items numbered along the diagonal from small and short-range to large and long-range. A strip of named forecast ranges, from nowcasting to long-term projections, runs along the planning-horizon axis; hover it for the definition, and select a sphere to see which ranges it covers. The 3D switch adds impact proximity as a third axis running into the screen, where each sphere is also stretched to the impact proximity that approach typically covers. Selecting an impact variable filters the items that forecast it and switches 3D on.</li>
+      <li data-id="<b>Posisi.</b> Tampilan bawaan dua dimensi: horizon perencanaan ke samping dan skala spasial ke atas: ukuran fitur yang diresolusi atau diprakirakan tiap pendekatan, dari detail halus hingga area terbesar yang dicakupnya, keduanya logaritmik, dengan item bernomor sepanjang diagonal dari skala kecil dan jangka pendek hingga skala besar dan jangka panjang. Strip rentang prakiraan bernama, dari nowcasting hingga proyeksi jangka panjang, membentang di sepanjang sumbu horizon perencanaan; arahkan kursor ke strip itu untuk melihat definisinya, dan pilih sebuah bola untuk melihat rentang yang dicakupnya. Strip kedua di tepi kanan menamai skala spasial, dari mikroskala hingga planeter, mengikuti klasifikasi skala Orlanski; arahkan kursor ke sana juga. Sakelar 3D menambah kedekatan dampak sebagai sumbu ketiga yang menjauh ke dalam layar, tempat setiap bola juga direntangkan sesuai kedekatan dampak yang umumnya dicakup pendekatan itu. Memilih variabel dampak menyaring item yang memprakirakannya dan menyalakan 3D."><b>Position.</b> The default view is two-dimensional: planning horizon across and spatial scale upward: the size of features each approach resolves or forecasts, from fine detail up to the largest area it covers, both logarithmic, with items numbered along the diagonal from small and short-range to large and long-range. A strip of named forecast ranges, from nowcasting to long-term projections, runs along the planning-horizon axis; hover it for the definition, and select a sphere to see which ranges it covers. A second strip along the right edge names the spatial scales, from microscale to planetary, following Orlanski's scale classification; hover it too. The 3D switch adds impact proximity as a third axis running into the screen, where each sphere is also stretched to the impact proximity that approach typically covers. Selecting an impact variable filters the items that forecast it and switches 3D on.</li>
       <li data-id="<b>Area keputusan.</b> Pilih area keputusan untuk menampilkan hanya pendekatan yang umumnya dipertimbangkan untuk area itu, diurutkan menurut horizon perencanaan. Pemilihannya adalah penilaian Klimatikal."><b>Decision area.</b> Choose a decision area to show only the approaches usually considered for it, listed by planning horizon. The selection is Klimatikal's assessment.</li>
       <li data-id="<b>Simbol.</b> Setiap item memiliki simbol cuaca, diwarnai menurut kelompok variabel utama yang diprakirakannya. Warna bola tetap menunjukkan kematangan atau bukti skill. Nomor ditampilkan pada daftar dan saat kursor diarahkan."><b>Symbols.</b> Each item has a weather symbol, coloured by the main variable group it forecasts. Sphere colour still shows maturity or skill evidence. Numbers are shown in the list and on hover.</li>
       <li data-id="<b>Variabel, contoh penggunaan, dan produk.</b> Setiap entri mencantumkan variabel yang dapat diprakirakan pendekatan tersebut, contoh penggunaan oleh institusi atau perusahaan lain, dan produk yang tersedia bila ada. Contoh dijelaskan sebagaimana dilaporkan sumbernya; contoh vendor dan riset diberi label."><b>Variables, use cases and products.</b> Each entry lists the variables the approach can forecast, examples of use by other institutions or companies, and existing products where one is available. Examples are described as the sources report them; vendor and research examples are labelled as such.</li>
@@ -548,6 +548,24 @@ var ID={
 "Long-term projections": "Proyeksi jangka panjang",
 "LT": "PJP",
 "Beyond about 10 years: scenario-based climate projections, out to 2100.": "Lebih dari sekitar 10 tahun: proyeksi iklim berbasis skenario, hingga 2100.",
+"Microscale": "Mikroskala",
+"Micro": "Mikro",
+"Below about 2 km: turbulence, street canyons, single clouds, tornadoes and small plumes.": "Di bawah sekitar 2 km: turbulensi, ngarai jalan, awan tunggal, tornado, dan plum kecil.",
+"Meso-γ": "Meso-γ",
+"γ": "γ",
+"2 to 20 km: individual thunderstorm cells and local slope and valley winds.": "2 hingga 20 km: sel badai petir individual serta angin lereng dan lembah lokal.",
+"Meso-β": "Meso-β",
+"β": "β",
+"20 to 200 km: squall lines, sea breezes, mountain waves and rain bands.": "20 hingga 200 km: garis badai, angin laut, gelombang pegunungan, dan pita hujan.",
+"Meso-α": "Meso-α",
+"α": "α",
+"200 to 2,000 km: mesoscale convective complexes, tropical cyclones and monsoon vortices.": "200 hingga 2.000 km: kompleks konvektif skala meso, siklon tropis, dan vorteks monsun.",
+"Synoptic": "Sinoptik",
+"Syn": "Sin",
+"2,000 to 10,000 km: the highs, lows and fronts of a weather map, and equatorial waves.": "2.000 hingga 10.000 km: tekanan tinggi, tekanan rendah, dan front pada peta cuaca, serta gelombang ekuator.",
+"Planetary": "Planeter",
+"Pl": "Pl",
+"Above about 10,000 km: the global circulation, jet-stream waves, and ENSO and MJO patterns.": "Di atas sekitar 10.000 km: sirkulasi global, gelombang arus jet, serta pola ENSO dan MJO.",
 "Pluvial flooding (surface water during heavy rain)": "Banjir pluvial (genangan permukaan saat hujan lebat)",
 "Vendor material: meteoblue states that its Urban Maps are live data for the past 3 days and the forecast up to 7 days ahead, and that more than 100 cities worldwide rely on it for continuous urban climate monitoring.": "Materi vendor: meteoblue menyatakan bahwa Urban Maps-nya berupa data langsung untuk 3 hari terakhir dan prakiraan hingga 7 hari ke depan, dan bahwa lebih dari 100 kota di seluruh dunia mengandalkannya untuk pemantauan iklim perkotaan berkelanjutan.",
 "The EU Horizon 2020 project ANYWHERE (grant agreement 700099) built multi-hazard early warning platforms and impact forecasting for civil protection across Europe, with pilot sites in several regions; meteoblue is listed as a project partner.": "Proyek Horizon 2020 Uni Eropa ANYWHERE (perjanjian hibah 700099) membangun platform peringatan dini multi-bahaya dan prakiraan berbasis dampak untuk perlindungan sipil di Eropa, dengan lokasi percontohan di beberapa wilayah; meteoblue tercantum sebagai mitra proyek.",
@@ -1393,9 +1411,15 @@ var BANDS=[{h:[0.5,2],n:`Nowcasting`,s:`Now`,d:`Very short-term predictions, 0 t
 {h:[730,8760],n:`Seasonal and sub-seasonal`,s:`S/S`,d:`About 1 to 12 months, most products 1 to 6: whether the coming season will be warmer, colder, wetter or drier than average, for example under El Niño or La Niña.`},
 {h:[8760,87600],n:`Decadal`,s:`Dec`,d:`1 to 10 years: multi-year climate variability, used for infrastructure, energy planning and resource management.`},
 {h:[87600,1000000],n:`Long-term projections`,s:`LT`,d:`Beyond about 10 years: scenario-based climate projections, out to 2100.`}];
+var SBANDS=[{s:[0.01,2],n:`Microscale`,sh:`Micro`,d:`Below about 2 km: turbulence, street canyons, single clouds, tornadoes and small plumes.`},
+{s:[2,20],n:`Meso-γ`,sh:`γ`,d:`2 to 20 km: individual thunderstorm cells and local slope and valley winds.`},
+{s:[20,200],n:`Meso-β`,sh:`β`,d:`20 to 200 km: squall lines, sea breezes, mountain waves and rain bands.`},
+{s:[200,2000],n:`Meso-α`,sh:`α`,d:`200 to 2,000 km: mesoscale convective complexes, tropical cyclones and monsoon vortices.`},
+{s:[2000,10000],n:`Synoptic`,sh:`Syn`,d:`2,000 to 10,000 km: the highs, lows and fronts of a weather map, and equatorial waves.`},
+{s:[10000,100000],n:`Planetary`,sh:`Pl`,d:`Above about 10,000 km: the global circulation, jet-stream waves, and ENSO and MJO patterns.`}];
 var bandBoxes=[];
 /* plot margins in the 2D view: the axes sit on the panel border */
-function mg(){return W<600?[58,10,10,70]:[76,16,30,76];}
+function mg(){return W<600?[58,34,10,70]:[76,40,30,76];}
 /* ---------- drawing ---------- */
 function draw(){
   var P=pal();
@@ -1473,6 +1497,22 @@ function draw(){
       bandBoxes.push({b:b,x0:v0,x1:v1,y0:yS,y1:yS+17});
     });
     if(ch){var a0=pr([(nh(ch[0])-0.5)*DIM.x,fy,0])[0], a1=pr([(nh(ch[1])-0.5)*DIM.x,fy,0])[0];ctx.fillStyle=P.fg;ctx.fillRect(a0,yS+14,Math.max(2,a1-a0),3);}
+    ctx.restore();
+    // named spatial scales (after Orlanski) along the right edge of the plot
+    var xs=Math.min(er+3,W-19), sh0=Math.max(0,et), sh1=Math.min(H,eb), sit=cur?ITEMS[cur-1].s:null;
+    ctx.save();ctx.beginPath();ctx.rect(xs,sh0,17,Math.max(0,sh1-sh0));ctx.clip();
+    SBANDS.forEach(function(b,i){
+      var yt=pr([0,fy,-(ns(b.s[1])-0.5)*DIM.z])[1], yb=pr([0,fy,-(ns(b.s[0])-0.5)*DIM.z])[1];
+      var on=sit&&b.s[0]<sit[1]&&b.s[1]>sit[0];
+      ctx.fillStyle=on?'rgba(15,118,110,0.30)':(i%2?'rgba(43,108,176,0.07)':'rgba(43,108,176,0.15)');ctx.fillRect(xs,yt,17,yb-yt);
+      ctx.strokeStyle='rgba(13,6,48,0.18)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(xs,yb);ctx.lineTo(xs+17,yb);ctx.stroke();
+      var v0=Math.max(yt,sh0), v1=Math.min(yb,sh1), h=v1-v0; if(h<=0)return;
+      ctx.font='10px system-ui,sans-serif';
+      var full=tr(b.n), shn=tr(b.sh), lab=ctx.measureText(full).width+8<=h?full:(ctx.measureText(shn).width+6<=h?shn:'');
+      if(lab){ctx.save();ctx.translate(xs+9,(v0+v1)/2);ctx.rotate(-Math.PI/2);txt(lab,0,0,P.mute,'center',10);ctx.restore();}
+      bandBoxes.push({b:{n:b.n,d:b.d},x0:xs,x1:xs+17,y0:v0,y1:v1});
+    });
+    if(sit){var b0=pr([0,fy,-(ns(sit[1])-0.5)*DIM.z])[1], b1=pr([0,fy,-(ns(sit[0])-0.5)*DIM.z])[1];ctx.fillStyle=P.fg;ctx.fillRect(xs,b0,3,Math.max(2,b1-b0));}
     ctx.restore();
     hs.forEach(function(t){txt(hLab(t.c),t.p,ly,P.mute,'center',10.5);});
     ss.forEach(function(t){txt(sLab(t.c),lx,t.p,P.mute,'right',10.5);});
@@ -1591,7 +1631,7 @@ cv.addEventListener('pointermove',function(e){
   var p=ptrs.get(e.pointerId);
   if(!p){ // hover
     var bb=bandBoxes.filter(function(q){return lx>=q.x0&&lx<=q.x1&&ly>=q.y0&&ly<=q.y1;})[0];
-    if(bb){tip.textContent=tr(bb.b.n)+': '+tr(bb.b.d);tip.style.display='block';tip.style.left=Math.max(4,Math.min(lx+12,W-250))+'px';tip.style.top=Math.max(4,ly-70)+'px';if(S.hov!==null){S.hov=null;request();}return;}
+    if(bb){tip.textContent=tr(bb.b.n)+': '+tr(bb.b.d);tip.style.display='block';tip.style.left=Math.max(4,Math.min(lx-(lx>W-60?250:-12),W-250))+'px';tip.style.top=Math.max(4,ly-(ly>H-120?70:-14))+'px';if(S.hov!==null){S.hov=null;request();}return;}
     var id=pick(lx,ly);
     if(id!==S.hov){S.hov=id;request();}
     if(id!==null){var it=byId(id);tip.textContent=it.gap?tr(it.tip):it.id+'. '+tr(it.name);tip.style.display='block';tip.style.left=Math.max(4,Math.min(lx+12,W-250))+'px';tip.style.top=(ly+14)+'px';}
