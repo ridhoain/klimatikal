@@ -236,3 +236,16 @@ if __name__ == "__main__":
     print()
     report()
     raise SystemExit(1 if failures else 0)
+
+
+def test_msl_is_smoothed_over_high_ground_only():
+    rng = np.random.default_rng(1)
+    sp = np.full((NLAT, NLON), 1000.0)
+    sp[200:300, 600:700] = 600.0                       # a plateau
+    msl = 1013.0 + rng.normal(0.0, 4.0, size=(NLAT, NLON))   # noisy everywhere
+    weight = encoding.terrain_weight(sp)
+    out = encoding.smooth_over_terrain(msl, weight)
+    assert np.array_equal(out[400:500, 100:200], msl[400:500, 100:200])   # lowland untouched
+    assert out[230:270, 630:670].std() < 0.1 * msl[230:270, 630:670].std()  # plateau smoothed
+    assert abs(out[230:270, 630:670].mean() - 1013.0) < 1.0                 # same level, no bias
+    assert np.array_equal(encoding.smooth_over_terrain(msl, np.zeros_like(weight)), msl)

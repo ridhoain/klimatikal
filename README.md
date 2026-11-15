@@ -64,7 +64,7 @@ is in the URL as `#preset=<id>`.
 | id | question | stack |
 |---|---|---|
 | `heat` | Is it dangerous to work outdoors? | NWS heat index, cloud haze (less sun), wind |
-| `synoptic` | What is the big-picture pattern? | low (tan) / mid (green) / high (white) cloud, sea-level pressure isobars (blue low, red high) with values on the lines and H / L at the centres, 850 hPa wind |
+| `synoptic` | What is the big-picture pattern? | low / mid / high cloud as stacked black veils on a white map (darker where levels overlap), sea-level pressure isobars (blue low, red high) with values on the lines and H / L at the centres, 850 hPa wind |
 
 Two pipeline consequences. `heatindex` is derived in `encoding.py` from the 2 m
 temperature and dewpoint (`2d`), so the map and the hover value read the same
@@ -86,6 +86,18 @@ dark side, dashed civil (6°) and nautical (12°) twilight lines, and a sun at t
 point where it is overhead. It is computed in the browser from the date of the
 time being shown (no pipeline data), follows the time slider, and adds
 "Day / Twilight / Night · sun elevation" to the hover box.
+
+Mean sea level pressure over high ground (Tibet, the Andes, Greenland,
+Antarctica) is the surface pressure reduced through kilometres of rock, which
+turns terrain roughness into pressure noise. The pipeline therefore blends `msl`
+into a heavily smoothed copy (2.5 degrees) where the surface pressure is below
+930 hPa, fully below 830 hPa, using `sp` of the first step so it does not
+flicker (`smooth_over_terrain` in `encoding.py`, revision 7). Lowlands are
+untouched. The browser also blurs the isobar field by 3 grid cells (`ISO_BLUR`).
+
+A preset with `lightBase` (Synoptic overview) switches the map to white: black coast with a soft shadow, dark place names with white outlines, dark wind streaks, and darker isobar colours so they read on white. Other presets keep the dark map.
+
+Presets are listed in the order given by their `order` (Synoptic overview first).
 
 A preset can also carry `hazard`: warning triangles where its field reaches a
 named level of the ramp's `marks` (Heat stress: Danger, 41 °C; purple triangle

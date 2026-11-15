@@ -325,21 +325,23 @@ Object.assign(RAMPS, {
       [24, [255, 255, 255, 235]], [27, [250, 232, 96, 190]],
       [32, [246, 162, 52, 230]], [41, [224, 62, 50, 245]], [54, [150, 26, 150, 255]],
       [56, [110, 14, 120, 255]]] },
-  // Cloud by level, one tint each so a stack of them reads as layers: low is
-  // warm, middle is green, high is white. Alpha stays 0 until 15% cover so clear
-  // sky stays clear.
-  lowcloud:  { source: "lcc", display: [0, 100], unitLabel: "%", opacity: 0.9,
-    stops: [[0, [236, 190, 130, 0]], [15, [236, 190, 130, 0]], [100, [236, 190, 130, 215]]] },
-  midcloud:  { source: "mcc", display: [0, 100], unitLabel: "%", opacity: 0.6,
-    stops: [[0, [150, 215, 165, 0]], [15, [150, 215, 165, 0]], [100, [150, 215, 165, 215]]] },
-  highcloud: { source: "hcc", display: [0, 100], unitLabel: "%", opacity: 0.5,
-    stops: [[0, [255, 255, 255, 0]], [15, [255, 255, 255, 0]], [100, [255, 255, 255, 215]]] },
+  // Cloud by level, all black on the white map: each level is a black veil whose
+  // strength follows its cover, and the veils stack, so where low, middle and
+  // high cloud overlap the map is darkest. Thin cloud already starts at a mid
+  // grey (not near-white), and clear sky, below 10 to 20% cover, stays white.
+  lowcloud:  { source: "lcc", display: [0, 100], unitLabel: "%", opacity: 0.32,
+    stops: [[0, [8, 10, 16, 0]], [10, [8, 10, 16, 0]], [20, [8, 10, 16, 190]], [100, [8, 10, 16, 255]]] },
+  midcloud:  { source: "mcc", display: [0, 100], unitLabel: "%", opacity: 0.32,
+    stops: [[0, [8, 10, 16, 0]], [10, [8, 10, 16, 0]], [20, [8, 10, 16, 190]], [100, [8, 10, 16, 255]]] },
+  highcloud: { source: "hcc", display: [0, 100], unitLabel: "%", opacity: 0.32,
+    stops: [[0, [8, 10, 16, 0]], [10, [8, 10, 16, 0]], [20, [8, 10, 16, 190]], [100, [8, 10, 16, 255]]] },
   // Colours of the sea-level pressure isobars (lines only, never filled):
   // blue low, red high. 995 to 1030 hPa spans deep lows to strong highs; values
   // outside keep the end colours.
   mslline: { display: [995, 1030], unitLabel: "hPa", opacity: 1, ticks: [1000, 1010, 1020, 1030],
-    stops: [[995, [50, 100, 255, 255]], [1004, [70, 190, 255, 255]], [1012, [255, 226, 120, 255]],
-            [1021, [255, 140, 60, 255]], [1030, [235, 50, 50, 255]]] },
+    // Saturated and dark enough to read on the white map (pale cyan and yellow vanish there).
+    stops: [[995, [24, 62, 220, 255]], [1004, [0, 138, 186, 255]], [1012, [186, 126, 0, 255]],
+            [1021, [224, 82, 22, 255]], [1030, [196, 24, 42, 255]]] },
   cloudveil: { source: "cloud", display: [0, 100], unitLabel: "%", opacity: 1,
     stops: [[0, [255, 255, 255, 0]], [25, [235, 240, 250, 0]], [60, [240, 245, 255, 70]],
             [100, [255, 255, 255, 150]]] },
@@ -362,6 +364,7 @@ Object.assign(RAMPS, {
 // ---------------------------------------------------------------------------
 const PRESETS = {
   heat: {
+    order: 1,
     label: "Heat stress",
     goal: "Is it dangerous to work outdoors?",
     main: "heatindex",
@@ -382,10 +385,12 @@ const PRESETS = {
     ],
   },
   synoptic: {
+    order: 0,                 // leftmost in the layer bar
     label: "Synoptic overview",
     goal: "What is the big-picture pattern?",
     main: "msl",
     keyRamp: "mslline",   // the legend is the isobar colours, not the pressure fill's
+    lightBase: true,      // white map with black clouds, black coast; see paintBoundaryStyle
     stack: [
       { kind: "fill", ramp: "lowcloud" },
       { kind: "fill", ramp: "midcloud" },
@@ -395,14 +400,14 @@ const PRESETS = {
       // the line every `labelEvery` hPa, and H / L mark the centres: the biggest or
       // smallest value within 4 degrees and 1.5 hPa clear of the ring around it.
       { kind: "contour", layer: "msl", ramp: "mslline", heavy: 10,
-        intervalByZoom: [[0, 5], [2.5, 2], [3.5, 1]], alpha: 0.8, majorAlpha: 1, width: 0.4, majorWidth: 0.75,
+        intervalByZoom: [[0, 5], [2.5, 2], [3.5, 1]], alpha: 0.9, majorAlpha: 1, width: 0.4, majorWidth: 0.75, casing: [1, 1, 1],
         labelEvery: 4, extrema: { radius: 16, depth: 1.5 } },
       { kind: "particles", layer: "wind850", opacity: 0.6 },
     ],
-    keys: [{ title: "Cloud level", rows: [
-      { swatch: [236, 190, 130], text: "Low" },
-      { swatch: [150, 215, 165], text: "Middle" },
-      { swatch: [255, 255, 255], text: "High" },
+    keys: [{ title: "Cloud density", rows: [
+      { swatch: [195, 197, 200], text: "Sparse" },
+      { swatch: [140, 142, 148], text: "Moderate" },
+      { swatch: [85, 87, 94], text: "Dense" },
     ] }],
     explain: [
       "Lines: sea-level pressure every {interval} hPa, bold every 10. Blue is low, red is high.",
@@ -626,6 +631,9 @@ const FIELD_FS = `
 // an extension under WebGL1 and is refused in ESSL 1.00 shaders under WebGL2.
 // A line is drawn where the value is within half a line width of a multiple of
 // u_interval; every u_major-th multiple gets the heavier width and colour.
+// How far, in grid cells, the isobar field is blurred (see valueAt in the shader
+// and valueGrid, which must agree so labels stay on their lines).
+const ISO_BLUR = 3;
 const CONTOUR_FS = `
   precision highp float;
   ${GLSL_DECODE}
@@ -633,6 +641,7 @@ const CONTOUR_FS = `
   uniform sampler2D u_now, u_next, u_ramp;
   uniform float u_blend, u_interval, u_major, u_width, u_majorWidth, u_px, u_base;
   uniform float u_dlo, u_dhi, u_alpha, u_majorAlpha;
+  uniform vec3 u_casing;
   varying vec2 v_merc;
   // The value minus u_base (a multiple of the heavy-line spacing, so the lines
   // do not move). float32 near 1010 hPa resolves only ~1e-4 hPa, about what
@@ -645,15 +654,16 @@ const CONTOUR_FS = `
   float valueOne(vec2 uv) {
     return mix(relValue(sampleSmooth(u_now, uv)), relValue(sampleSmooth(u_next, uv)), u_blend);
   }
-  // Averaged over a texel around the point (the same blur the label tracing
-  // applies to its grid), so the lines are smooth curves instead of
-  // following the small grid-scale wobbles of the data.
+  // Averaged with four points ${ISO_BLUR} cells away (the same blur the label
+  // tracing applies to its grid), so the lines are smooth curves and not the
+  // grid-scale wobbles of the data. Sea-level pressure over high ground is the
+  // worst case: the reduction multiplies every bit of terrain roughness.
   float valueAt(vec2 m) {
     vec2 uv = dataUV(m.x, m.y);
-    vec2 d = 1.0 / u_texSize;
-    return 0.4 * valueOne(uv)
-         + 0.15 * (valueOne(uv + vec2(d.x, 0.0)) + valueOne(uv - vec2(d.x, 0.0))
-                 + valueOne(uv + vec2(0.0, d.y)) + valueOne(uv - vec2(0.0, d.y)));
+    vec2 d = ${ISO_BLUR}.0 / u_texSize;
+    return 0.2 * (valueOne(uv)
+         + valueOne(uv + vec2(d.x, 0.0)) + valueOne(uv - vec2(d.x, 0.0))
+         + valueOne(uv + vec2(0.0, d.y)) + valueOne(uv - vec2(0.0, d.y)));
   }
   float lineAt(float v, float step, float width, float perPx) {
     float d = abs(fract(v / step + 0.5) - 0.5) * step / max(perPx, 1e-5);  // pixels to the nearest line
@@ -668,9 +678,15 @@ const CONTOUR_FS = `
     float major = lineAt(v, u_interval * u_major, u_majorWidth, perPx);
     // Colour by the line's own value: back to absolute, through the ramp.
     float t = clamp((v + u_base - u_dlo) / (u_dhi - u_dlo), 0.0, 1.0);
-    float a = max(minor * u_alpha, major * u_majorAlpha);
+    float core = max(minor * u_alpha, major * u_majorAlpha);
+    // A dark edge one pixel either side of the line, so a coloured line reads
+    // over white cloud and over black sea alike (the colours alone blend into
+    // both). Alpha-compositing the line over its own casing.
+    float casing = max(lineAt(v, u_interval, u_width + 2.0, perPx), lineAt(v, u_interval * u_major, u_majorWidth + 2.0, perPx)) * 0.6;
+    float a = core + casing * (1.0 - core);
     if (a < 0.01) discard;
-    gl_FragColor = vec4(texture2D(u_ramp, vec2(t, 0.5)).rgb, a);
+    vec3 line = texture2D(u_ramp, vec2(t, 0.5)).rgb;
+    gl_FragColor = vec4((line * core + u_casing * casing * (1.0 - core)) / a, a);
   }`;
 
 // ---------------------------------------------------------------------------
@@ -767,7 +783,8 @@ const DRAW_FS = `
   precision highp float;
   varying float v_end;
   uniform float u_opacity;
-  void main() { gl_FragColor = vec4(1.0, 1.0, 1.0, u_opacity * mix(0.05, 0.75, v_end)); }`;
+  uniform vec3 u_color;
+  void main() { gl_FragColor = vec4(u_color, u_opacity * mix(0.05, 0.75, v_end)); }`;
 
 class WeatherLayer {
   constructor(app) {
@@ -904,6 +921,7 @@ class WeatherLayer {
         gl.uniform1f(f.loc.u_width, item.width);
         gl.uniform1f(f.loc.u_majorWidth, item.majorWidth);
         gl.uniform1f(f.loc.u_base, Math.round(spec.min / item.heavy) * item.heavy);
+        gl.uniform3fv(f.loc.u_casing, item.casing || [0.03, 0.05, 0.10]);
         gl.uniform1f(f.loc.u_px, 1 / (512 * Math.pow(2, this.map.getZoom())));
         const ramp = RAMPS[item.ramp];
         gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, this.ramp(item.ramp));
@@ -992,6 +1010,7 @@ class WeatherLayer {
     gl.uniformMatrix4fv(d.loc.u_matrix, false, matrix);
     gl.uniform1f(d.loc.u_side, this.side);
     gl.uniform1f(d.loc.u_opacity, pItem.opacity != null ? pItem.opacity : 1.0);
+    gl.uniform3fv(d.loc.u_color, this.app.lightBase() ? [0.04, 0.05, 0.09] : [1, 1, 1]);   // dark streaks on a white map
     gl.uniform1f(d.loc.u_trail, WIND_TRAIL_STEPS);
     // Well above the fastest legitimate step (a 50 m/s wind is 5x the
     // reference), far below a respawn or a wrap, which are 0.3 or more.
@@ -1218,13 +1237,13 @@ class App {
       out[n] = Math.pow(unit, g) * span + spec.min;
     }
     let grid = out;
-    if (wide) {                                   // same smoothing as the contour shader: centre 0.4, four neighbours 0.15
-      const w = cv.width, h = cv.height;
+    if (wide) {                                   // same smoothing as the contour shader: the cell and four around it, ISO_BLUR away
+      const w = cv.width, h = cv.height, R = ISO_BLUR;
       grid = new Float32Array(out.length);
       for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-        const n = y * w + x;
-        grid[n] = 0.4 * out[n] + 0.15 * (out[n - (x > 0 ? 1 : 0)] + out[n + (x < w - 1 ? 1 : 0)]
-          + out[n - (y > 0 ? w : 0)] + out[n + (y < h - 1 ? w : 0)]);
+        grid[y * w + x] = 0.2 * (out[y * w + x]
+          + out[y * w + Math.max(0, x - R)] + out[y * w + Math.min(w - 1, x + R)]
+          + out[Math.max(0, y - R) * w + x] + out[Math.min(h - 1, y + R) * w + x]);
       }
     }
     this.gridCache.set(key, grid);
@@ -1612,7 +1631,7 @@ class App {
 
   buildChrome() {
     const box = document.getElementById("layers");
-    const available = Object.keys(PRESETS).filter((id) => this.presetAvailable(id));
+    const available = Object.keys(PRESETS).filter((id) => this.presetAvailable(id)).sort((a, b) => PRESETS[a].order - PRESETS[b].order);
     for (const id of available) {
       const b = document.createElement("button");
       b.className = "preset";
@@ -1906,15 +1925,16 @@ class App {
 
     // Kept quiet on purpose: the grid is a reference, and the weather and the
     // coastline are what the eye should land on.
-    const GRID_LINE = "rgba(255,255,255,0.11)";
+    const lb = this.lightBase();
+    const GRID_LINE = lb ? "rgba(0,0,0,0.13)" : "rgba(255,255,255,0.11)";
     ctx.lineWidth = 1;
     ctx.strokeStyle = GRID_LINE;
     ctx.font = "11px ui-sans-serif, system-ui, sans-serif";
     ctx.textBaseline = "middle";
     const halo = (text, x, y, align) => {
       ctx.textAlign = align;
-      ctx.lineWidth = 3; ctx.strokeStyle = "rgba(8,12,24,0.7)"; ctx.strokeText(text, x, y);
-      ctx.fillStyle = "rgba(225,232,248,0.72)"; ctx.fillText(text, x, y);
+      ctx.lineWidth = 3; ctx.strokeStyle = lb ? "rgba(255,255,255,0.85)" : "rgba(8,12,24,0.7)"; ctx.strokeText(text, x, y);
+      ctx.fillStyle = lb ? "rgba(25,32,50,0.8)" : "rgba(225,232,248,0.72)"; ctx.fillText(text, x, y);
       ctx.lineWidth = 1; ctx.strokeStyle = GRID_LINE;
     };
 
@@ -2219,18 +2239,46 @@ class App {
   // Coastline and border colours follow the field underneath: white lines
   // vanish on the pale fields (cloud is white, pressure is near-white around
   // 1013 hPa), so those get dark lines with a light casing instead.
+  // A preset with `lightBase` draws on a white map: black coast with a soft
+  // shadow, dark place names with white outlines, dark wind streaks (the
+  // clouds are greys). Everything else is the dark map.
+  lightBase() {
+    const p = this.preset && PRESETS[this.preset];
+    return !!(p && p.lightBase);
+  }
+
   paintBoundaryStyle() {
     const m = this.map;
     if (!m) return;
-    const light = LIGHT_FIELDS.has(this.layer) && this.preset !== "synoptic";   // synoptic: white coast, over the clouds
+    const lb = this.lightBase();
+    const light = lb || LIGHT_FIELDS.has(this.layer);
     const dark = "rgba(0,0,0,", pale = "rgba(255,255,255,";
     const set = (id, color) => { if (m.getLayer(id)) m.setPaintProperty(id, "line-color", color); };
-    set("coast", light ? dark + "0.92)" : pale + "0.92)");
-    set("coast-casing", light ? pale + "0.6)" : dark + "0.5)");
+    set("coast", light ? dark + "0.95)" : pale + "0.92)");
+    set("coast-casing", lb ? dark + "0.28)" : light ? pale + "0.6)" : dark + "0.5)");
     set("admin0", light ? dark + "0.7)" : pale + "0.7)");
     set("admin0-casing", light ? pale + "0.45)" : dark + "0.45)");
     set("admin1", light ? dark + "0.5)" : pale + "0.35)");
     set("admin1-casing", light ? pale + "0.35)" : dark + "0.35)");
+    // The coast's "shading": on a white map its casing becomes a wide, soft, translucent shadow.
+    if (m.getLayer("coast-casing")) {
+      this.coastCasingWidth = this.coastCasingWidth || m.getPaintProperty("coast-casing", "line-width");
+      m.setPaintProperty("coast-casing", "line-width", lb ? ["interpolate", ["linear"], ["zoom"], 2, 4, 6, 7] : this.coastCasingWidth);
+      m.setPaintProperty("coast-casing", "line-blur", lb ? 3 : 0);
+    }
+    if (m.getLayer("bg")) m.setPaintProperty("bg", "background-color", lb ? "#ffffff" : "#0b1020");
+    const text = (ids, color, halo) => ids.forEach((id) => {
+      if (!m.getLayer(id)) return;
+      m.setPaintProperty(id, "text-color", color);
+      m.setPaintProperty(id, "text-halo-color", halo);
+    });
+    const ids = (re) => (this.labelLayerIds || []).filter((id) => re.test(id));
+    text(ids(/^label-(water|ocean)/), lb ? "rgba(35,70,125,0.95)" : "rgba(170,205,255,0.95)", lb ? "rgba(255,255,255,0.95)" : "rgba(8,14,34,0.9)");
+    text(ids(/^label-city/), lb ? "#10131c" : "#fff", lb ? "rgba(255,255,255,0.95)" : "rgba(8,12,24,0.9)");
+    text(ids(/^label-countries/), lb ? "rgba(40,46,62,0.9)" : "rgba(235,240,252,0.85)", lb ? "rgba(255,255,255,0.9)" : "rgba(8,12,24,0.85)");
+    for (const id of ["contour-labels", "contour-extrema"])      // pressure numbers and H / L: white outline on the white map
+      if (m.getLayer(id)) m.setPaintProperty(id, "text-halo-color", lb ? "rgba(255,255,255,0.95)" : id === "contour-labels" ? "rgba(8,12,24,0.9)" : "rgba(8,12,24,0.92)");
+    this.drawGrid();
   }
 
   // Text labels: oceans/seas/lakes, countries and cities. They are symbol
@@ -2326,6 +2374,7 @@ class App {
                  "text-opacity": ["interpolate", ["linear"], ["zoom"], minzoom, 0, minzoom + 0.8, 1, 6, 1, 7, 0] },
       });
     }
+    this.paintBoundaryStyle();               // the labels were just created: give them the current theme
   }
 
   showLabels(visible) {

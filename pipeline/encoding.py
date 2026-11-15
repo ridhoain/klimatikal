@@ -37,7 +37,8 @@ FORMAT_VERSION = 1
 #      tropics have only a dozen distinct pressure levels over 20 x 30 degrees,
 #      so a 2 hPa isobar comes out as thick wandering bands, not a line
 #   6  added 850 hPa wind and low/mid/high cloud cover for the synoptic preset
-REVISION = 6
+#   7  msl is smoothed over high ground (see smooth_over_terrain)
+REVISION = 7
 
 # Grid of the ECMWF open data 0.25 degree product.
 NLAT, NLON = 721, 1440
@@ -227,6 +228,47 @@ def _denormalise(unit: np.ndarray, lo: float, hi: float, gamma: float | None) ->
     if gamma is not None:
         unit = unit**gamma
     return unit * (hi - lo) + lo
+
+
+# Mean sea level pressure is the surface pressure reduced to sea level. Over
+# high ground (Tibet, the Andes, Greenland, Antarctica) that reduction runs
+# through kilometres of rock, so every bump of the terrain and every small error
+# in the surface temperature is multiplied into pressure differences of many
+# hPa, and the isobars come out as noise that follows the mountains. Where the
+# ground is high, msl is replaced by a heavily smoothed copy: fully from
+# TERRAIN_SP_FULL hPa of surface pressure (about 1700 m) and not at all from
+# TERRAIN_SP_NONE (about 700 m), with a smooth blend between, so there is no
+# seam. Lowlands are untouched.
+TERRAIN_SP_NONE = 930.0
+TERRAIN_SP_FULL = 830.0
+TERRAIN_SIGMA_CELLS = 10.0      # 2.5 degrees at 0.25 degree resolution
+
+
+def _gaussian_blur(a: np.ndarray, sigma: float) -> np.ndarray:
+    """Gaussian blur of an (NLAT, NLON) global grid: periodic in longitude,
+    mirrored at the poles. FFT-based, no SciPy needed."""
+    pad = int(4 * sigma)
+    tall = np.concatenate([a[pad:0:-1], a, a[-2:-pad - 2:-1]], axis=0)
+    for axis in (0, 1):
+        n = tall.shape[axis]
+        response = np.exp(-2.0 * (np.pi * sigma * np.fft.rfftfreq(n)) ** 2)
+        shape = [1, 1]
+        shape[axis] = -1
+        tall = np.fft.irfft(np.fft.rfft(tall, axis=axis) * response.reshape(shape), n=n, axis=axis)
+    return tall[pad:-pad]
+
+
+def terrain_weight(sp_hpa: np.ndarray) -> np.ndarray:
+    """0 on low ground, 1 on high ground, smoothly in between."""
+    t = np.clip((TERRAIN_SP_NONE - sp_hpa) / (TERRAIN_SP_NONE - TERRAIN_SP_FULL), 0.0, 1.0)
+    return t * t * (3.0 - 2.0 * t)
+
+
+def smooth_over_terrain(msl: np.ndarray, weight: np.ndarray) -> np.ndarray:
+    """msl with high ground (weight near 1) replaced by a heavily smoothed copy."""
+    if not weight.any():
+        return msl
+    return msl + weight * (_gaussian_blur(msl, TERRAIN_SIGMA_CELLS) - msl)
 
 
 def encode(layer: str, fields: list[np.ndarray]) -> np.ndarray:

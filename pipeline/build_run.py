@@ -32,7 +32,8 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from encoding import FORMAT_VERSION, LAYERS, NLAT, NLON, REVISION, encode, layer_manifest, reproject
+from encoding import (FORMAT_VERSION, LAYERS, NLAT, NLON, REVISION, encode, layer_manifest, reproject,
+                      smooth_over_terrain, terrain_weight)
 
 # 0 to 144 by 3 is published by all four daily cycles. 00z and 12z go on to
 # 360 by 6; ignoring that keeps every cycle identical, which keeps the client
@@ -58,6 +59,7 @@ CONVERSIONS = {
     "tp": ("mm", lambda a: a * 1000.0),        # metres of water equivalent
     "tcc": ("%", lambda a: a * 100.0),         # 0..1 fraction
     "msl": ("hPa", lambda a: a / 100.0),       # Pascals
+    "sp": ("hPa", lambda a: a / 100.0),        # surface pressure: only decides where msl is smoothed
 }
 
 ALL_PARAMS = sorted({p for spec in LAYERS.values() for p in spec["params"]})
@@ -65,7 +67,8 @@ ALL_PARAMS = sorted({p for spec in LAYERS.values() for p in spec["params"]})
 # here are the GRIB short name with the level appended.
 PL_FIELDS = {"u850": "u", "v850": "v"}
 PL_LEVEL = 850
-SFC_PARAMS = [p for p in ALL_PARAMS if p not in PL_FIELDS]
+EXTRA_PARAMS = ["sp"]       # read but not stored as a layer
+SFC_PARAMS = [p for p in ALL_PARAMS + EXTRA_PARAMS if p not in PL_FIELDS]
 
 CACHE_RUN_FILES = "public, max-age=31536000, immutable"
 CACHE_LATEST = "public, max-age=60"
@@ -131,7 +134,7 @@ def read_fields(paths: list[Path]) -> dict[str, np.ndarray]:
             short = ds[name].attrs.get("GRIB_shortName", str(name))
             if "isobaricInhPa" in ds[name].coords:      # pressure-level field: u -> u850
                 short += str(int(ds[name].coords["isobaricInhPa"].values))
-            if short not in ALL_PARAMS:
+            if short not in ALL_PARAMS + EXTRA_PARAMS:
                 continue
             values = np.asarray(ds[name].values, dtype=np.float64)
             if values.shape != (NLAT, NLON):
@@ -144,7 +147,7 @@ def read_fields(paths: list[Path]) -> dict[str, np.ndarray]:
                 lats=ds[name].coords["latitude"].values,
                 lons=ds[name].coords["longitude"].values,
             )
-    missing = set(ALL_PARAMS) - set(fields)
+    missing = set(ALL_PARAMS + EXTRA_PARAMS) - set(fields)
     if missing:
         raise SystemExit(f"missing parameters in {[p.name for p in paths]}: {sorted(missing)}")
     return fields
@@ -275,6 +278,7 @@ def synthetic_fields(step: int) -> dict[str, np.ndarray]:
         "tp": np.clip(swirl, 0, None) * 0.4 * (step / 3.0 + 1),
         "tcc": np.clip(50 + 50 * swirl, 0, 100),
         "msl": 1013.0 + 25.0 * swirl,
+        "sp": 1000.0 - 450.0 * np.exp(-((lat - 30) ** 2 + (lon - 85) ** 2) / 200.0),   # a plateau
         "lcc": np.clip(40 + 50 * swirl, 0, 100),
         "mcc": np.clip(30 + 40 * np.roll(swirl, 60, axis=1), 0, 100),
         "hcc": np.clip(20 + 50 * np.roll(swirl, 150, axis=1), 0, 100),
@@ -319,6 +323,7 @@ def build(args) -> None:
 
     workdir = Path(tempfile.mkdtemp(prefix="klimatikal-"))
     previous_tp: np.ndarray | None = None
+    terrain_w: np.ndarray | None = None     # fixed from the first step so the smoothing does not flicker
     written = 0
     total_bytes = 0
 
@@ -345,6 +350,10 @@ def build(args) -> None:
             else:
                 fields["tp"] = np.maximum(accumulated - previous_tp, 0.0)
             previous_tp = accumulated
+
+            if terrain_w is None:
+                terrain_w = terrain_weight(fields["sp"])
+            fields["msl"] = smooth_over_terrain(fields["msl"], terrain_w)
 
             for layer, spec in LAYERS.items():
                 rgba = encode(layer, [fields[p] for p in spec["params"]])
