@@ -321,6 +321,9 @@ def build(args) -> None:
         return
     log(f"building run {run_id}, {len(steps)} steps, {len(LAYERS)} layers")
 
+    # Seconds spent per phase, so a slow build says where the time went.
+    spent = {"download": 0.0, "read": 0.0, "encode": 0.0, "png": 0.0, "upload": 0.0}
+    build_started = time.perf_counter()
     workdir = Path(tempfile.mkdtemp(prefix="klimatikal-"))
     previous_tp: np.ndarray | None = None
     terrain_w: np.ndarray | None = None     # fixed from the first step so the smoothing does not flicker
@@ -329,12 +332,17 @@ def build(args) -> None:
 
     try:
         for step in steps:
+            step_started = time.perf_counter()
             if args.offline:
                 grib = None
                 fields = synthetic_fields(step)
             else:
+                t0 = time.perf_counter()
                 grib = fetch_step(client, run, step, workdir)
+                t1 = time.perf_counter()
                 fields = read_fields(grib)
+                spent["download"] += t1 - t0
+                spent["read"] += time.perf_counter() - t1
 
             # tp is accumulated from the start of the forecast, so the rate
             # over this step is the difference from the step before. Step 0 is
@@ -356,20 +364,27 @@ def build(args) -> None:
             fields["msl"] = smooth_over_terrain(fields["msl"], terrain_w)
 
             for layer, spec in LAYERS.items():
+                t0 = time.perf_counter()
                 rgba = encode(layer, [fields[p] for p in spec["params"]])
+                t1 = time.perf_counter()
                 body = png_bytes(rgba)
+                t2 = time.perf_counter()
                 sink.put(
                     f"runs/{run_id}/{layer}/f{step:03d}.png",
                     body,
                     "image/png",
                     CACHE_RUN_FILES,
                 )
+                spent["encode"] += t1 - t0
+                spent["png"] += t2 - t1
+                spent["upload"] += time.perf_counter() - t2
                 written += 1
                 total_bytes += len(body)
 
             for g in grib or []:
                 g.unlink(missing_ok=True)
-            log(f"step {step:3d} done  ({total_bytes/1024/1024:.0f} MB so far)")
+            log(f"step {step:3d} done  ({total_bytes/1024/1024:.0f} MB so far, "
+                f"{time.perf_counter() - step_started:.0f} s)")
 
         manifest = {
             "format_version": FORMAT_VERSION,
@@ -405,6 +420,9 @@ def build(args) -> None:
             CACHE_LATEST,
         )
         log(f"published {run_id}: {written} files, {total_bytes/1024/1024:.0f} MB")
+        total = time.perf_counter() - build_started
+        log("timing: " + ", ".join(f"{k} {v:.0f} s ({100 * v / total:.0f}%)" for k, v in spent.items())
+            + f", total {total/60:.1f} min")
 
         prune(sink, keep=args.keep, current=run_id)
     finally:
