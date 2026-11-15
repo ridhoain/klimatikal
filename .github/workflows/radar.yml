@@ -5,8 +5,10 @@ name: build radar frames
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "3,13,23,33,43,53 * * * *"
+  # Schedule removed on purpose: republishing BMKG radar needs BMKG's written
+  # permission, which is not on file yet. Restore this when it is:
+  # schedule:
+  #   - cron: "3,13,23,33,43,53 * * * *"
 
 concurrency:
   group: radar
