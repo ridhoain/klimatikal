@@ -49,12 +49,23 @@ CONVERSIONS = {
     "10u": ("m s-1", lambda a: a),
     "10v": ("m s-1", lambda a: a),
     "2t": ("degC", lambda a: a - 273.15),      # Kelvin
+    "2d": ("degC", lambda a: a - 273.15),      # dewpoint, Kelvin
+    "lcc": ("%", lambda a: a * 100.0),
+    "mcc": ("%", lambda a: a * 100.0),
+    "hcc": ("%", lambda a: a * 100.0),
+    "u850": ("m s-1", lambda a: a),            # pressure-level fields: GRIB short name + level
+    "v850": ("m s-1", lambda a: a),
     "tp": ("mm", lambda a: a * 1000.0),        # metres of water equivalent
     "tcc": ("%", lambda a: a * 100.0),         # 0..1 fraction
     "msl": ("hPa", lambda a: a / 100.0),       # Pascals
 }
 
 ALL_PARAMS = sorted({p for spec in LAYERS.values() for p in spec["params"]})
+# Fields on a pressure level are a second request (levtype "pl"). Their names
+# here are the GRIB short name with the level appended.
+PL_FIELDS = {"u850": "u", "v850": "v"}
+PL_LEVEL = 850
+SFC_PARAMS = [p for p in ALL_PARAMS if p not in PL_FIELDS]
 
 CACHE_RUN_FILES = "public, max-age=31536000, immutable"
 CACHE_LATEST = "public, max-age=60"
@@ -91,24 +102,21 @@ def resolve_run(client, requested: str | None) -> dt.datetime:
         time.sleep(600)
 
 
-def fetch_step(client, run: dt.datetime, step: int, workdir: Path) -> Path:
-    target = workdir / f"step{step:03d}.grib2"
-    if target.exists():
-        return target
-    client.retrieve(
-        date=run.strftime("%Y%m%d"),
-        time=run.hour,
-        stream="oper",
-        type="fc",
-        param=ALL_PARAMS,
-        step=step,
-        target=str(target),
-    )
-    return target
+def fetch_step(client, run: dt.datetime, step: int, workdir: Path) -> list[Path]:
+    """Surface fields and the pressure-level fields, two GRIB files."""
+    common = dict(date=run.strftime("%Y%m%d"), time=run.hour, stream="oper", type="fc", step=step)
+    sfc = workdir / f"step{step:03d}.grib2"
+    pl = workdir / f"step{step:03d}-pl.grib2"
+    if not sfc.exists():
+        client.retrieve(param=SFC_PARAMS, target=str(sfc), **common)
+    if not pl.exists():
+        client.retrieve(param=sorted(set(PL_FIELDS.values())), levtype="pl", levelist=PL_LEVEL,
+                        target=str(pl), **common)
+    return [sfc, pl]
 
 
-def read_fields(path: Path) -> dict[str, np.ndarray]:
-    """Read every parameter in a GRIB file into image-oriented arrays.
+def read_fields(paths: list[Path]) -> dict[str, np.ndarray]:
+    """Read every parameter in the GRIB files into image-oriented arrays.
 
     cfgrib.open_datasets, not xarray.open_dataset: one GRIB file holds several
     incompatible hypercubes (different levels and step types) and the single
@@ -117,10 +125,12 @@ def read_fields(path: Path) -> dict[str, np.ndarray]:
     import cfgrib
 
     fields: dict[str, np.ndarray] = {}
-    datasets = cfgrib.open_datasets(str(path))
+    datasets = [ds for path in paths for ds in cfgrib.open_datasets(str(path))]
     for ds in datasets:
         for name in ds.data_vars:
             short = ds[name].attrs.get("GRIB_shortName", str(name))
+            if "isobaricInhPa" in ds[name].coords:      # pressure-level field: u -> u850
+                short += str(int(ds[name].coords["isobaricInhPa"].values))
             if short not in ALL_PARAMS:
                 continue
             values = np.asarray(ds[name].values, dtype=np.float64)
@@ -136,7 +146,7 @@ def read_fields(path: Path) -> dict[str, np.ndarray]:
             )
     missing = set(ALL_PARAMS) - set(fields)
     if missing:
-        raise SystemExit(f"missing parameters in {path.name}: {sorted(missing)}")
+        raise SystemExit(f"missing parameters in {[p.name for p in paths]}: {sorted(missing)}")
     return fields
 
 
@@ -260,10 +270,15 @@ def synthetic_fields(step: int) -> dict[str, np.ndarray]:
         "10u": 12.0 * swirl + 6.0 * np.sin(np.deg2rad(lat) * 4),
         "10v": 9.0 * np.cos(np.deg2rad(lon) * 2 + phase) * np.cos(np.deg2rad(lat)),
         "2t": np.broadcast_to(warm, (NLAT, NLON)).copy(),
+        "2d": np.broadcast_to(warm - 3.0 - 6.0 * (1 - swirl), (NLAT, NLON)).copy(),
         # tp is accumulated in the real data, so the fake must be too.
         "tp": np.clip(swirl, 0, None) * 0.4 * (step / 3.0 + 1),
         "tcc": np.clip(50 + 50 * swirl, 0, 100),
         "msl": 1013.0 + 25.0 * swirl,
+        "lcc": np.clip(40 + 50 * swirl, 0, 100),
+        "mcc": np.clip(30 + 40 * np.roll(swirl, 60, axis=1), 0, 100),
+        "hcc": np.clip(20 + 50 * np.roll(swirl, 150, axis=1), 0, 100),
+        "u850": 15.0 * swirl, "v850": 10.0 * np.cos(np.deg2rad(lon) * 2 + phase) * np.cos(np.deg2rad(lat)),
     }
 
 
@@ -343,8 +358,8 @@ def build(args) -> None:
                 written += 1
                 total_bytes += len(body)
 
-            if grib is not None:
-                grib.unlink(missing_ok=True)
+            for g in grib or []:
+                g.unlink(missing_ok=True)
             log(f"step {step:3d} done  ({total_bytes/1024/1024:.0f} MB so far)")
 
         manifest = {

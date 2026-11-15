@@ -97,6 +97,8 @@
   #layers input.op { width: 70px; accent-color: #2d6cf6; align-self: center; }
   #layers input.op[hidden] { display: none; }
   #layers .sep { width: 1px; background: rgba(255,255,255,.18); margin: 2px 4px; }
+  #layers button.preset[aria-pressed="true"] { background: #14907e; color: #fff; }
+  #layers button.preset { border-color: rgba(20,144,126,.55); }
   #layers button.toggle[aria-pressed="true"] { background: #243156; color: #fff;
     border-color: rgba(255,255,255,.25); }
   /* Coordinate grid: a canvas over the map, redrawn on every move so the
@@ -126,20 +128,43 @@
   #tz button { all: unset; cursor: pointer; padding: 3px 8px; font-size: 11px; color: #9fb0d4; }
   #tz button[aria-pressed="true"] { background: #243156; color: #fff; }
   #tz button:focus-visible { outline: 2px solid #8ab4ff; outline-offset: -2px; }
-  #legend { bottom: calc(var(--time-h, 100px) + 24px); right: 12px; width: auto;
-    display: flex; gap: 14px; padding: 8px 10px; }
-  #legend .col { display: flex; flex-direction: column; align-items: flex-end; }
+  /* Two boxes stacked at the bottom right: the cloud-level key on top, when a
+     preset has one, and the colour key (one column) under it. */
+  #legends { position: absolute; z-index: 2; bottom: calc(var(--time-h, 100px) + 24px); right: 12px;
+    display: flex; flex-direction: column; gap: 8px; align-items: flex-end; max-width: calc(100vw - 24px); }
+  #legends .panel { position: static; }
+  #legends .panel[hidden] { display: none; }
+  #legend, #legend2 { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; padding: 8px 10px; }
+  #legend .col, #legend2 .col { display: flex; flex-direction: column; align-items: flex-end; }
+  #legend .info { all: unset; cursor: pointer; box-sizing: border-box; width: 18px; height: 18px;
+    border-radius: 50%; display: grid; place-items: center; font: italic 700 11px/1 Georgia, serif;
+    color: #cfd8ee; border: 1px solid rgba(255,255,255,.4); }
+  #legend .info:hover { color: #fff; border-color: #fff; }
+  #legend .info[aria-pressed="true"] { background: #243156; color: #fff; }
+  #legend .info:focus-visible { outline: 2px solid #8ab4ff; outline-offset: 2px; }
+  #legend .explain { max-width: 190px; font-size: 9.5px; line-height: 1.4; color: #cfd8ee; text-align: left; }
+  #legend .explain p { margin: 0 0 4px; }
+  #legend2 .title { text-align: left; font-size: 10.5px; color: #cfd8ee; }
+  #legend2 .rows { display: flex; flex-direction: column; gap: 3px; margin-top: 3px; }
+  #legend2 .row { font-size: 10px; color: #cfd8ee; display: flex; align-items: center; gap: 5px; }
+  #legend2 .sw { width: 11px; height: 11px; border-radius: 2px; border: 1px solid rgba(255,255,255,.35); }
   #legend .title { text-align: right; font-size: 10.5px; color: #cfd8ee; margin-bottom: 4px;
     max-width: 76px; line-height: 1.25; }
   #legend .title span { display: block; }
   #legend .title span:last-child { color: #a9b5d0; font-size: 9.5px; }
-  #legend .body { display: flex; gap: 6px; height: clamp(100px, 25vh, 190px); }
+  #legend .body { display: flex; gap: 6px; height: clamp(90px, 22vh, 170px); }
   #legend .ticks { position: relative; width: 26px; font-size: 9.5px; color: #cfd8ee;
     font-variant-numeric: tabular-nums; }
   #legend .ticks span { position: absolute; right: 0; transform: translateY(50%); white-space: nowrap; }
   #legend .ticks span.first { transform: none; }
   #legend .ticks span.last { transform: translateY(100%); }
-  #legend .bar { width: 9px; border-radius: 3px; background-color: #0b1020;
+  #legend .ticks.named { width: 96px; }
+  #legend .ticks.named span { padding-right: 9px; }
+  #legend .ticks.named span::after { content: ""; position: absolute; right: 0; top: 50%; width: 6px; height: 1px;
+    background: rgba(255,255,255,.9); }
+  #legend .bar i.mk { position: absolute; left: -2px; right: -2px; height: 1px; background: rgba(255,255,255,.9);
+    transform: translateY(50%); }
+  #legend .bar { position: relative; width: 9px; border-radius: 3px; background-color: #0b1020;
     border: 1px solid rgba(255,255,255,.25); }
   #legend .note { margin-top: 4px; max-width: 76px; text-align: right; font-size: 9px; color: #b4c0dc; }
   #readout { padding: 6px 8px; top: 12px; right: 56px; min-width: 100px; line-height: 1.25; font-variant-numeric: tabular-nums; }
@@ -155,7 +180,7 @@
   /* Last in the sheet on purpose: these must win over the base rules above. */
   @media (max-width: 1000px) {
     /* The centred variable bar can reach the legend: lift the legend above it. */
-    #legend { bottom: calc(var(--time-h, 100px) + var(--vars-h, 0px) + 24px); }
+    #legends { bottom: calc(var(--time-h, 100px) + var(--vars-h, 0px) + 24px); }
   }
   @media (max-width: 720px) {
     #legend { gap: 10px; padding: 6px 8px; }
@@ -197,7 +222,10 @@
 
 <div id="maptools" class="panel" role="group" aria-label="Map overlays"></div>
 
-<div id="legend" class="panel glass" aria-label="Colour scale"></div>
+<div id="legends">
+  <div id="legend2" class="panel glass" aria-label="Cloud level key" hidden></div>
+  <div id="legend" class="panel glass" aria-label="Colour scale"></div>
+</div>
 
 <div id="readout" class="panel glass" hidden>
   <div id="readout-label" style="font-size:10px;color:#b4c0dc"></div>
@@ -269,13 +297,115 @@ const RAMPS = {
   cloud: { display: [0, 100], unitLabel: "%", opacity: 0.9, ticks: [0, 25, 50, 75, 100],
     stops: [
       [0,   [255, 255, 255, 0]],   [20, [235, 240, 250, 40]], [50, [235, 240, 250, 120]],
-      [80,  [245, 248, 255, 190]], [100, [255, 255, 255, 235]]] },
+      [80,  [150, 215, 165, 190]], [100, [255, 255, 255, 235]]] },
   msl: { display: [960, 1045], unitLabel: "hPa", opacity: 0.72, ticks: [960, 980, 1000, 1013, 1030, 1045],
     stops: [
       [960,  [91, 58, 156, 255]],  [985,  [63, 127, 212, 255]], [1000, [143, 208, 232, 255]],
       [1013, [242, 242, 242, 255]], [1025, [245, 199, 106, 255]], [1040, [224, 112, 58, 255]],
       [1045, [212, 72, 47, 255]]] },
 };
+
+// Colours for the presets' own fields. heatindex follows the NWS risk bands
+// (27 caution, 32 extreme caution, 41 danger, 54 extreme danger, all degC) with
+// a soft ramp between them; below 27 it fades to white, because the index says
+// nothing useful for cool air. cloudveil is cloud as a translucent white haze,
+// light enough to sit under other fields; `source` names the data layer.
+Object.assign(RAMPS, {
+  heatindex: { display: [24, 56], unitLabel: "°C", opacity: 0.78, legendMinWhite: true, ticks: [27, 32, 41, 54],
+    // NWS danger levels, marked on the key at the value where each begins.
+    marks: [[27, "Caution"], [32, "Extreme caution"], [41, "Danger"], [54, "Extreme danger"]],
+    marksBelow: "Below caution",
+    stops: [
+      [24, [255, 255, 255, 235]], [27, [250, 232, 96, 190]],
+      [32, [246, 162, 52, 230]], [41, [224, 62, 50, 245]], [54, [150, 26, 150, 255]],
+      [56, [110, 14, 120, 255]]] },
+  // Cloud by level, one tint each so a stack of them reads as layers: low is
+  // warm, middle is green, high is white. Alpha stays 0 until 15% cover so clear
+  // sky stays clear.
+  lowcloud:  { source: "lcc", display: [0, 100], unitLabel: "%", opacity: 0.9,
+    stops: [[0, [236, 190, 130, 0]], [15, [236, 190, 130, 0]], [100, [236, 190, 130, 215]]] },
+  midcloud:  { source: "mcc", display: [0, 100], unitLabel: "%", opacity: 0.6,
+    stops: [[0, [150, 215, 165, 0]], [15, [150, 215, 165, 0]], [100, [150, 215, 165, 215]]] },
+  highcloud: { source: "hcc", display: [0, 100], unitLabel: "%", opacity: 0.5,
+    stops: [[0, [255, 255, 255, 0]], [15, [255, 255, 255, 0]], [100, [255, 255, 255, 215]]] },
+  // Colours of the sea-level pressure isobars (lines only, never filled):
+  // blue low, red high. 995 to 1030 hPa spans deep lows to strong highs; values
+  // outside keep the end colours.
+  mslline: { display: [995, 1030], unitLabel: "hPa", opacity: 1, ticks: [1000, 1010, 1020, 1030],
+    stops: [[995, [50, 100, 255, 255]], [1004, [70, 190, 255, 255]], [1012, [255, 226, 120, 255]],
+            [1021, [255, 140, 60, 255]], [1030, [235, 50, 50, 255]]] },
+  cloudveil: { source: "cloud", display: [0, 100], unitLabel: "%", opacity: 1,
+    stops: [[0, [255, 255, 255, 0]], [25, [235, 240, 250, 0]], [60, [240, 245, 255, 70]],
+            [100, [255, 255, 255, 150]]] },
+});
+
+// ---------------------------------------------------------------------------
+// Presets: one information goal each, as a stack of layers drawn bottom to top.
+//   fill      a colour field; `ramp` names the colours, the data is
+//             RAMPS[ramp].source or the ramp's own name
+//   contour   isolines of `layer` every `interval` units, every `major`-th one
+//             heavier
+//   particles the wind streaks (`layer` is the vector layer)
+// `main` is the layer the hover value and the coast colours follow, and whose
+// colour bar is the legend. `explain` is the plain-language reading of the map,
+// hidden until the "i" on the legend is pressed; `keys` are colour keys for
+// layers with no bar of their own, drawn in a box of their own. A preset is only
+// offered when the run has every layer it needs, so an older run still loads.
+// With no preset chosen the page behaves as before: the selected layer plus
+// wind particles.
+// ---------------------------------------------------------------------------
+const PRESETS = {
+  heat: {
+    label: "Heat stress",
+    goal: "Is it dangerous to work outdoors?",
+    main: "heatindex",
+    // Warning symbols where the index reaches the named level of its ramp's
+    // marks. Cells are grouped in blocks of about blockPx screen pixels, so
+    // areas merge into one symbol zoomed out and split apart zoomed in.
+    hazard: { layer: "heatindex", level: "Danger", blockPx: 44 },
+    stack: [
+      { kind: "fill", ramp: "heatindex" },
+      { kind: "fill", ramp: "cloudveil", opacity: 0.55 },
+      { kind: "particles", layer: "wind", opacity: 0.45 },
+    ],
+    explain: [
+      "Heat index: temperature and humidity together, as for a person in shade and light wind. Full sun adds several °C.",
+      "Pale haze: cloud cover (less sun).",
+      "Streaks: 10 m wind.",
+      "Warning triangle: an area at or above the Danger level, with its peak. Nearby areas merge into one as you zoom out.",
+    ],
+  },
+  synoptic: {
+    label: "Synoptic overview",
+    goal: "What is the big-picture pattern?",
+    main: "msl",
+    keyRamp: "mslline",   // the legend is the isobar colours, not the pressure fill's
+    stack: [
+      { kind: "fill", ramp: "lowcloud" },
+      { kind: "fill", ramp: "midcloud" },
+      { kind: "fill", ramp: "highcloud" },
+      // Isobars of mean sea-level pressure, blue low to red high. Spacing follows
+      // zoom (the tropics are nearly flat); heavy every 10 hPa. The number goes on
+      // the line every `labelEvery` hPa, and H / L mark the centres: the biggest or
+      // smallest value within 4 degrees and 1.5 hPa clear of the ring around it.
+      { kind: "contour", layer: "msl", ramp: "mslline", heavy: 10,
+        intervalByZoom: [[0, 5], [2.5, 2], [3.5, 1]], alpha: 0.8, majorAlpha: 1, width: 0.4, majorWidth: 0.75,
+        labelEvery: 4, extrema: { radius: 16, depth: 1.5 } },
+      { kind: "particles", layer: "wind850", opacity: 0.6 },
+    ],
+    keys: [{ title: "Cloud level", rows: [
+      { swatch: [236, 190, 130], text: "Low" },
+      { swatch: [150, 215, 165], text: "Middle" },
+      { swatch: [255, 255, 255], text: "High" },
+    ] }],
+    explain: [
+      "Lines: sea-level pressure every {interval} hPa, bold every 10. Blue is low, red is high.",
+      "H and L: centres of high and low pressure.",
+      "Streaks: 850 hPa wind.",
+    ],
+  },
+};
+const dataOf = (item) => item.kind === "fill" ? (RAMPS[item.ramp].source || item.ramp) : item.layer;
 
 // Radar legend only: dBZ reflectivity colours for the key under "Radar ·
 // demo". These paint nothing themselves — the colours already live baked
@@ -298,7 +428,7 @@ const WIND_SPEED = Number(new URLSearchParams(location.search).get("windspeed"))
 const WIND_TRAIL_STEPS = 24;
 
 // Fields pale enough that white coastlines disappear on them.
-const LIGHT_FIELDS = new Set(["cloud", "msl", "precip"]);
+const LIGHT_FIELDS = new Set(["cloud", "msl", "precip", "heatindex"]);
 // A satellite manifest comes in two shapes: sat/global.json (frames split into
 // longitude tiles) and the older sat/manifest.json (one image per frame). Make
 // both look the same: every frame gets `tiles`, and `image` becomes a key that
@@ -444,18 +574,13 @@ const FIELD_VS = `
     gl_Position = u_matrix * vec4(a_pos.x + u_worldShift, a_pos.y, 0.0, 1.0);
   }`;
 
-const FIELD_FS = `
-  precision highp float;
-  ${GLSL_DECODE}
-  uniform sampler2D u_now, u_next, u_ramp;
-  uniform float u_blend, u_dlo, u_dhi, u_opacity;
+// Cubic B-spline interpolation of the raw texel bytes, done with four
+// hardware-bilinear fetches. Plain bilinear shows the 0.25 degree grid as
+// facets once you zoom in, and the 8-bit steps as bands; this is C2-smooth.
+// Every layer is encoded linearly, so filtering the bytes then decoding is
+// the same as filtering the values. Shared by the colour field and the contours.
+const GLSL_SMOOTH = `
   uniform vec2 u_texSize;
-  varying vec2 v_merc;
-  // Cubic B-spline interpolation of the raw texel bytes, done with four
-  // hardware-bilinear fetches. Plain bilinear shows the 0.25 degree grid as
-  // facets once you zoom in, and the 8-bit steps as bands; this is C2-smooth.
-  // Every layer is encoded linearly, so filtering the bytes then decoding is
-  // the same as filtering the values.
   vec4 sampleSmooth(sampler2D t, vec2 uv) {
     vec2 coord = uv * u_texSize - 0.5;
     vec2 i = floor(coord);
@@ -470,7 +595,15 @@ const FIELD_FS = `
     vec2 pB = (i + 1.0 + w3 / g1 + 0.5) / u_texSize;
     return g0.y * (g0.x * texture2D(t, vec2(pA.x, pA.y)) + g1.x * texture2D(t, vec2(pB.x, pA.y)))
          + g1.y * (g0.x * texture2D(t, vec2(pA.x, pB.y)) + g1.x * texture2D(t, vec2(pB.x, pB.y)));
-  }
+  }`;
+
+const FIELD_FS = `
+  precision highp float;
+  ${GLSL_DECODE}
+  ${GLSL_SMOOTH}
+  uniform sampler2D u_now, u_next, u_ramp;
+  uniform float u_blend, u_dlo, u_dhi, u_opacity;
+  varying vec2 v_merc;
   void main() {
     vec2 uv = dataUV(v_merc.x, v_merc.y);
     float a = decodeValue(sampleSmooth(u_now,  uv));
@@ -479,6 +612,59 @@ const FIELD_FS = `
     float t = clamp((value - u_dlo) / (u_dhi - u_dlo), 0.0, 1.0);
     vec4 c = texture2D(u_ramp, vec2(t, 0.5));
     gl_FragColor = vec4(c.rgb, c.a * u_opacity);
+  }`;
+
+// Isolines of a scalar layer. The line width is set in screen pixels: the
+// field's change per pixel is measured by sampling one pixel to the right and
+// one down (u_px is a pixel in mercator units), not with fwidth(), which needs
+// an extension under WebGL1 and is refused in ESSL 1.00 shaders under WebGL2.
+// A line is drawn where the value is within half a line width of a multiple of
+// u_interval; every u_major-th multiple gets the heavier width and colour.
+const CONTOUR_FS = `
+  precision highp float;
+  ${GLSL_DECODE}
+  ${GLSL_SMOOTH}
+  uniform sampler2D u_now, u_next, u_ramp;
+  uniform float u_blend, u_interval, u_major, u_width, u_majorWidth, u_px, u_base;
+  uniform float u_dlo, u_dhi, u_alpha, u_majorAlpha;
+  varying vec2 v_merc;
+  // The value minus u_base (a multiple of the heavy-line spacing, so the lines
+  // do not move). float32 near 1010 hPa resolves only ~1e-4 hPa, about what
+  // the field changes per pixel across the flat tropics, and the lines would
+  // smear into bands; measured from the base the numbers stay small and exact.
+  float relValue(vec4 px) {
+    float unit = u_encoding == 1 ? (px.r * 255.0 * 256.0 + px.g * 255.0) / 65535.0 : px.r;
+    return pow(clamp(unit, 0.0, 1.0), u_gamma) * (u_max - u_min) + (u_min - u_base);
+  }
+  float valueOne(vec2 uv) {
+    return mix(relValue(sampleSmooth(u_now, uv)), relValue(sampleSmooth(u_next, uv)), u_blend);
+  }
+  // Averaged over a texel around the point (the same blur the label tracing
+  // applies to its grid), so the lines are smooth curves instead of
+  // following the small grid-scale wobbles of the data.
+  float valueAt(vec2 m) {
+    vec2 uv = dataUV(m.x, m.y);
+    vec2 d = 1.0 / u_texSize;
+    return 0.4 * valueOne(uv)
+         + 0.15 * (valueOne(uv + vec2(d.x, 0.0)) + valueOne(uv - vec2(d.x, 0.0))
+                 + valueOne(uv + vec2(0.0, d.y)) + valueOne(uv - vec2(0.0, d.y)));
+  }
+  float lineAt(float v, float step, float width, float perPx) {
+    float d = abs(fract(v / step + 0.5) - 0.5) * step / max(perPx, 1e-5);  // pixels to the nearest line
+    return 1.0 - smoothstep(max(width * 0.5 - 0.5, 0.0), width * 0.5 + 0.5, d);   // width px wide, one pixel of anti-aliasing centred on the edge
+  }
+  void main() {
+    float v  = valueAt(v_merc);
+    float vx = valueAt(v_merc + vec2(u_px, 0.0));
+    float vy = valueAt(v_merc + vec2(0.0, u_px));
+    float perPx = abs(vx - v) + abs(vy - v);
+    float minor = lineAt(v, u_interval, u_width, perPx);
+    float major = lineAt(v, u_interval * u_major, u_majorWidth, perPx);
+    // Colour by the line's own value: back to absolute, through the ramp.
+    float t = clamp((v + u_base - u_dlo) / (u_dhi - u_dlo), 0.0, 1.0);
+    float a = max(minor * u_alpha, major * u_majorAlpha);
+    if (a < 0.01) discard;
+    gl_FragColor = vec4(texture2D(u_ramp, vec2(t, 0.5)).rgb, a);
   }`;
 
 // ---------------------------------------------------------------------------
@@ -594,6 +780,7 @@ class WeatherLayer {
     // reaching into MapLibre's internals.
     this.app.gl = gl;
     this.field = program(gl, FIELD_VS, FIELD_FS);
+    this.contour = program(gl, FIELD_VS, CONTOUR_FS);
     this.update = program(gl, QUAD_VS, UPDATE_FS);
     this.draw = program(gl, DRAW_VS, DRAW_FS);
 
@@ -657,8 +844,19 @@ class WeatherLayer {
       return;
     }
     const app = this.app;
-    const frame = app.currentFrame(app.fieldSource(app.layer));
-    if (!frame) { this.map.triggerRepaint(); return; }
+    // Everything the stack draws must be on the GPU before anything is drawn,
+    // or a preset would flash half-built while scrubbing. Particles are the
+    // exception: they are decoration and never hold the picture up.
+    const stack = app.renderStack();
+    const frames = new Map();
+    for (const item of stack) {
+      if (item.kind === "particles") continue;
+      const src = app.fieldSource(dataOf(item));
+      if (frames.has(src)) continue;
+      const fr = app.currentFrame(src);
+      if (!fr) { this.map.triggerRepaint(); return; }
+      frames.set(src, fr);
+    }
     // First weather frame is ready: now it is safe to start on the boundaries.
     // Deferred, because adding layers from inside a render callback is not.
     if (app.boundariesPending) {
@@ -673,38 +871,58 @@ class WeatherLayer {
     if (app.satOn && !app.satLoaded && !app.satLoading) {
       setTimeout(() => app.loadSatellite(), 0);
     }
-    const { spec, now, next, blend } = frame;
-    const name = app.layer;   // colours and opacity belong to the selected layer
-
-    // --- colour field -----------------------------------------------------
-    const f = this.field;
-    gl.useProgram(f.p);
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.quad);
-    gl.enableVertexAttribArray(f.loc.a_pos);
-    gl.vertexAttribPointer(f.loc.a_pos, 2, gl.FLOAT, false, 0, 0);
-    gl.uniformMatrix4fv(f.loc.u_matrix, false, matrix);
-    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, now);
-    gl.uniform1i(f.loc.u_now, 0);
-    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, next);
-    gl.uniform1i(f.loc.u_next, 1);
-    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, this.ramp(name));
-    gl.uniform1i(f.loc.u_ramp, 2);
-    this.bindDecode(f.loc, spec);
-    gl.uniform2f(f.loc.u_texSize, app.manifest.grid.width, app.manifest.grid.height);
-    gl.uniform1f(f.loc.u_blend, blend);
-    gl.uniform1f(f.loc.u_dlo, RAMPS[name].display[0]);
-    gl.uniform1f(f.loc.u_dhi, RAMPS[name].display[1]);
-    gl.uniform1f(f.loc.u_opacity, RAMPS[name].opacity);
+    const shifts = app.worldShifts();
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    const shifts = app.worldShifts();
-    for (const shift of shifts) {
-      gl.uniform1f(f.loc.u_worldShift, shift);
-      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    for (const item of stack) {
+      if (item.kind === "particles") continue;
+      const { spec, now, next, blend } = frames.get(app.fieldSource(dataOf(item)));
+      const isContour = item.kind === "contour";
+      const f = isContour ? this.contour : this.field;
+      gl.useProgram(f.p);
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.quad);
+      gl.enableVertexAttribArray(f.loc.a_pos);
+      gl.vertexAttribPointer(f.loc.a_pos, 2, gl.FLOAT, false, 0, 0);
+      gl.uniformMatrix4fv(f.loc.u_matrix, false, matrix);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, now);
+      gl.uniform1i(f.loc.u_now, 0);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, next);
+      gl.uniform1i(f.loc.u_next, 1);
+      this.bindDecode(f.loc, spec);
+      gl.uniform2f(f.loc.u_texSize, app.manifest.grid.width, app.manifest.grid.height);
+      gl.uniform1f(f.loc.u_blend, blend);
+      if (isContour) {
+        const interval = app.contourInterval(item);
+        gl.uniform1f(f.loc.u_interval, interval);
+        gl.uniform1f(f.loc.u_major, item.heavy / interval);
+        gl.uniform1f(f.loc.u_width, item.width);
+        gl.uniform1f(f.loc.u_majorWidth, item.majorWidth);
+        gl.uniform1f(f.loc.u_base, Math.round(spec.min / item.heavy) * item.heavy);
+        gl.uniform1f(f.loc.u_px, 1 / (512 * Math.pow(2, this.map.getZoom())));
+        const ramp = RAMPS[item.ramp];
+        gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, this.ramp(item.ramp));
+        gl.uniform1i(f.loc.u_ramp, 2);
+        gl.uniform1f(f.loc.u_dlo, ramp.display[0]);
+        gl.uniform1f(f.loc.u_dhi, ramp.display[1]);
+        gl.uniform1f(f.loc.u_alpha, item.alpha);
+        gl.uniform1f(f.loc.u_majorAlpha, item.majorAlpha);
+      } else {
+        const ramp = RAMPS[item.ramp];
+        gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, this.ramp(item.ramp));
+        gl.uniform1i(f.loc.u_ramp, 2);
+        gl.uniform1f(f.loc.u_dlo, ramp.display[0]);
+        gl.uniform1f(f.loc.u_dhi, ramp.display[1]);
+        gl.uniform1f(f.loc.u_opacity, item.opacity != null ? item.opacity : ramp.opacity);
+      }
+      for (const shift of shifts) {
+        gl.uniform1f(f.loc.u_worldShift, shift);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+      }
     }
 
     // --- particles, only where there is a vector field ---------------------
-    const windFrame = app.currentFrame("wind");
+    const pItem = stack.find((i) => i.kind === "particles");
+    const windFrame = pItem && app.currentFrame(pItem.layer);
     if (!windFrame) { this.finish(gl); return; }
 
     const nowMs = performance.now();
@@ -767,7 +985,7 @@ class WeatherLayer {
     gl.uniform1i(d.loc.u_new, 1);
     gl.uniformMatrix4fv(d.loc.u_matrix, false, matrix);
     gl.uniform1f(d.loc.u_side, this.side);
-    gl.uniform1f(d.loc.u_opacity, 1.0);
+    gl.uniform1f(d.loc.u_opacity, pItem.opacity != null ? pItem.opacity : 1.0);
     gl.uniform1f(d.loc.u_trail, WIND_TRAIL_STEPS);
     // Well above the fastest legitimate step (a 50 m/s wind is 5x the
     // reference), far below a respawn or a wrap, which are 0.3 or more.
@@ -837,6 +1055,9 @@ class App {
     this.textures = new Map();
     this.pending = new Map();
     this.layer = "wind";
+    this.legendInfo = false;  // is the explanation under the legend open
+    try { this.legendInfo = localStorage.getItem("klimatikal.legendinfo") === "1"; } catch (e) { /* private mode */ }
+    this.preset = null;       // id in PRESETS, or null for the plain layer buttons
     this.stepIndex = 0;       // forecast-step units (may be fractional); what the weather layers read
     // The slider runs along `axis`: normally the forecast steps; with the
     // satellite on, the last few hours of satellite frames first (10-minute
@@ -932,6 +1153,319 @@ class App {
     return null;
   }
 
+  // What to draw: the chosen preset's stack, or (no preset) the selected layer
+  // with wind particles over it, which is how the page always behaved.
+  renderStack() {
+    const preset = this.preset && PRESETS[this.preset];
+    if (preset) return preset.stack;
+    return [{ kind: "fill", ramp: this.layer }, { kind: "particles", layer: "wind" }];
+  }
+
+  // Contour spacing for the current zoom: the last [minZoom, interval] row reached.
+  contourInterval(item) {
+    const z = this.map ? this.map.getZoom() : 0;
+    let v = item.intervalByZoom[0][1];
+    for (const [minZoom, interval] of item.intervalByZoom) if (z >= minZoom) v = interval;
+    return v;
+  }
+
+  // --- contour labels -------------------------------------------------------
+  // The coloured lines are drawn by the GPU and have no geometry, so the
+  // numbers on them come from tracing the same field on the CPU and handing the
+  // polylines to a MapLibre symbol layer that writes along them. It follows the
+  // preset (off when the preset has no labelled contour), the view, the zoom
+  // (line spacing) and the time.
+  contourLabelItem() {
+    const p = this.preset && PRESETS[this.preset];
+    return p && p.stack.find((i) => i.kind === "contour" && i.labelEvery);
+  }
+
+  scheduleContourLabels() {
+    clearTimeout(this.clTimer);
+    this.clTimer = setTimeout(() => { this.updateContourLabels(); this.updateHazard(); }, 150);
+  }
+
+  // The layer's values as a Float32Array on the PNG's own grid. Cached, newest
+  // few only: a grid is 4 MB.
+  async valueGrid(layer, index) {
+    const step = this.steps[Math.max(0, Math.min(this.steps.length - 1, index))];
+    const key = `${layer}/${step}`;
+    this.gridCache = this.gridCache || new Map();
+    if (this.gridCache.has(key)) return this.gridCache.get(key);
+    const spec = this.manifest.layers[layer];
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    await new Promise((resolve, reject) => {
+      img.onload = resolve; img.onerror = () => reject(new Error(`failed to load ${key}`));
+      img.src = `${this.runPrefix}/${layer}/f${String(step).padStart(3, "0")}.png`;
+    });
+    const cv = document.createElement("canvas");
+    cv.width = img.naturalWidth; cv.height = img.naturalHeight;
+    const cx = cv.getContext("2d", { willReadFrequently: true });
+    cx.drawImage(img, 0, 0);
+    const px = cx.getImageData(0, 0, cv.width, cv.height).data;
+    const out = new Float32Array(cv.width * cv.height);
+    const g = spec.gamma || 1, span = spec.max - spec.min, wide = spec.encoding === "scalar16";
+    for (let n = 0; n < out.length; n++) {
+      const unit = wide ? (px[n * 4] * 256 + px[n * 4 + 1]) / 65535 : px[n * 4] / 255;
+      out[n] = Math.pow(unit, g) * span + spec.min;
+    }
+    let grid = out;
+    if (wide) {                                   // same smoothing as the contour shader: centre 0.4, four neighbours 0.15
+      const w = cv.width, h = cv.height;
+      grid = new Float32Array(out.length);
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const n = y * w + x;
+        grid[n] = 0.4 * out[n] + 0.15 * (out[n - (x > 0 ? 1 : 0)] + out[n + (x < w - 1 ? 1 : 0)]
+          + out[n - (y > 0 ? w : 0)] + out[n + (y < h - 1 ? w : 0)]);
+      }
+    }
+    this.gridCache.set(key, grid);
+    while (this.gridCache.size > 6) this.gridCache.delete(this.gridCache.keys().next().value);
+    return grid;
+  }
+
+  async updateContourLabels() {
+    const map = this.map, src = map && map.getSource("contour-labels");
+    if (!src) return;
+    const item = this.contourLabelItem();
+    const empty = { type: "FeatureCollection", features: [] };
+    if (!item) {
+      if (this.clKey) { this.clKey = null; src.setData(empty); const ex = map.getSource("contour-extrema"); if (ex) ex.setData(empty); }
+      return;
+    }
+
+    const g = this.manifest.grid, res = 360 / g.width;
+    const step = Math.max(this.contourInterval(item), item.labelEvery);
+    const b = map.getBounds(), pad = 6;
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    const x0 = clamp(Math.floor((b.getWest() - pad + 180) / res), 0, g.width - 2);
+    const x1 = clamp(Math.ceil((b.getEast() + pad + 180) / res), x0 + 1, g.width - 1);
+    const y0 = clamp(Math.floor((90 - (b.getNorth() + pad)) / res), 0, g.height - 2);
+    const y1 = clamp(Math.ceil((90 - (b.getSouth() - pad)) / res), y0 + 1, g.height - 1);
+    const key = [item.layer, step, Math.round(this.stepIndex * 4), x0, x1, y0, y1].join();
+    if (key === this.clKey) return;
+    const token = this.clToken = (this.clToken || 0) + 1;
+
+    const i = Math.floor(this.stepIndex), blend = this.stepIndex - i;
+    let A, B;
+    try { [A, B] = await Promise.all([this.valueGrid(item.layer, i), this.valueGrid(item.layer, i + 1)]); }
+    catch (err) { console.warn("contour labels unavailable", err); return; }
+    if (token !== this.clToken) return;                // a newer request superseded this one
+
+    const ww = x1 - x0 + 1, wh = y1 - y0 + 1, vals = new Float32Array(ww * wh);
+    for (let y = 0; y < wh; y++) for (let x = 0; x < ww; x++) {
+      const n = (y0 + y) * g.width + x0 + x;
+      vals[y * ww + x] = A[n] + (B[n] - A[n]) * blend;
+    }
+    const features = [];
+    for (const [level, lines] of traceContours(vals, ww, wh, step)) {
+      for (const line of lines) {
+        if (line.length < 8) continue;                 // a speck: no room for a number
+        features.push({ type: "Feature", properties: { t: String(level), v: level }, geometry: { type: "LineString",
+          coordinates: smoothLine(line).map(([x, y]) => [-180 + (x0 + x) * res, 90 - (y0 + y) * res]) } });
+      }
+    }
+    const points = [];
+    if (item.extrema) {
+      for (const e of findExtrema(vals, ww, wh, item.extrema.radius, item.extrema.depth)) {
+        points.push({ type: "Feature", properties: { k: e.kind, v: String(Math.round(e.v)), d: e.depth },
+          geometry: { type: "Point", coordinates: [-180 + (x0 + e.x) * res, 90 - (y0 + e.y) * res] } });
+      }
+    }
+    this.clKey = key;
+    src.setData({ type: "FeatureCollection", features });
+    const ex = map.getSource("contour-extrema");
+    if (ex) ex.setData({ type: "FeatureCollection", features: points });
+  }
+
+  // The label layer sits under the place names, so a town always wins a collision.
+  addContourLabels() {
+    const map = this.map;
+    const ci = Object.values(PRESETS).flatMap((p) => p.stack).find((i) => i.kind === "contour" && i.labelEvery);
+    const ramp = RAMPS[ci.ramp];
+    map.addSource("contour-labels", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+    map.addLayer({
+      id: "contour-labels", type: "symbol", source: "contour-labels",
+      layout: {
+        "symbol-placement": "line", "symbol-spacing": 260, "text-field": ["get", "t"],
+        "text-font": ["Open Sans Semibold"], "text-max-angle": 45, "text-padding": 3,
+        // Town names are 11.5 px (13 for capitals) at every zoom. These are a
+        // step smaller and grow a little with zoom, topping out at 83% of a town.
+        "text-size": ["interpolate", ["linear"], ["zoom"], 2, 8, 6, 9.5],
+      },
+      paint: { "text-color": ["interpolate", ["linear"], ["get", "v"],
+                 ...ramp.stops.flatMap(([v, c]) => [v, `rgb(${c[0]},${c[1]},${c[2]})`])],
+               "text-halo-color": "rgba(8,12,24,0.9)",
+               "text-halo-width": 1.3, "text-halo-blur": 0.3 },
+    });
+    // H and L at the centres of high and low, in the ends of the contour colour
+    // ramp (red high, blue low), with the height under the letter. Deeper
+    // centres win a collision.
+    const end = (i) => { const c = ramp.stops[i][1]; return `rgb(${c[0]},${c[1]},${c[2]})`; };
+    map.addSource("contour-extrema", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+    map.addLayer({
+      id: "contour-extrema", type: "symbol", source: "contour-extrema",
+      layout: {
+        "text-field": ["format", ["get", "k"], { "font-scale": 1 }, "\n", {}, ["get", "v"], { "font-scale": 0.5 }],
+        "text-font": ["Open Sans Semibold"], "text-size": ["interpolate", ["linear"], ["zoom"], 2, 15, 6, 22],
+        "text-line-height": 1, "text-padding": 6, "symbol-sort-key": ["-", 0, ["get", "d"]],
+      },
+      paint: { "text-color": ["case", ["==", ["get", "k"], "H"], end(ramp.stops.length - 1), end(0)],
+               "text-halo-color": "rgba(8,12,24,0.92)", "text-halo-width": 1.6, "text-halo-blur": 0.3 },
+    });
+  }
+
+  hazardSpec() {
+    const p = this.preset && PRESETS[this.preset];
+    return p && p.hazard;
+  }
+
+  // Warning symbols over the areas at or above the hazard level. The visible
+  // cells are binned into blocks of about blockPx screen pixels (a block is hot
+  // if any cell in it reaches the level), hot blocks within one block of each
+  // other are joined, and each joined area gets one symbol at the hot block
+  // nearest its centre of mass, labelled with its peak. The block size follows
+  // the zoom, which is what makes the grouping dynamic.
+  async updateHazard() {
+    const map = this.map, src = map && map.getSource("hazard");
+    if (!src) return;
+    const h = this.hazardSpec();
+    const empty = { type: "FeatureCollection", features: [] };
+    if (!h || !this.manifest.layers[h.layer]) { if (this.hzKey) { this.hzKey = null; src.setData(empty); } return; }
+    const marks = RAMPS[PRESETS[this.preset].main].marks || [];
+    const level = (marks.find(([, name]) => name === h.level) || [Infinity])[0];
+    const extreme = (marks[marks.length - 1] || [Infinity])[0];
+
+    const g = this.manifest.grid, res = 360 / g.width;
+    const pxPerCell = 512 * Math.pow(2, map.getZoom()) / 360 * res;
+    const k = Math.max(1, Math.round(h.blockPx / pxPerCell));
+    const b = map.getBounds(), pad = 2;
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    const x0 = clamp(Math.floor((b.getWest() - pad + 180) / res), 0, g.width - 1);
+    const x1 = clamp(Math.ceil((b.getEast() + pad + 180) / res), x0, g.width - 1);
+    const y0 = clamp(Math.floor((90 - (b.getNorth() + pad)) / res), 0, g.height - 1);
+    const y1 = clamp(Math.ceil((90 - (b.getSouth() - pad)) / res), y0, g.height - 1);
+    const key = [h.layer, level, k, Math.round(this.stepIndex * 4), x0, x1, y0, y1].join();
+    if (key === this.hzKey) return;
+    const token = this.hzToken = (this.hzToken || 0) + 1;
+
+    const i = Math.floor(this.stepIndex), blend = this.stepIndex - i;
+    let A, B;
+    try { [A, B] = await Promise.all([this.valueGrid(h.layer, i), this.valueGrid(h.layer, i + 1)]); }
+    catch (err) { console.warn("hazard symbols unavailable", err); return; }
+    if (token !== this.hzToken) return;
+
+    const bw = Math.ceil((x1 - x0 + 1) / k), bh = Math.ceil((y1 - y0 + 1) / k);
+    const peak = new Float32Array(bw * bh).fill(-Infinity), px = new Float32Array(bw * bh), py = new Float32Array(bw * bh);
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const n = y * g.width + x, v = A[n] + (B[n] - A[n]) * blend;
+      if (v < level) continue;
+      const bi = Math.floor((y - y0) / k) * bw + Math.floor((x - x0) / k);
+      if (v > peak[bi]) { peak[bi] = v; px[bi] = x; py[bi] = y; }
+    }
+    const seen = new Uint8Array(bw * bh), features = [];
+    for (let s0 = 0; s0 < peak.length; s0++) {
+      if (seen[s0] || peak[s0] < level) continue;
+      let top = -Infinity, sx = 0, sy = 0, sw = 0, members = [];
+      const stack = [s0]; seen[s0] = 1;
+      while (stack.length) {
+        const c = stack.pop(); members.push(c);
+        const w = peak[c] - level + 0.1;
+        sx += px[c] * w; sy += py[c] * w; sw += w; top = Math.max(top, peak[c]);
+        const cx = c % bw, cy = (c - cx) / bw;
+        for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {   // within one empty block of each other
+          const nx = cx + dx, ny = cy + dy;
+          if (nx < 0 || ny < 0 || nx >= bw || ny >= bh) continue;
+          const m = ny * bw + nx;
+          if (!seen[m] && peak[m] >= level) { seen[m] = 1; stack.push(m); }
+        }
+      }
+      // the member block closest to the centre of mass
+      sx /= sw; sy /= sw;
+      let best = members[0], bd = Infinity;
+      for (const m of members) { const d = (px[m] - sx) ** 2 + (py[m] - sy) ** 2; if (d < bd) { bd = d; best = m; } }
+      features.push({ type: "Feature", properties: { peak: Math.round(top), x: top >= extreme ? 1 : 0, n: members.length },
+        geometry: { type: "Point", coordinates: [-180 + (px[best] + 0.5) * res, 90 - (py[best] + 0.5) * res] } });
+    }
+    this.hzKey = key;
+    src.setData({ type: "FeatureCollection", features });
+  }
+
+  addHazardLayer() {
+    const map = this.map;
+    // Warning triangle, drawn once: rounded, white edge, "!" cut in white.
+    const tri = (fill) => {
+      const S = 64, cv = document.createElement("canvas"); cv.width = cv.height = S;
+      const c = cv.getContext("2d");
+      c.lineJoin = "round"; c.lineWidth = 6;
+      c.beginPath(); c.moveTo(S / 2, 7); c.lineTo(S - 7, S - 10); c.lineTo(7, S - 10); c.closePath();
+      c.fillStyle = fill; c.strokeStyle = "#fff"; c.fill(); c.stroke();
+      c.fillStyle = "#fff"; c.fillRect(S / 2 - 3.5, 24, 7, 17);
+      c.beginPath(); c.arc(S / 2, 48, 4.2, 0, Math.PI * 2); c.fill();
+      return c.getImageData(0, 0, S, S);
+    };
+    map.addImage("hazard-danger", tri("#e0312b"), { pixelRatio: 2 });
+    map.addImage("hazard-extreme", tri("#7a1fa2"), { pixelRatio: 2 });
+    map.addSource("hazard", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+    map.addLayer({
+      id: "hazard", type: "symbol", source: "hazard",
+      layout: {
+        "icon-image": ["case", ["==", ["get", "x"], 1], "hazard-extreme", "hazard-danger"],
+        "icon-size": ["interpolate", ["linear"], ["zoom"], 2, 0.55, 7, 0.8],
+        "icon-allow-overlap": false, "icon-padding": 4,
+        "text-field": ["concat", ["to-string", ["get", "peak"]], "°"],
+        "text-font": ["Open Sans Semibold"], "text-size": 10, "text-anchor": "top", "text-offset": [0, 0.75],
+        "text-optional": true, "symbol-sort-key": ["-", 0, ["get", "peak"]],
+      },
+      paint: { "text-color": "#fff", "text-halo-color": "rgba(60,8,8,0.95)", "text-halo-width": 1.5 },
+    });
+    // The triangles pulse (about 1.4 s a beat) so they catch the eye. Updated at
+    // ~12 fps and only while there are triangles to draw; people who ask their
+    // system for reduced motion get steady ones.
+    const still = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!still) this.hazardPulse = setInterval(() => {
+      const on = map.getSource("hazard") && this.hzKey && !document.hidden;
+      if (!on) return;
+      const o = 0.65 + 0.35 * Math.cos((performance.now() / 1400) * 2 * Math.PI);   // 0.3 .. 1
+      map.setPaintProperty("hazard", "icon-opacity", o);
+      map.setPaintProperty("hazard", "text-opacity", Math.max(o, 0.6));
+    }, 80);
+    // The first pass can run before the map has its final size; redo it once settled.
+    map.once("idle", () => { this.hzKey = null; this.scheduleContourLabels(); });
+  }
+
+  contourIntervalText() {
+    const c = this.renderStack().find((i) => i.kind === "contour");
+    return c ? String(this.contourInterval(c)) : "";
+  }
+
+  // A preset is offered only when the run has every layer it needs, and
+  // isobars only from a 16-bit field (older runs have 8-bit pressure, which
+  // draws as thick wandering bands).
+  presetAvailable(id) {
+    return PRESETS[id].stack.every((i) => {
+      const spec = this.manifest.layers[i.kind === "particles" ? i.layer : dataOf(i)];
+      return spec && (i.kind !== "contour" || spec.encoding === "scalar16");
+    });
+  }
+
+  setPreset(id) {
+    this.preset = id;
+    if (id) this.layer = PRESETS[id].main;
+    this.paintLayerButtons();
+    this.writeURL(); this.paintReadoutLabel(); this.paintLegend(); this.paintBoundaryStyle();
+    this.scheduleContourLabels();
+    this.map && this.map.triggerRepaint();
+  }
+
+  paintLayerButtons() {
+    document.querySelectorAll("#layers button[data-layer]").forEach((c) =>
+      c.setAttribute("aria-pressed", String(!this.preset && c.dataset.layer === this.layer)));
+    document.querySelectorAll("#layers button[data-preset]").forEach((c) =>
+      c.setAttribute("aria-pressed", String(c.dataset.preset === this.preset)));
+  }
+
   // The layer whose PNG colours the map and feeds the hover value. Wind is
   // drawn from the 16-bit speed layer when the run has one (the u/v pair is
   // only 8-bit and bands in light wind); the particles still use u/v. Runs
@@ -955,21 +1489,44 @@ class App {
 
   buildChrome() {
     const box = document.getElementById("layers");
+    const available = Object.keys(PRESETS).filter((id) => this.presetAvailable(id));
+    for (const id of available) {
+      const b = document.createElement("button");
+      b.className = "preset";
+      b.textContent = PRESETS[id].label;
+      b.title = PRESETS[id].goal;
+      b.dataset.preset = id;
+      b.onclick = () => this.setPreset(this.preset === id ? null : id);
+      box.appendChild(b);
+    }
+    if (available.length) {
+      const sep = document.createElement("span");
+      sep.className = "sep";
+      box.appendChild(sep);
+    }
     for (const name of Object.keys(this.manifest.layers)) {
       if (this.manifest.layers[name].hidden) continue;   // data-only layers, e.g. windspeed
       const b = document.createElement("button");
       b.textContent = this.manifest.layers[name].label;
       b.dataset.layer = name;
-      b.setAttribute("aria-pressed", String(name === this.layer));
       b.onclick = () => {
         this.layer = name;
-        box.querySelectorAll("button[data-layer]").forEach((c) =>
-          c.setAttribute("aria-pressed", String(c.dataset.layer === name)));
-        this.writeURL(); this.paintReadoutLabel(); this.paintLegend(); this.paintBoundaryStyle();
+        this.preset = null;
+        this.paintLayerButtons();
+        this.writeURL();
+        this.scheduleContourLabels(); this.paintReadoutLabel(); this.paintLegend(); this.paintBoundaryStyle();
         this.map && this.map.triggerRepaint();
       };
       box.appendChild(b);
     }
+
+    this.paintLayerButtons();
+    document.getElementById("legend").addEventListener("click", (e) => {
+      if (!e.target.closest(".info")) return;
+      this.legendInfo = !this.legendInfo;
+      try { localStorage.setItem("klimatikal.legendinfo", this.legendInfo ? "1" : "0"); } catch (err) { /* ignore */ }
+      this.paintLegend();
+    });
 
     // Hide / show the variable bar; starts expanded, remembers the last choice.
     const vars = document.getElementById("vars");
@@ -1100,7 +1657,10 @@ class App {
   // Colour key for the active layer, built from the same RAMPS table the
   // shader's colour texture is built from.
   paintLegend() {
-    const r = RAMPS[this.layer];
+    const preset = this.preset && PRESETS[this.preset];
+    // The key follows what is drawn: a preset whose main layer is shown as lines
+    // names the ramp those lines use.
+    const r = RAMPS[(preset && preset.keyRamp) || this.layer];
     const spec = this.manifest.layers[this.layer];
     if (!r) return;
     const [lo, hi] = r.display;
@@ -1116,22 +1676,42 @@ class App {
     const ticks = r.evenLegend
       ? r.stops.map(([v], i) => ({ v, p: at(i) }))
       : r.ticks.map((v) => ({ v, p: (v - lo) / (hi - lo) }));
-    let html = this.legendColumn(spec ? spec.label : this.layer, r.unitLabel, gradient, ticks);
+    // A ramp with `marks` names its thresholds (heat danger levels): each gets a
+    // line across the bar and its name beside it.
+    const named = r.marks && r.marks.map(([v, name]) => ({ v, text: `${name} ${v}`, p: (v - lo) / (hi - lo) }));
+    let html = this.legendColumn(spec ? spec.label : this.layer, r.unitLabel, gradient, named || ticks, "", !!named);
     if (this.radarOn) html += this.radarLegendHTML();
     if (this.satOn && this.satManifest) html += this.satLegendHTML();
+    // "i" shows the plain-language reading of the map; hidden until asked for.
+    if (preset && preset.explain) {
+      html = `<button type="button" class="info" aria-pressed="${this.legendInfo}" aria-label="What does this map show?" ` +
+        `title="What does this map show?">i</button>` + html;
+      if (this.legendInfo) {
+        html += `<div class="explain">` + preset.explain.map((n) =>
+          `<p>${escapeHTML(n.replace("{interval}", this.contourIntervalText()))}</p>`).join("") + `</div>`;
+      }
+    }
     document.getElementById("legend").innerHTML = html;
+    // Colour keys for layers that have no bar: their own box.
+    const keys = document.getElementById("legend2");
+    keys.hidden = !(preset && preset.keys);
+    keys.innerHTML = preset && preset.keys ? preset.keys.map((k) =>
+      `<div class="col"><div class="title">${escapeHTML(k.title)}</div>` +
+      `<div class="rows">` + k.rows.map((r2) => `<div class="row"><i class="sw" style="background:rgb(${r2.swatch.join(",")})"></i>${escapeHTML(r2.text)}</div>`).join("") +
+      `</div></div>`).join("") : "";
   }
 
   // One vertical key: low values at the bottom, high at the top. `ticks` are
   // {v, p} with p in 0..1 along the bar.
-  legendColumn(title, unit, gradient, ticks, note = "") {
+  legendColumn(title, unit, gradient, ticks, note = "", named = false) {
     const last = ticks.length - 1;
     return `<div class="col">` +
       `<div class="title"><span>${escapeHTML(title)}</span><span>${escapeHTML(unit)}</span></div>` +
-      `<div class="body"><div class="ticks">` + ticks.map((t, i) =>
-        `<span class="${i === 0 ? "first" : i === last ? "last" : ""}" ` +
-        `style="bottom:${(t.p * 100).toFixed(1)}%">${t.v}</span>`).join("") + `</div>` +
-      `<div class="bar" style="background-image:linear-gradient(to top, ${gradient})"></div></div>` +
+      `<div class="body"><div class="ticks${named ? " named" : ""}">` + ticks.map((t, i) =>
+        `<span class="${named ? "" : i === 0 ? "first" : i === last ? "last" : ""}" ` +
+        `style="bottom:${(t.p * 100).toFixed(1)}%">${escapeHTML(String(t.text || t.v))}</span>`).join("") + `</div>` +
+      `<div class="bar" style="background-image:linear-gradient(to top, ${gradient})">` +
+      (named ? ticks.map((t) => `<i class="mk" style="bottom:${(t.p * 100).toFixed(1)}%"></i>`).join("") : "") + `</div></div>` +
       (note ? `<div class="note">${escapeHTML(note)}</div>` : "") + `</div>`;
   }
 
@@ -1376,6 +1956,7 @@ class App {
       `<small>${other.day} ${other.hm} ${other.label}</small>${tag}`;
     this.applySatelliteTime(entry);
     this.textureFor(this.fieldSource(this.layer), Math.floor(this.stepIndex) + 1);  // prefetch
+    if (this.contourLabelItem() || this.hazardSpec()) this.scheduleContourLabels();
     this.writeURL();
     this.map && this.map.triggerRepaint();
   }
@@ -1388,6 +1969,8 @@ class App {
   readURL() {
     const h = new URLSearchParams(location.hash.slice(1));
     if (h.get("layer") && this.manifest.layers[h.get("layer")] && !this.manifest.layers[h.get("layer")].hidden) this.layer = h.get("layer");
+    const pid = h.get("preset");
+    if (pid && PRESETS[pid] && this.presetAvailable(pid)) { this.preset = pid; this.layer = PRESETS[pid].main; }
     if (h.get("step")) {
       this.stepIndex = Math.max(0, Math.min(this.steps.length - 1, +h.get("step")));
       this.stepFromURL = true;
@@ -1404,7 +1987,7 @@ class App {
     const c = this.map.getCenter();
     const at = `${c.lng.toFixed(2)},${c.lat.toFixed(2)},${this.map.getZoom().toFixed(1)}`;
     const h = new URLSearchParams({
-      layer: this.layer, step: String(Math.round(this.stepIndex * 100) / 100), at,
+      layer: this.layer, ...(this.preset ? { preset: this.preset } : {}), step: String(Math.round(this.stepIndex * 100) / 100), at,
       grid: this.gridOn ? "1" : "0", radar: this.radarOn ? "1" : "0",
       sat: this.satOn ? "1" : "0",
       labels: this.labelsOn ? "1" : "0",
@@ -1441,6 +2024,7 @@ class App {
     this.map.touchZoomRotate.disableRotation();
     this.map.on("load", () => {
       this.map.addLayer(new WeatherLayer(this));   // sets this.gl via onAdd
+      this.paintLegend();   // first painted before the map existed, so the zoom-dependent key was wrong
       const boot = document.getElementById("boot");
       if (boot) boot.remove();
       this.drawGrid();
@@ -1453,7 +2037,9 @@ class App {
     });
     this.map.on("move", () => this.drawGrid());
     this.map.on("resize", () => this.drawGrid());
-    this.map.on("moveend", () => this.writeURL());
+    this.map.on("moveend", () => { this.writeURL(); this.scheduleContourLabels(); });
+    // The isobar spacing follows zoom, and the key quotes it.
+    this.map.on("zoomend", () => { if (this.preset) this.paintLegend(); });
     this.map.on("mousemove", (e) => this.probe(e.lngLat));
     this.map.on("mouseout", () => { document.getElementById("readout").hidden = true; });
   }
@@ -1500,8 +2086,8 @@ class App {
   paintBoundaryStyle() {
     const m = this.map;
     if (!m) return;
-    const light = LIGHT_FIELDS.has(this.layer);
-    const dark = "rgba(10,18,42,", pale = "rgba(255,255,255,";
+    const light = LIGHT_FIELDS.has(this.layer) && this.preset !== "synoptic";   // synoptic: white coast, over the clouds
+    const dark = "rgba(0,0,0,", pale = "rgba(255,255,255,";
     const set = (id, color) => { if (m.getLayer(id)) m.setPaintProperty(id, "line-color", color); };
     set("coast", light ? dark + "0.92)" : pale + "0.92)");
     set("coast-casing", light ? pale + "0.6)" : dark + "0.5)");
@@ -1532,6 +2118,9 @@ class App {
     g.lineWidth = 1.8; g.strokeStyle = "rgba(8,12,24,0.85)"; g.stroke();
     map.addImage("city-dot", g.getImageData(0, 0, 16, 16), { pixelRatio: 2 });
 
+    this.addContourLabels();
+    this.addHazardLayer();
+    this.scheduleContourLabels();
     const vis = this.labelsOn ? "visible" : "none";
     const halo = (color) => ({ "text-halo-color": color, "text-halo-width": 1.4, "text-halo-blur": 0.4 });
     const add = (layer) => { map.addLayer({ ...layer, layout: { ...layer.layout, visibility: vis } }); this.labelLayerIds.push(layer.id); };
@@ -1711,7 +2300,11 @@ class App {
     const i = Math.floor(p), j = Math.min(i + 1, n - 1);
     const si = this.axis[i].si + (this.axis[j].si - this.axis[i].si) * (p - i);
     const lo = Math.floor(si);
-    const names = new Set([this.fieldSource(this.layer), this.layer]);
+    const names = new Set();
+    for (const item of this.renderStack()) {
+      const n = item.kind === "particles" ? item.layer : dataOf(item);
+      names.add(this.fieldSource(n)); names.add(n);
+    }
     for (const name of names) {
       if (!this.manifest.layers[name]) continue;
       if (!this.textureFor(name, lo)) ok = false;
@@ -1907,11 +2500,142 @@ class App {
     const unit = RAMPS[this.layer].unitLabel;
     const el = document.getElementById("readout");
     el.hidden = false;
+    // A ramp that names its thresholds (heat index) also names the level here.
+    const marks = RAMPS[this.layer].marks;
+    const level = marks ? ([...marks].reverse().find(([v]) => value >= v) || [0, RAMPS[this.layer].marksBelow])[1] : "";
     document.getElementById("readout-value").textContent =
-      `${value.toFixed(value < 10 ? 1 : 0)} ${unit}`;
+      `${value.toFixed(value < 10 ? 1 : 0)} ${unit}` + (level ? ` · ${level}` : "");
     document.getElementById("readout-pos").textContent =
       `${lngLat.lat.toFixed(2)}, ${lngLat.lng.toFixed(2)}`;
   }
+}
+
+// Contour lines of a scalar grid (marching squares), joined into polylines, for
+// the labels. The colour lines themselves are drawn on the GPU; this only finds
+// where to put text, so it works at the grid's own resolution. `v` is w*h values
+// row by row; a line is drawn at every multiple of `step`. Returns
+// Map(level -> [ [[x, y], ...], ... ]) in fractional grid coordinates.
+function traceContours(v, w, h, step) {
+  const perLevel = new Map();
+  const get = (L) => {
+    let s = perLevel.get(L);
+    if (!s) { s = { pts: new Map(), list: [] }; perLevel.set(L, s); }
+    return s;
+  };
+  for (let j = 0; j < h - 1; j++) {
+    for (let i = 0; i < w - 1; i++) {
+      const a = v[j * w + i], b = v[j * w + i + 1], c = v[(j + 1) * w + i + 1], d = v[(j + 1) * w + i];
+      const lo = Math.min(a, b, c, d), hi = Math.max(a, b, c, d);
+      if (!(hi > lo)) continue;                       // flat, or NaN
+      for (let L = Math.ceil(lo / step) * step; L <= hi; L += step) {
+        const mask = (a < L ? 1 : 0) | (b < L ? 2 : 0) | (c < L ? 4 : 0) | (d < L ? 8 : 0);
+        if (mask === 0 || mask === 15) continue;
+        const s = get(L);
+        // An edge is named by its cell and direction, so the two cells that share
+        // it name it the same way and their segments join up.
+        const H = (x, y, v1, v2) => { const k = (y * w + x) * 2; if (!s.pts.has(k)) s.pts.set(k, [x + (L - v1) / (v2 - v1), y]); return k; };
+        const V = (x, y, v1, v2) => { const k = (y * w + x) * 2 + 1; if (!s.pts.has(k)) s.pts.set(k, [x, y + (L - v1) / (v2 - v1)]); return k; };
+        const T = () => H(i, j, a, b), R = () => V(i + 1, j, b, c), B = () => H(i, j + 1, d, c), Lf = () => V(i, j, a, d);
+        const seg = (p, q) => s.list.push([p(), q()]);
+        const centreBelow = (a + b + c + d) / 4 < L;
+        switch (mask) {
+          case 1: case 14: seg(Lf, T); break;
+          case 2: case 13: seg(T, R); break;
+          case 3: case 12: seg(Lf, R); break;
+          case 4: case 11: seg(R, B); break;
+          case 6: case 9:  seg(T, B); break;
+          case 7: case 8:  seg(Lf, B); break;
+          case 5:  if (centreBelow) { seg(T, R); seg(Lf, B); } else { seg(Lf, T); seg(R, B); } break;
+          case 10: if (centreBelow) { seg(Lf, T); seg(R, B); } else { seg(T, R); seg(Lf, B); } break;
+        }
+      }
+    }
+  }
+  const out = new Map();
+  for (const [L, s] of perLevel) {
+    const adj = new Map();
+    s.list.forEach(([p, q], n) => {
+      for (const k of [p, q]) { if (!adj.has(k)) adj.set(k, []); adj.get(k).push(n); }
+    });
+    const used = new Uint8Array(s.list.length);
+    const walk = (from) => {                         // follow unused segments out of `from`
+      const keys = [];
+      for (let at = from; ;) {
+        const n = (adj.get(at) || []).find((m) => !used[m]);
+        if (n === undefined) break;
+        used[n] = 1;
+        at = s.list[n][0] === at ? s.list[n][1] : s.list[n][0];
+        keys.push(at);
+      }
+      return keys;
+    };
+    const lines = [];
+    for (let n = 0; n < s.list.length; n++) {
+      if (used[n]) continue;
+      used[n] = 1;
+      const [p, q] = s.list[n];
+      const tail = walk(q), head = walk(p);
+      lines.push([...head.reverse(), p, q, ...tail].map((k) => s.pts.get(k)));
+    }
+    out.set(L, lines);
+  }
+  return out;
+}
+
+// Centres of high and low: points that are the maximum (minimum) of everything
+// within `r` cells, and stand at least `depth` above (below) the mean of the ring
+// at distance r, so a gentle bump on a flat field is not called a high. Cells
+// within r of the edge are skipped, since what lies beyond is unknown. Returns
+// [{ x, y, v, kind: "H" | "L", depth }].
+function findExtrema(v, w, h, r, depth) {
+  if (w < 2 * r + 1 || h < 2 * r + 1) return [];
+  const rowMax = new Float32Array(w * h), rowMin = new Float32Array(w * h);
+  for (let y = 0; y < h; y++) for (let x = r; x < w - r; x++) {
+    let mx = -Infinity, mn = Infinity;
+    for (let k = -r; k <= r; k++) { const q = v[y * w + x + k]; if (q > mx) mx = q; if (q < mn) mn = q; }
+    rowMax[y * w + x] = mx; rowMin[y * w + x] = mn;
+  }
+  const out = [];
+  for (let y = r; y < h - r; y++) for (let x = r; x < w - r; x++) {
+    const c = v[y * w + x];
+    if (!(c > -Infinity)) continue;
+    let hi = true, lo = true;
+    for (let k = -r; k <= r && (hi || lo); k++) {
+      if (rowMax[(y + k) * w + x] > c) hi = false;
+      if (rowMin[(y + k) * w + x] < c) lo = false;
+    }
+    if (!hi && !lo) continue;
+    let sum = 0, cnt = 0;
+    for (let k = -r; k <= r; k += 2) {
+      sum += v[(y - r) * w + x + k] + v[(y + r) * w + x + k] + v[(y + k) * w + x - r] + v[(y + k) * w + x + r];
+      cnt += 4;
+    }
+    const d = c - sum / cnt;
+    if (hi && d >= depth) out.push({ x, y, v: c, kind: "H", depth: d });
+    else if (lo && -d >= depth) out.push({ x, y, v: c, kind: "L", depth: -d });
+  }
+  // A plateau can give several equal maxima; keep the first of any pair closer than r.
+  return out.filter((e, i) => !out.slice(0, i).some((o) => o.kind === e.kind && Math.hypot(o.x - e.x, o.y - e.y) < r));
+}
+
+// A traced line steps cell by cell, so its direction jitters at the scale of a
+// label and MapLibre will not bend text along it. A few passes of neighbour
+// averaging (ends held fixed, closed loops wrapped) and keeping every other
+// point give a line the text can follow; it moves by a fraction of a cell.
+function smoothLine(pts, passes = 3) {
+  const closed = pts.length > 3 && pts[0][0] === pts[pts.length - 1][0] && pts[0][1] === pts[pts.length - 1][1];
+  let cur = closed ? pts.slice(0, -1) : pts.slice();
+  const n = () => cur.length;
+  for (let p = 0; p < passes && n() > 4; p++) {
+    cur = cur.map((pt, i) => {
+      if (!closed && (i < 2 || i > n() - 3)) return pt;
+      let x = 0, y = 0;
+      for (let k = -2; k <= 2; k++) { const q = cur[(i + k + n()) % n()]; x += q[0]; y += q[1]; }
+      return [x / 5, y / 5];
+    });
+  }
+  const kept = cur.filter((_, i) => i % 2 === 0 || i === n() - 1);
+  return closed ? [...kept, kept[0]] : kept;
 }
 
 // Mirrors decodeValue() in GLSL and decode() in encoding.py.

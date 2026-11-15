@@ -29,11 +29,16 @@ def make_fields(spec: dict) -> list[np.ndarray]:
     lo, hi = spec["range"]
     if spec.get("derive") == "speed":
         return [synthetic(-hi * 0.7, hi * 0.7, i) for i in range(2)]
+    if spec.get("derive") == "heatindex":
+        t = synthetic(15.0, 40.0, 0)
+        return [t, t - synthetic(2.0, 15.0, 1)]  # dewpoint below temperature
     return [synthetic(lo, hi, i) for i in range(len(spec["params"]))]
 
 
 def expected(spec: dict, fields: list[np.ndarray]) -> list[np.ndarray]:
     """What decode() should give back for these input fields."""
+    if spec.get("derive") == "heatindex":
+        return [encoding.heat_index(*fields)]
     return [np.hypot(*fields)] if spec.get("derive") == "speed" else fields
 
 
@@ -139,6 +144,20 @@ def test_guard_skips_a_run_that_is_already_published():
             assert "building run" in go(dest, steps=[0, 3])
         finally:
             build_run.REVISION = old
+
+
+def test_heat_index_matches_nws_reference_points():
+    # NWS heat index chart: 90 F / 70% RH -> 106 F; 96 F / 65% -> ~121 F.
+    def hi_f(t_f, rh):
+        t_c = (t_f - 32) * 5 / 9
+        a, b = 17.625, 243.04
+        # dewpoint that gives this RH at this temperature (inverse Magnus)
+        g = np.log(rh / 100.0) + a * t_c / (b + t_c)
+        td = b * g / (a - g)
+        return encoding.heat_index(np.array([t_c]), np.array([td]))[0] * 9 / 5 + 32
+    assert abs(hi_f(90, 70) - 106) <= 2, hi_f(90, 70)
+    assert abs(hi_f(96, 65) - 121) <= 3, hi_f(96, 65)
+    assert abs(hi_f(75, 50) - 75) <= 3     # mild air: close to the air temperature
 
 
 def test_alpha_is_always_opaque():

@@ -32,7 +32,12 @@ FORMAT_VERSION = 1
 #   1  initial
 #   2  longitudes taken from the GRIB's own coordinates (half-world shift fix)
 #   3  added the 16-bit "windspeed" layer (colour field and readout for wind)
-REVISION = 3
+#   4  added the derived "heatindex" layer (needs the 2 m dewpoint, "2d")
+#   5  msl is 16-bit: the synoptic preset draws isobars, and at 8 bits the
+#      tropics have only a dozen distinct pressure levels over 20 x 30 degrees,
+#      so a 2 hPa isobar comes out as thick wandering bands, not a line
+#   6  added 850 hPa wind and low/mid/high cloud cover for the synoptic preset
+REVISION = 6
 
 # Grid of the ECMWF open data 0.25 degree product.
 NLAT, NLON = 721, 1440
@@ -78,6 +83,19 @@ LAYERS: dict[str, dict] = {
         "range": [-80.0, 60.0],
         "label": "2 m temperature",
     },
+    # NWS heat index (shade, light wind) from 2 m temperature and dewpoint. It is
+    # derived here, not in the browser, so the map and the hover value read the
+    # same bytes like every other layer. Range is wide so nothing clips; the
+    # useful part of the scale (27 to 54 degC) is what the page colours.
+    "heatindex": {
+        "params": ["2t", "2d"],
+        "derive": "heatindex",
+        "hidden": True,    # reached through the "Heat stress" preset, not a layer button of its own
+        "encoding": "scalar8",
+        "unit": "degC",
+        "range": [-10.0, 70.0],
+        "label": "heat index",
+    },
     "precip": {
         "params": ["tp"],
         "encoding": "scalar8",
@@ -93,22 +111,32 @@ LAYERS: dict[str, dict] = {
         "range": [0.0, 100.0],
         "label": "total cloud cover",
     },
+    # Cloud by level, for the synoptic preset's cloud colouring. Data-only.
+    "lcc": {"params": ["lcc"], "hidden": True, "encoding": "scalar8", "unit": "%",
+            "range": [0.0, 100.0], "label": "low cloud cover"},
+    "mcc": {"params": ["mcc"], "hidden": True, "encoding": "scalar8", "unit": "%",
+            "range": [0.0, 100.0], "label": "medium cloud cover"},
+    "hcc": {"params": ["hcc"], "hidden": True, "encoding": "scalar8", "unit": "%",
+            "range": [0.0, 100.0], "label": "high cloud cover"},
+    # 850 hPa wind, for the synoptic preset's streaks. Data-only.
+    "wind850": {"params": ["u850", "v850"], "hidden": True, "encoding": "vector8",
+                "unit": "m s-1", "range": [-60.0, 60.0], "label": "850 hPa wind"},
     "msl": {
         "params": ["msl"],
-        "encoding": "scalar8",
+        "encoding": "scalar16",
         "unit": "hPa",
         "range": [870.0, 1085.0],
         "label": "mean sea level pressure",
     },
 }
 
-# Why everything is scalar8 even though scalar16 is implemented and tested:
+# Why almost everything is scalar8 even though scalar16 is implemented and tested
+# (msl and windspeed are the exceptions, for the reasons given at each):
 # a 16-bit field is 4 to 8 times the bytes of an 8-bit one, because the low
 # byte is close to random and PNG cannot compress it. At 8 bits, temperature
 # resolves to 0.55 degC and pressure to 0.84 hPa, which no one can see on a
-# colour map. Pressure is the one field where it shows, as slight stepping in
-# tightly spaced isobars; if that bothers you, set msl to "scalar16" above and
-# accept roughly 1.4 MB more per forecast step.
+# colour map. Pressure is the one field where it shows, and it is now 16-bit for
+# that reason: isobars are drawn from it (roughly 1.4 MB more per forecast step).
 #
 # The consequence for the product: these PNGs are display-grade, not
 # archive-grade. A data customer who needs full precision should be served the
@@ -154,6 +182,34 @@ def reproject(
     return out
 
 
+def heat_index(t_c: np.ndarray, td_c: np.ndarray) -> np.ndarray:
+    """NWS heat index in degC from 2 m temperature and dewpoint (both degC).
+
+    Steadman's simple formula first; where its mean with the air temperature
+    reaches 80 F the Rothfusz regression takes over, with the NWS low- and
+    high-humidity adjustments. Defined for shade and light wind: full sun can
+    add several degrees, which this does not know about. Below ~27 degC it is
+    roughly the air temperature, so only the warm end is meaningful.
+    """
+    t_c = np.asarray(t_c, dtype=np.float64)
+    td_c = np.minimum(np.asarray(td_c, dtype=np.float64), t_c)  # dewpoint cannot exceed T
+    # Relative humidity from the Magnus formula.
+    a, b = 17.625, 243.04
+    rh = 100.0 * np.exp(a * td_c / (b + td_c) - a * t_c / (b + t_c))
+    rh = np.clip(rh, 0.0, 100.0)
+    t = t_c * 9.0 / 5.0 + 32.0  # degF
+    simple = 0.5 * (t + 61.0 + (t - 68.0) * 1.2 + rh * 0.094)
+    hi = (-42.379 + 2.04901523 * t + 10.14333127 * rh - 0.22475541 * t * rh
+          - 0.00683783 * t * t - 0.05481717 * rh * rh + 0.00122874 * t * t * rh
+          + 0.00085282 * t * rh * rh - 0.00000199 * t * t * rh * rh)
+    dry = (rh < 13.0) & (t >= 80.0) & (t <= 112.0)
+    hi = np.where(dry, hi - ((13.0 - rh) / 4.0) * np.sqrt(np.abs(17.0 - np.abs(t - 95.0)) / 17.0), hi)
+    humid = (rh > 85.0) & (t >= 80.0) & (t <= 87.0)
+    hi = np.where(humid, hi + ((rh - 85.0) / 10.0) * ((87.0 - t) / 5.0), hi)
+    out_f = np.where((simple + t) / 2.0 >= 80.0, hi, simple)
+    return (out_f - 32.0) * 5.0 / 9.0
+
+
 def _normalise(values: np.ndarray, lo: float, hi: float, gamma: float | None) -> np.ndarray:
     """Map values onto 0..1, clipped, with an optional gamma curve."""
     out = (values.astype(np.float64) - lo) / (hi - lo)
@@ -183,6 +239,9 @@ def encode(layer: str, fields: list[np.ndarray]) -> np.ndarray:
     if spec.get("derive") == "speed":
         u, v = fields
         fields = [np.hypot(u.astype(np.float64), v.astype(np.float64))]
+    elif spec.get("derive") == "heatindex":
+        t, td = fields
+        fields = [heat_index(t, td)]
 
     rgba = np.zeros((NLAT, NLON, 4), dtype=np.uint8)
     rgba[..., 3] = 255  # see module docstring: never anything but 255

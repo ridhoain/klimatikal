@@ -50,6 +50,56 @@ python pipeline/build_run.py
 Every file of the run is uploaded before `latest.json` is written, so a crash
 at any earlier point leaves the previous run live.
 
+## Presets
+
+A preset is one information goal as a stack of layers drawn bottom to top, the
+`PRESETS` table in `web/index.html`. Each entry is a `fill` (a colour field, its
+colours in `RAMPS`), a `contour` (isolines of a layer) or `particles` (the wind
+streaks); `main` is the layer the key, hover value and coast colours follow, and
+`notes` are the key lines for layers with no colour bar. Picking a plain layer
+button clears the preset and the page behaves as before. A preset is offered only
+when the run holds every layer it needs, so an older run still loads. The choice
+is in the URL as `#preset=<id>`.
+
+| id | question | stack |
+|---|---|---|
+| `heat` | Is it dangerous to work outdoors? | NWS heat index, cloud haze (less sun), wind |
+| `synoptic` | What is the big-picture pattern? | low (tan) / mid (green) / high (white) cloud, sea-level pressure isobars (blue low, red high) with values on the lines and H / L at the centres, 850 hPa wind |
+
+Two pipeline consequences. `heatindex` is derived in `encoding.py` from the 2 m
+temperature and dewpoint (`2d`), so the map and the hover value read the same
+bytes; it is the shade, light-wind NWS index, and full sun adds several degrees.
+`msl` is 16-bit, because isobars drawn from 8-bit pressure come out as thick
+bands in the tropics (a dozen distinct levels over 20 x 30 degrees). The
+synoptic preset also uses 850 hPa wind (`wind850`) and low/mid/high cloud cover
+(`lcc`, `mcc`, `hcc`); the pressure-level wind is a second request per step
+(`levtype=pl`). The contour numbers and the H / L markers are not drawn by the
+shader: the page traces the same pressure field on the CPU (`traceContours`,
+`findExtrema` in `web/index.html`) and gives MapLibre lines and points to label.
+An H / L is the biggest or smallest value within 4 degrees and at least 1.5 hPa
+off the surrounding ring; over high ground sea-level pressure is a reduction to
+a surface below the terrain, so centres there are not physical.
+
+A preset can also carry `hazard`: warning triangles where its field reaches a
+named level of the ramp's `marks` (Heat stress: Danger, 41 °C; purple triangle
+from Extreme danger, 54 °C). The browser bins the visible cells into blocks of
+about 44 screen pixels, joins hot blocks that are close, and draws one triangle
+per joined area with its peak value, so areas merge as you zoom out and split as
+you zoom in. The legend marks, the hover danger text and the triangles all come
+from the same `marks`. Heat index is reached only through the Heat stress
+preset (it has no layer button of its own).
+
+The legend is one column. A preset's plain-language reading (`explain`) stays
+hidden until the "i" on the legend is pressed (remembered per browser), a
+preset's colour keys for layers without a bar (`keys`, the cloud levels) get a
+box of their own, and a ramp with `marks` (the heat index) draws its named
+thresholds across the bar.
+
+These are REVISIONs 4 to 6, so already-published runs rebuild once.
+
+    cd pipeline && python3 build_run.py --dry-run --steps 0,3,6,9,12 --dest ../web/data/preset-test
+    # then open http://localhost:8000/?data=./data/preset-test#preset=heat
+
 ## The one rule
 
 `encoding.py`, the GLSL in `web/index.html`, and `decodeOnCPU()` in the same
