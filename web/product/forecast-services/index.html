@@ -1181,9 +1181,9 @@ function draw(){
   var cx3=W/2+S.px+(nar?40:0), cy3=H/2+S.py, cxF=M[0]+(W-M[0]-M[1])/2+S.px, cyF=M[2]+(H-M[2]-M[3])/2+S.py;
   var cx=cx3+(cxF-cx3)*fl, cy=cy3+(cyF-cy3)*fl;
   var cyw=Math.cos(S.yaw), syw=Math.sin(S.yaw), cp=Math.cos(S.pitch), sp=Math.sin(S.pitch), DP=7;
-  // scene axes: x = planning horizon (right), y = spatial extent (up), z = impact proximity (into the screen)
+  // scene axes: x = planning horizon (right), y = spatial extent (up), z = impact proximity (socioeconomic nearest, modes and indices deepest)
   function pr(p){
-    var X=p[0], Y=-p[2], Z=-p[1];
+    var X=p[0], Y=-p[2], Z=p[1];
     var x1=X*cyw-Z*syw, z1=X*syw+Z*cyw;
     var y2=Y*cp-z1*sp, z2=Y*sp+z1*cp;
     var f=1+(DP/(DP-z2)-1)*S.persp;
@@ -1204,7 +1204,7 @@ function draw(){
   // floor grid
   var hT=[[1,'1 h'],[24,'1 d'],[168,'1 wk'],[730,'1 mo'],[8760,'1 yr'],[87600,'10 yr'],[876000,'100 yr']];
   var sT=[[0.01,'10 m'],[0.1,'100 m'],[1,'1 km'],[10,'10'],[100,'100'],[1000,'1,000'],[10000,'10,000 km']];
-  var fy=flat?-hy:hy; // grid wall: the back wall in 3D
+  var fy=-hy; // grid wall: the back wall in 3D (modes and indices sit at the back)
   var hs=null,ss=null;
   if(flat){
     hs=pickTicks(HC,function(v){return pr([(nh(v)-0.5)*DIM.x,fy,0])[0];},W,[36,56,68]);
@@ -1245,7 +1245,7 @@ function draw(){
   var xR=(pr([hx,0,hz])[0]>=pr([-hx,0,hz])[0])?hx:-hx; // right-most bottom edge, receding
   if(!flat&&slen([xR,-hy,hz],[xR,hy,hz])>40){
   [[1.5,'Modes and indices'],[5,'Weather and hazards'],[8.5,'Socioeconomic']].forEach(function(t){var y=(t[0]/10-0.5)*DIM.y,p=away(pr([xR,y,hz]),14);txt(tr(t[1]),p[0],p[1],P.mute,'left',10.5);});
-  var at=away(pr([xR,hy,hz]),16);txt(tr(nar?'Impact':'Impact proximity'),at[0]+4,at[1]-8,P.fg,'left',11.5,true);}
+  var at=away(pr([xR,-hy,hz]),16);txt(tr(nar?'Impact':'Impact proximity'),at[0]+4,at[1]-8,P.fg,'left',11.5,true);}
 
   // boxes
   var list=ITEMS.filter(visible).map(function(it){var c=pr(it.ctr);return {it:it,c:c};});
