@@ -400,9 +400,9 @@ const PRESETS = {
       // the line every `labelEvery` hPa, and H / L mark the centres: the biggest or
       // smallest value within 4 degrees and 1.5 hPa clear of the ring around it.
       { kind: "contour", layer: "msl", ramp: "mslline", heavy: 10,
-        intervalByZoom: [[0, 5], [2.5, 2], [3.5, 1]], alpha: 0.9, majorAlpha: 1, width: 0.4, majorWidth: 0.75, casing: [1, 1, 1],
+        intervalByZoom: [[0, 5], [2.5, 2], [3.5, 1]], alpha: 0.95, majorAlpha: 1, width: 0.4, majorWidth: 0.75,
         labelEvery: 4, extrema: { radius: 16, depth: 1.5 } },
-      { kind: "particles", layer: "wind850", opacity: 0.6 },
+      { kind: "particles", layer: "wind850", opacity: 1.0, tint: { layer: "msl", ramp: "mslline" } },
     ],
     keys: [{ title: "Cloud density", rows: [
       { swatch: [195, 197, 200], text: "Sparse" },
@@ -412,7 +412,7 @@ const PRESETS = {
     explain: [
       "Lines: sea-level pressure every {interval} hPa, bold every 10. Blue is low, red is high.",
       "H and L: centres of high and low pressure.",
-      "Streaks: 850 hPa wind.",
+      "Streaks: 850 hPa wind, coloured by the sea-level pressure under them (the same colours as the lines).",
     ],
   },
 };
@@ -641,7 +641,6 @@ const CONTOUR_FS = `
   uniform sampler2D u_now, u_next, u_ramp;
   uniform float u_blend, u_interval, u_major, u_width, u_majorWidth, u_px, u_base;
   uniform float u_dlo, u_dhi, u_alpha, u_majorAlpha;
-  uniform vec3 u_casing;
   varying vec2 v_merc;
   // The value minus u_base (a multiple of the heavy-line spacing, so the lines
   // do not move). float32 near 1010 hPa resolves only ~1e-4 hPa, about what
@@ -651,15 +650,28 @@ const CONTOUR_FS = `
     float unit = u_encoding == 1 ? (px.r * 255.0 * 256.0 + px.g * 255.0) / 65535.0 : px.r;
     return pow(clamp(unit, 0.0, 1.0), u_gamma) * (u_max - u_min) + (u_min - u_base);
   }
+  // Bilinear done by hand on exact texel centres. The hardware filter weighs
+  // the bytes with only 8 bits, which is ~0.003 hPa of noise: invisible in the
+  // colour field, but over a flat pressure field zoomed in it breaks the line
+  // into dashes. The wide blur below hides the facets bilinear would show.
+  float relBilinear(sampler2D t, vec2 uv) {
+    vec2 coord = uv * u_texSize - 0.5;
+    vec2 i = floor(coord), f = coord - i;
+    vec2 c = (i + 0.5) / u_texSize, o = 1.0 / u_texSize;
+    float a = relValue(texture2D(t, c));
+    float b = relValue(texture2D(t, c + vec2(o.x, 0.0)));
+    float d = relValue(texture2D(t, c + vec2(0.0, o.y)));
+    float e = relValue(texture2D(t, c + o));
+    return mix(mix(a, b, f.x), mix(d, e, f.x), f.y);
+  }
   float valueOne(vec2 uv) {
-    return mix(relValue(sampleSmooth(u_now, uv)), relValue(sampleSmooth(u_next, uv)), u_blend);
+    return mix(relBilinear(u_now, uv), relBilinear(u_next, uv), u_blend);
   }
   // Averaged with four points ${ISO_BLUR} cells away (the same blur the label
   // tracing applies to its grid), so the lines are smooth curves and not the
   // grid-scale wobbles of the data. Sea-level pressure over high ground is the
   // worst case: the reduction multiplies every bit of terrain roughness.
-  float valueAt(vec2 m) {
-    vec2 uv = dataUV(m.x, m.y);
+  float valueAtUV(vec2 uv) {
     vec2 d = ${ISO_BLUR}.0 / u_texSize;
     return 0.2 * (valueOne(uv)
          + valueOne(uv + vec2(d.x, 0.0)) + valueOne(uv - vec2(d.x, 0.0))
@@ -670,23 +682,24 @@ const CONTOUR_FS = `
     return 1.0 - smoothstep(max(width * 0.5 - 0.5, 0.0), width * 0.5 + 0.5, d);   // width px wide, one pixel of anti-aliasing centred on the edge
   }
   void main() {
-    float v  = valueAt(v_merc);
-    float vx = valueAt(v_merc + vec2(u_px, 0.0));
-    float vy = valueAt(v_merc + vec2(0.0, u_px));
-    float perPx = abs(vx - v) + abs(vy - v);
+    vec2 uv = dataUV(v_merc.x, v_merc.y);
+    float v  = valueAtUV(uv);
+    // The change per pixel is the change per grid cell times the pixel's size in
+    // cells. Differencing over one pixel instead loses the answer to rounding
+    // (hardware filtering of the 16-bit bytes is only good to ~0.003 hPa), and
+    // it showed as hairs along the lines when zoomed in on a flat field.
+    vec2 cell = 1.0 / u_texSize;
+    float gx = valueAtUV(uv + vec2(cell.x, 0.0)) - v;
+    float gy = valueAtUV(uv + vec2(0.0, cell.y)) - v;
+    vec2 pc = (dataUV(v_merc.x + u_px, v_merc.y + u_px) - uv) * u_texSize;
+    float perPx = abs(gx) * abs(pc.x) + abs(gy) * abs(pc.y);
     float minor = lineAt(v, u_interval, u_width, perPx);
     float major = lineAt(v, u_interval * u_major, u_majorWidth, perPx);
     // Colour by the line's own value: back to absolute, through the ramp.
     float t = clamp((v + u_base - u_dlo) / (u_dhi - u_dlo), 0.0, 1.0);
-    float core = max(minor * u_alpha, major * u_majorAlpha);
-    // A dark edge one pixel either side of the line, so a coloured line reads
-    // over white cloud and over black sea alike (the colours alone blend into
-    // both). Alpha-compositing the line over its own casing.
-    float casing = max(lineAt(v, u_interval, u_width + 2.0, perPx), lineAt(v, u_interval * u_major, u_majorWidth + 2.0, perPx)) * 0.6;
-    float a = core + casing * (1.0 - core);
+    float a = max(minor * u_alpha, major * u_majorAlpha);
     if (a < 0.01) discard;
-    vec3 line = texture2D(u_ramp, vec2(t, 0.5)).rgb;
-    gl_FragColor = vec4((line * core + u_casing * casing * (1.0 - core)) / a, a);
+    gl_FragColor = vec4(texture2D(u_ramp, vec2(t, 0.5)).rgb, a);
   }`;
 
 // ---------------------------------------------------------------------------
@@ -751,7 +764,15 @@ const DRAW_VS = `
   uniform sampler2D u_old, u_new;
   uniform mat4 u_matrix;
   uniform float u_side, u_worldShift, u_jump, u_trail;
+  // Optional tint: the colour of a ramp at the value of a 16-bit layer (sea-level
+  // pressure) under the head of the streak, so a streak shows the isobar it is on.
+  uniform sampler2D u_press, u_pramp;
+  uniform float u_tint, u_pmin, u_pmax, u_pdlo, u_pdhi;
+  uniform vec2 u_shift;       // extra pixels of offset, in clip units; draws a line twice as wide
   varying float v_end;
+  varying vec3 v_tint;
+  const float PI = 3.1415926535897932;
+  float mercToLat(float y) { return degrees(2.0 * atan(exp((1.0 - 2.0 * y) * PI)) - PI * 0.5); }
 
   vec2 unpack(vec4 px) {
     return vec2(px.r * 255.0 * 256.0 + px.g * 255.0,
@@ -776,15 +797,30 @@ const DRAW_VS = `
     vec2 pos = a_end > 0.5 ? newP : tail;
     v_end = teleported ? 0.0 : a_end;
     gl_Position = u_matrix * vec4(pos.x + u_worldShift, pos.y, 0.0, 1.0);
+    gl_Position.xy += u_shift * gl_Position.w;
     gl_PointSize = 1.5;
+    v_tint = vec3(0.0);
+    if (u_tint > 0.5) {
+      vec2 duv = vec2(fract(newP.x), (90.0 - mercToLat(newP.y)) / 180.0);
+      vec4 px = texture2D(u_press, duv);
+      float value = (px.r * 255.0 * 256.0 + px.g * 255.0) / 65535.0 * (u_pmax - u_pmin) + u_pmin;
+      v_tint = texture2D(u_pramp, vec2(clamp((value - u_pdlo) / (u_pdhi - u_pdlo), 0.0, 1.0), 0.5)).rgb;
+    }
   }`;
 
 const DRAW_FS = `
   precision highp float;
   varying float v_end;
-  uniform float u_opacity;
+  varying vec3 v_tint;
+  uniform float u_opacity, u_tint, u_halo;
   uniform vec3 u_color;
-  void main() { gl_FragColor = vec4(u_color, u_opacity * mix(0.05, 0.75, v_end)); }`;
+  void main() {
+    // Tinted streaks are coloured like the isobars and need more weight than the
+    // plain pale or dark ones to stand out from the field underneath.
+    float tail = u_tint > 0.5 ? mix(0.2, 1.0, v_end) : mix(0.05, 0.75, v_end);
+    if (u_halo > 0.5) { gl_FragColor = vec4(1.0, 1.0, 1.0, 0.4 * u_opacity * tail); return; }   // the light edge round a coloured streak
+    gl_FragColor = vec4(u_tint > 0.5 ? v_tint : u_color, u_opacity * tail);
+  }`;
 
 class WeatherLayer {
   constructor(app) {
@@ -921,7 +957,6 @@ class WeatherLayer {
         gl.uniform1f(f.loc.u_width, item.width);
         gl.uniform1f(f.loc.u_majorWidth, item.majorWidth);
         gl.uniform1f(f.loc.u_base, Math.round(spec.min / item.heavy) * item.heavy);
-        gl.uniform3fv(f.loc.u_casing, item.casing || [0.03, 0.05, 0.10]);
         gl.uniform1f(f.loc.u_px, 1 / (512 * Math.pow(2, this.map.getZoom())));
         const ramp = RAMPS[item.ramp];
         gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, this.ramp(item.ramp));
@@ -946,7 +981,7 @@ class WeatherLayer {
 
     // --- particles, only where there is a vector field ---------------------
     const pItem = stack.find((i) => i.kind === "particles");
-    const windFrame = pItem && app.currentFrame(pItem.layer);
+    const windFrame = pItem && app.windOn && app.currentFrame(pItem.layer);
     if (!windFrame) { this.finish(gl); return; }
 
     const nowMs = performance.now();
@@ -1012,12 +1047,38 @@ class WeatherLayer {
     gl.uniform1f(d.loc.u_opacity, pItem.opacity != null ? pItem.opacity : 1.0);
     gl.uniform3fv(d.loc.u_color, this.app.lightBase() ? [0.04, 0.05, 0.09] : [1, 1, 1]);   // dark streaks on a white map
     gl.uniform1f(d.loc.u_trail, WIND_TRAIL_STEPS);
+    // Colour by pressure when the preset asks for it and the frame is ready.
+    const tintFrame = pItem.tint && app.currentFrame(pItem.tint.layer);
+    gl.uniform1f(d.loc.u_tint, tintFrame ? 1 : 0);
+    if (tintFrame) {
+      const ramp = RAMPS[pItem.tint.ramp];
+      gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, tintFrame.now);
+      gl.uniform1i(d.loc.u_press, 2);
+      gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, this.ramp(pItem.tint.ramp));
+      gl.uniform1i(d.loc.u_pramp, 3);
+      gl.uniform1f(d.loc.u_pmin, tintFrame.spec.min);
+      gl.uniform1f(d.loc.u_pmax, tintFrame.spec.max);
+      gl.uniform1f(d.loc.u_pdlo, ramp.display[0]);
+      gl.uniform1f(d.loc.u_pdhi, ramp.display[1]);
+    }
     // Well above the fastest legitimate step (a 50 m/s wind is 5x the
     // reference), far below a respawn or a wrap, which are 0.3 or more.
     gl.uniform1f(d.loc.u_jump, 12 * stepMercator);
+    // A GL line is one pixel wide. A coloured streak keeps that width, inside a
+    // light edge one pixel either side drawn first (four offset passes), so the
+    // colour holds against both dark and light cloud.
+    const px = [2 / gl.drawingBufferWidth, 2 / gl.drawingBufferHeight];
+    const halo = tintFrame ? [[-1, 0], [1, 0], [0, -1], [0, 1]] : [];
+    const body = [[0, 0]];
     for (const shift of shifts) {
       gl.uniform1f(d.loc.u_worldShift, shift);
-      gl.drawArrays(gl.LINES, 0, this.particleCount * 2);
+      for (const [pass, offsets] of [[1, halo], [0, body]]) {
+        gl.uniform1f(d.loc.u_halo, pass);
+        for (const [ox, oy] of offsets) {
+          gl.uniform2f(d.loc.u_shift, ox * px[0], oy * px[1]);
+          gl.drawArrays(gl.LINES, 0, this.particleCount * 2);
+        }
+      }
     }
 
     const swap = this.posA; this.posA = this.posB; this.posB = swap;
@@ -1099,6 +1160,7 @@ class App {
     this.useUTC = tzStore.get() === "utc";
     this.gridOn = true;
     this.labelsOn = true;
+    this.windOn = true;       // wind particles (the streaks), on or off
     this.nightOn = false;     // day/night lines (terminator, twilight, sun)
     this.labelLayerIds = [];
     // Radar overlay: BMKG radar frames built by pipeline/bmkg_radar.py and
@@ -1759,6 +1821,24 @@ class App {
     box.appendChild(satOp);
     this.satOpacity = satOp;
 
+    // Wind streaks on or off, for any layer or preset that has them.
+    const windSep = document.createElement("span");
+    windSep.className = "sep";
+    box.appendChild(windSep);
+    const wind = document.createElement("button");
+    wind.className = "toggle";
+    wind.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 6h8a2.2 2.2 0 1 0-2.2-2.2"/><path d="M1.5 10h10.5a2.2 2.2 0 1 1-2.2 2.2"/><path d="M1.5 8h5"/></svg>';
+    wind.setAttribute("aria-label", "Wind streaks");
+    wind.title = "Show or hide the moving wind streaks";
+    wind.setAttribute("aria-pressed", String(this.windOn));
+    wind.onclick = () => {
+      this.windOn = !this.windOn;
+      wind.setAttribute("aria-pressed", String(this.windOn));
+      this.writeURL();
+      this.map && this.map.triggerRepaint();
+    };
+    box.appendChild(wind);
+
     const slider = document.getElementById("slider");
     this.axis = this.buildAxis();
     slider.max = String(this.axis.length - 1);
@@ -2135,6 +2215,7 @@ class App {
     if (h.get("sat") === "1") this.satOn = true;
     if (h.get("labels") !== null) this.labelsOn = h.get("labels") !== "0";
     if (h.get("night") === "1") this.nightOn = true;
+    if (h.get("wind") === "0") this.windOn = false;
   }
 
   writeURL() {
@@ -2147,6 +2228,7 @@ class App {
       sat: this.satOn ? "1" : "0",
       labels: this.labelsOn ? "1" : "0",
       ...(this.nightOn ? { night: "1" } : {}),
+      ...(this.windOn ? {} : { wind: "0" }),
     });
     history.replaceState(null, "", `#${h}`);
   }
@@ -2254,13 +2336,17 @@ class App {
     const light = lb || LIGHT_FIELDS.has(this.layer);
     const dark = "rgba(0,0,0,", pale = "rgba(255,255,255,";
     const set = (id, color) => { if (m.getLayer(id)) m.setPaintProperty(id, "line-color", color); };
-    set("coast", light ? dark + "0.95)" : pale + "0.92)");
+    set("coast", lb ? dark + "0.75)" : light ? dark + "0.95)" : pale + "0.92)");   // a lighter black on the white map, so the isobars lead
     set("coast-casing", lb ? dark + "0.28)" : light ? pale + "0.6)" : dark + "0.5)");
     set("admin0", light ? dark + "0.7)" : pale + "0.7)");
     set("admin0-casing", light ? pale + "0.45)" : dark + "0.45)");
     set("admin1", light ? dark + "0.5)" : pale + "0.35)");
     set("admin1-casing", light ? pale + "0.35)" : dark + "0.35)");
     // The coast's "shading": on a white map its casing becomes a wide, soft, translucent shadow.
+    if (m.getLayer("coast")) {      // thinner black coast on the white map, about the weight of the isobars
+      this.coastWidth = this.coastWidth || m.getPaintProperty("coast", "line-width");
+      m.setPaintProperty("coast", "line-width", lb ? ["interpolate", ["linear"], ["zoom"], 2, 0.3, 8, 0.6] : this.coastWidth);
+    }
     if (m.getLayer("coast-casing")) {
       this.coastCasingWidth = this.coastCasingWidth || m.getPaintProperty("coast-casing", "line-width");
       m.setPaintProperty("coast-casing", "line-width", lb ? ["interpolate", ["linear"], ["zoom"], 2, 4, 6, 7] : this.coastCasingWidth);

@@ -95,7 +95,13 @@ into a heavily smoothed copy (2.5 degrees) where the surface pressure is below
 flicker (`smooth_over_terrain` in `encoding.py`, revision 7). Lowlands are
 untouched. The browser also blurs the isobar field by 3 grid cells (`ISO_BLUR`).
 
+Wind streaks in Synoptic overview are coloured by the sea-level pressure under their head (`tint` on the particles item), with the isobar colours, so a streak shows which isobar it is on; they are one pixel wide inside a light edge so the colour holds on dark and light cloud. Isobars themselves are plain coloured lines.
+
 A preset with `lightBase` (Synoptic overview) switches the map to white: black coast with a soft shadow, dark place names with white outlines, dark wind streaks, and darker isobar colours so they read on white. Other presets keep the dark map.
+
+The wind icon at the end of the layer bar turns the wind streaks on or off for any layer (`#wind=0` when off).
+
+The contour shader interpolates pressure by hand on exact texel centres and takes the line width from the change per grid cell; the hardware filter's 8-bit weights broke flat-field isobars into dashes when zoomed in.
 
 Presets are listed in the order given by their `order` (Synoptic overview first).
 
