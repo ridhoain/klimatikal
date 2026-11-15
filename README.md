@@ -165,3 +165,20 @@ check needed). The site reads `sat/global.json` first and falls back to
 `sat/manifest.json`, so `satellite.yml` can be retired once the mosaic is proven.
 
     python3 satglobal.py --dry-run --dest ../web/data  # local test, no R2
+
+## Tropical systems (JTWC)
+
+`pipeline/jtwc.py` reads the Joint Typhoon Warning Center's public text products
+(the ABPW10 and ABIO10 outlooks, formation alerts, and tropical cyclone
+warnings) and publishes one small file, `tropical/tropical.json`, every 30
+minutes (`.github/workflows/tropical.yml`; only `boto3` is needed). The page
+draws invests as rings coloured by development chance and warned cyclones as
+discs coloured by intensity, with past track (solid) and JTWC forecast track
+(dashed); a click opens the details. The Storms button in the layer bar (or
+`#storms=0`) hides it.
+
+JTWC publishes no past track, so each run adds the newest position to the
+previous file's. If JTWC is unreachable the job exits without touching the
+last good file. Parser tests use saved real text in `pipeline/fixtures/jtwc/`:
+`python3 -m pytest pipeline/test_jtwc.py`. JTWC products are US Government
+works; the credit line names JTWC while the layer is on.

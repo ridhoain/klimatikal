@@ -1,0 +1,41 @@
+# JTWC tropical systems (invests and warnings) -> tropical/tropical.json on R2,
+# every 30 minutes. JTWC updates outlooks about every 6 hours and warnings every
+# 6 hours, with alerts in between, so this is more than often enough. Minutes
+# 7 and 37 dodge the top of the hour, when GitHub delays scheduled runs most.
+name: build tropical systems
+
+on:
+  schedule:
+    - cron: "7,37 * * * *"
+  push:
+    branches: [main]
+    paths:
+      - pipeline/jtwc.py
+      - .github/workflows/tropical.yml
+  workflow_dispatch:
+
+concurrency:
+  group: tropical
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install boto3 pytest
+      - name: Parser tests
+        working-directory: pipeline
+        run: python -m pytest -q test_jtwc.py
+      - name: Fetch and publish
+        working-directory: pipeline
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: python jtwc.py
