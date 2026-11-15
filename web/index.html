@@ -1135,7 +1135,33 @@ function tzParts(d, utc) {
 const SVG_ATTR = 'viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"';
 const ICON_RADAR = `<svg ${SVG_ATTR}><circle cx="8" cy="8" r="6.2"/><circle cx="8" cy="8" r="3"/><path d="M8 8l4-4.2"/></svg>`;
 const ICON_SAT = `<svg ${SVG_ATTR}><rect x="6.2" y="6.2" width="3.6" height="3.6" rx=".6" transform="rotate(45 8 8)"/><path d="M3.2 4.8l1.6-1.6 2 2-1.6 1.6zM9.2 10.8l1.6-1.6 2 2-1.6 1.6z"/><path d="M12.2 2.8c.9.9 1.4 2 1.5 3.2"/></svg>`;
-const RADAR_LABEL = ICON_RADAR + "Radar";
+// Cyclone symbol for the map, as pixels for map.addImage: 28 css px drawn at 2x.
+// solid: coloured disc with a white spiral (a warned cyclone); otherwise a
+// coloured spiral on a faint disc (a suspect area). `clockwise` is the southern
+// hemisphere's sense of rotation.
+function stormIcon(color, solid, clockwise) {
+  const px = 56, c = px / 2, cv = document.createElement("canvas");
+  cv.width = cv.height = px;
+  const g = cv.getContext("2d");
+  g.lineCap = "round";
+  const disc = (r, fill, stroke, w) => { g.beginPath(); g.arc(c, c, r, 0, Math.PI * 2); if (fill) { g.fillStyle = fill; g.fill(); } if (stroke) { g.lineWidth = w; g.strokeStyle = stroke; g.stroke(); } };
+  disc(25, "rgba(8,12,24,0.55)");                                   // casing, so it reads on any basemap
+  if (solid) disc(22, color, "#ffffff", 2.5); else disc(22, "rgba(255,255,255,0.22)", color, 3);
+  const arm = (phase) => {
+    g.beginPath();
+    for (let a = 0; a <= 4.6; a += 0.12) {
+      const r = 3 + a * 3.9, th = phase + (clockwise ? 1 : -1) * a;
+      const x = c + r * Math.cos(th), y = c + r * Math.sin(th);
+      a === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+    }
+    g.stroke();
+  };
+  g.lineWidth = 4.5; g.strokeStyle = solid ? "#ffffff" : color;
+  arm(0); arm(Math.PI);
+  g.fillStyle = solid ? "#101a33" : "#ffffff"; g.beginPath(); g.arc(c, c, 2.6, 0, Math.PI * 2); g.fill();   // the eye
+  return g.getImageData(0, 0, px, px);
+}
+const RADAR_LABEL =ICON_RADAR + "Radar";
 const SAT_LABEL = ICON_SAT + "Satellite IR";
 
 class App {
@@ -2330,7 +2356,7 @@ class App {
       acc.push(lo); return acc;
     }, []);
     for (const s of (this.tropical && this.tropical.systems) || []) {
-      const props = { id: s.id, kind: s.kind, name: s.name, kt: s.wind_kt_max ?? s.wind_kt ?? 0,
+      const props = { id: s.id, kind: s.kind, name: s.name, kt: s.wind_kt_max ?? s.wind_kt ?? 0, hemi: s.lat < 0 ? "s" : "n",
                       potential: s.potential || "", tcfa: !!s.tcfa,
                       label: s.kind === "tc" ? `${s.name} · ${s.wind_kt_max ?? "?"} kt` : s.id };
       const trackPts = [...(s.past || []).map((p) => [p[1], p[0]]), [s.lon, s.lat]];
@@ -2361,7 +2387,6 @@ class App {
       for (const [id, data] of Object.entries(names)) map.addSource(id, { type: "geojson", data });
       // Intensity colours for warned cyclones (one-minute wind, kt).
       const ktColor = ["step", ["get", "kt"], "#6ec6ff", 34, "#3fcf8e", 64, "#f2e23b", 83, "#f5a623", 96, "#f0533a", 113, "#d6249f"];
-      const potColor = ["match", ["get", "potential"], "high", "#e5484d", "medium", "#f39c33", "#f2d03b"];
       const FONT = ["Open Sans Semibold"];
       const text = { "text-font": FONT, "text-size": 11, "text-anchor": "top", "text-offset": [0, 1.1],
                      "text-allow-overlap": true, "text-optional": true };
@@ -2379,16 +2404,25 @@ class App {
       L({ id: "trop-fclabel", type: "symbol", source: "trop-fcpts", minzoom: 3.5,
           filter: ["get", "big"], layout: { ...text, "text-field": ["get", "h"], "text-size": 10 }, paint: halo });
       // Invests: hollow ring. Warned cyclones: filled disc.
-      L({ id: "trop-invest", type: "circle", source: "trop-pts", filter: ["==", ["get", "kind"], "invest"],
-          paint: { "circle-radius": 9, "circle-color": potColor, "circle-opacity": 0.28,
-                   "circle-stroke-color": potColor, "circle-stroke-width": 3 } });
-      L({ id: "trop-invest-dot", type: "circle", source: "trop-pts", filter: ["==", ["get", "kind"], "invest"],
-          paint: { "circle-radius": 2.5, "circle-color": "#101a33", "circle-stroke-color": "#fff", "circle-stroke-width": 1 } });
-      L({ id: "trop-tc", type: "circle", source: "trop-pts", filter: ["==", ["get", "kind"], "tc"],
-          paint: { "circle-radius": 9, "circle-color": ktColor, "circle-stroke-color": "#fff", "circle-stroke-width": 2.5 } });
-      L({ id: "trop-label", type: "symbol", source: "trop-pts", layout: { ...text, "text-field": ["get", "label"], "text-offset": [0, 1.4] }, paint: halo });
+      // The cyclone symbol: a two-armed spiral round an eye. Drawn once per
+      // intensity colour and hemisphere (it turns clockwise south of the
+      // equator, anticlockwise north of it). Warned cyclones are a solid disc
+      // with a white spiral; invests are a hollow, coloured spiral.
+      const KT_COLORS = ["#6ec6ff", "#3fcf8e", "#f2e23b", "#f5a623", "#f0533a", "#d6249f"];
+      const POT_COLORS = { low: "#f2d03b", med: "#f39c33", high: "#e5484d" };
+      for (const hemi of ["n", "s"]) {
+        KT_COLORS.forEach((c, i) => map.addImage(`tc-${i}-${hemi}`, stormIcon(c, true, hemi === "s"), { pixelRatio: 2 }));
+        for (const [k, c] of Object.entries(POT_COLORS)) map.addImage(`iv-${k}-${hemi}`, stormIcon(c, false, hemi === "s"), { pixelRatio: 2 });
+      }
+      const iconBase = { "icon-allow-overlap": true, "icon-ignore-placement": true };
+      const hemi = ["get", "hemi"];
+      L({ id: "trop-invest", type: "symbol", source: "trop-pts", filter: ["==", ["get", "kind"], "invest"],
+          layout: { ...iconBase, "icon-image": ["concat", "iv-", ["match", ["get", "potential"], "high", "high", "medium", "med", "low"], "-", hemi] } });
+      L({ id: "trop-tc", type: "symbol", source: "trop-pts", filter: ["==", ["get", "kind"], "tc"],
+          layout: { ...iconBase, "icon-image": ["concat", "tc-", ["to-string", ["step", ["get", "kt"], 0, 34, 1, 64, 2, 83, 3, 96, 4, 113, 5]], "-", hemi] } });
+      L({ id: "trop-label", type: "symbol", source: "trop-pts", layout: { ...text, "text-field": ["get", "label"], "text-offset": [0, 1.7] }, paint: halo });
       this.tropicalIds = ["trop-past-casing", "trop-past", "trop-fc-casing", "trop-fc", "trop-fcpts", "trop-fclabel",
-                          "trop-invest", "trop-invest-dot", "trop-tc", "trop-label"];
+                          "trop-invest", "trop-tc", "trop-label"];
       for (const id of ["trop-invest", "trop-tc"]) {
         map.on("click", id, (e) => this.tropicalPopup(e));
         map.on("mouseenter", id, () => { map.getCanvas().style.cursor = "pointer"; });
