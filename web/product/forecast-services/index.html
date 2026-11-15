@@ -103,14 +103,19 @@ aside h2{font-size:16px;margin:0 0 4px;color:var(--kl-lime);font-weight:600}
 .dot.d{border-radius:3px;transform:rotate(45deg)}
 .dot.d span{transform:rotate(-45deg)}
 .back{margin:0 0 6px}.back button,.pick button{font:inherit;background:none;border:0;color:var(--kl-lime);cursor:pointer;padding:0;text-align:left}.back button{font-size:12.5px;color:var(--kl-teal)}.back button:hover,.pick button:hover{color:#fff;text-decoration:underline}.pick{list-style:none;padding:0;margin:2px 0 0}.pick li{margin:5px 0}.pick .mu{display:block;font-size:12px;color:var(--mute)}
-.glos{flex:none;position:relative;background:#fff;border-top:1px solid #d5dde5;padding:6px 12px;color:#3b4a5c;font-size:13px}
-.glos summary{cursor:pointer;color:#0D0630;font-weight:600;width:max-content}
-.glos dl{position:absolute;left:0;right:0;bottom:100%;margin:0;padding:10px 14px 4px;max-height:min(52vh,360px);overflow:auto;columns:2 300px;column-gap:28px;background:#fff;border-top:1px solid #d5dde5;box-shadow:0 -6px 14px rgba(13,6,48,.12);z-index:4}
-.glos dt{font-weight:600;color:#0D0630;break-after:avoid}.glos dd{margin:0 0 7px;break-inside:avoid}
+.below{flex:none;padding:6px 16px 10px;border-top:1px solid var(--line)}
+.below .how{max-width:none;margin:8px 0}
+.below .how summary,.below .glos summary{font-size:14px;font-weight:600}
+.below .how ul{max-width:110ch}
+.glos{margin:8px 0;color:var(--mute);font-size:13px}
+.glos summary{cursor:pointer;color:var(--kl-teal);width:max-content}
+.glos summary:hover{color:var(--kl-lime)}
+.glos dl{margin:8px 0 2px;columns:2 300px;column-gap:28px;max-width:140ch}
+.glos dt{font-weight:600;color:var(--text);break-after:avoid}.glos dd{margin:0 0 7px;break-inside:avoid}
 abbr.gl{text-decoration:underline dotted;text-underline-offset:3px;cursor:help}
 .plain{margin:2px 0 8px;font-size:13.5px}
 .foot{flex:none;padding:8px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--mute)}
-@media (min-width:901px){html,body{height:100%}body{height:100vh;overflow:hidden}}
+@media (min-width:901px){.app{flex:none;height:max(560px,calc(100vh - 200px))}}
 @media (max-width:900px){
   .app{grid-template-columns:1fr}
   .canvaswrap{height:62vh;flex:none}
@@ -145,18 +150,6 @@ abbr.gl{text-decoration:underline dotted;text-underline-offset:3px;cursor:help}
   <p class="eyebrow" data-id="Produk · Layanan prakiraan cuaca dan iklim">Product · Forecast services</p>
   <h1 data-id="Prakiraan mana yang sesuai dengan keputusan Anda?">Which forecast fits your decision?</h1>
   <p class="lead" data-id="Banyak kegiatan dan aset bergantung pada cuaca dan iklim, dan keputusan harus diambil agar kegiatan itu tetap berjalan ke depan. Banyak prakiraan dan layanan meteorologi tersedia, tetapi menemukan yang sesuai dengan suatu kebutuhan tidak selalu mudah. Gunakan panduan ini untuk menemukan layanan prakiraan yang sesuai dan mengembangkan kasus penggunaan Anda.">Many activities and assets depend on the weather and climate, and decisions must be made to keep them running into the future. Many meteorological forecasts and services exist, but finding the one that fits a given need is not always easy. Use this guide to find a suitable forecast service and to develop your use case.</p>
-  <details class="how">
-    <summary data-id="Cara membaca panduan ini">How to read this guide</summary>
-    <ul>
-      <li data-id="<b>Posisi.</b> Tampilan bawaan dua dimensi: horizon perencanaan ke samping dan cakupan spasial ke atas, keduanya logaritmik, dengan item bernomor sepanjang diagonal dari skala kecil dan jangka pendek hingga skala besar dan jangka panjang. Sakelar 3D menambah kedekatan dampak sebagai sumbu ketiga yang menjauh ke dalam layar, tempat setiap bola juga direntangkan sesuai kedekatan dampak yang umumnya dicakup pendekatan itu. Memilih variabel dampak menyaring item yang memprakirakannya dan menyalakan 3D."><b>Position.</b> The default view is two-dimensional: planning horizon across and spatial extent upward, both logarithmic, with items numbered along the diagonal from small and short-range to large and long-range. The 3D switch adds impact proximity as a third axis running into the screen, where each sphere is also stretched to the impact proximity that approach typically covers. Selecting an impact variable filters the items that forecast it and switches 3D on.</li>
-      <li data-id="<b>Area keputusan.</b> Pilih area keputusan untuk menampilkan hanya pendekatan yang umumnya dipertimbangkan untuk area itu, diurutkan menurut horizon perencanaan. Pemilihannya adalah penilaian Klimatikal."><b>Decision area.</b> Choose a decision area to show only the approaches usually considered for it, listed by planning horizon. The selection is Klimatikal's assessment.</li>
-      <li data-id="<b>Simbol.</b> Setiap item memiliki simbol cuaca, diwarnai menurut kelompok variabel utama yang diprakirakannya. Warna bola tetap menunjukkan kematangan atau bukti skill. Nomor ditampilkan pada daftar dan saat kursor diarahkan."><b>Symbols.</b> Each item has a weather symbol, coloured by the main variable group it forecasts. Sphere colour still shows maturity or skill evidence. Numbers are shown in the list and on hover.</li>
-      <li data-id="<b>Variabel, contoh penggunaan, dan produk.</b> Setiap entri mencantumkan variabel yang dapat diprakirakan pendekatan tersebut, contoh penggunaan oleh institusi atau perusahaan lain, dan produk yang tersedia bila ada. Contoh dijelaskan sebagaimana dilaporkan sumbernya; contoh vendor dan riset diberi label."><b>Variables, use cases and products.</b> Each entry lists the variables the approach can forecast, examples of use by other institutions or companies, and existing products where one is available. Examples are described as the sources report them; vendor and research examples are labelled as such.</li>
-      <li data-id="<b>Penempatan dan kematangan.</b> Ini adalah penilaian Klimatikal per 14 November 2026 dan akan berubah seiring bukti. Mapan berarti rutin dipakai secara operasional; eksperimental berarti masih awal, terbatas, atau sedang diverifikasi."><b>Placement and maturity.</b> These are Klimatikal's assessments as of 14 November 2026 and will change as evidence does. Established means routine in operational use; experimental means early, limited or still being verified.</li>
-      <li data-id="<b>Bukti skill.</b> Tag menunjukkan di mana skill yang dikutip diukur: Indonesia atau Asia Tenggara, wilayah tropis lain, wilayah lintang tengah, atau studi global. Satu item dapat memiliki beberapa tag. Item tanpa angka ditandai sebagai tidak ditemukan atau tidak dapat diverifikasi karena berupa proyeksi atau model kerugian. Angka dikutip dari sumber untuk metrik, wilayah, dan periode yang digunakan masing-masing; angka tidak dapat dibandingkan antar pendekatan. Bila sumber berupa poster, preprint, atau materi vendor, entri menyebutkannya, dan bila tidak ada temuan untuk Indonesia, entri juga menyebutkannya."><b>Skill evidence.</b> The tags show where the cited skill was measured: Indonesia or Southeast Asia, other tropical regions, mid-latitude regions, or global studies. An item can carry several. Items with no figure are marked either as having none found or as not verifiable, because they are projections or loss models. Figures are quoted from the cited sources for the metric, region and period each used. They are not comparable across approaches. Where a source is a poster, preprint or vendor material, the entry says so, and where nothing was found for Indonesia, it says that too.</li>
-      <li data-id="<b>Lingkup.</b> Ini panduan memilih pendekatan, bukan prakiraan, dan bukan rekomendasi untuk keputusan tertentu."><b>Scope.</b> This is a guide to choosing an approach, not a forecast, and not a recommendation for any specific decision.</li>
-    </ul>
-  </details>
 </div>
 <noscript><p data-id="Panduan ini interaktif dan memerlukan JavaScript. Tanpa itu, hubungi kami melalui <a href=&quot;/contact-us/&quot;>halaman kontak</a> dan kami akan membantu Anda memilih pendekatan.">This guide is interactive and needs JavaScript. Without it, contact us at <a href="/contact-us/">our contact page</a> and we will help you choose an approach.</p></noscript>
 <div class="app">
@@ -176,10 +169,6 @@ abbr.gl{text-decoration:underline dotted;text-underline-offset:3px;cursor:help}
     <div class="hint" id="hint"></div>
     <div class="legend" id="legend"><button type="button" id="lgtoggle" aria-expanded="true" aria-controls="lgbody">Legend ▾</button><div class="lgbody" id="lgbody"></div></div>
   </div>
-  <details class="glos" id="glos">
-    <summary data-id="Daftar istilah">Glossary</summary>
-    <dl id="glossary"></dl>
-  </details>
 </div>
 <aside>
   <div id="detail"><p class="empty"></p></div>
@@ -187,6 +176,24 @@ abbr.gl{text-decoration:underline dotted;text-underline-offset:3px;cursor:help}
   <div class="cta" data-id="Belum yakin pendekatan mana yang sesuai dengan keputusan Anda? <a href=&quot;/contact-us/&quot;>Hubungi kami</a>">Not sure which approach fits your decision? <a href="/contact-us/">Talk to us</a></div>
 </aside>
 </div>
+<section class="below" aria-label="Guide and glossary">
+  <details class="how">
+    <summary data-id="Cara membaca panduan ini">How to read this guide</summary>
+    <ul>
+      <li data-id="<b>Posisi.</b> Tampilan bawaan dua dimensi: horizon perencanaan ke samping dan cakupan spasial ke atas, keduanya logaritmik, dengan item bernomor sepanjang diagonal dari skala kecil dan jangka pendek hingga skala besar dan jangka panjang. Sakelar 3D menambah kedekatan dampak sebagai sumbu ketiga yang menjauh ke dalam layar, tempat setiap bola juga direntangkan sesuai kedekatan dampak yang umumnya dicakup pendekatan itu. Memilih variabel dampak menyaring item yang memprakirakannya dan menyalakan 3D."><b>Position.</b> The default view is two-dimensional: planning horizon across and spatial extent upward, both logarithmic, with items numbered along the diagonal from small and short-range to large and long-range. The 3D switch adds impact proximity as a third axis running into the screen, where each sphere is also stretched to the impact proximity that approach typically covers. Selecting an impact variable filters the items that forecast it and switches 3D on.</li>
+      <li data-id="<b>Area keputusan.</b> Pilih area keputusan untuk menampilkan hanya pendekatan yang umumnya dipertimbangkan untuk area itu, diurutkan menurut horizon perencanaan. Pemilihannya adalah penilaian Klimatikal."><b>Decision area.</b> Choose a decision area to show only the approaches usually considered for it, listed by planning horizon. The selection is Klimatikal's assessment.</li>
+      <li data-id="<b>Simbol.</b> Setiap item memiliki simbol cuaca, diwarnai menurut kelompok variabel utama yang diprakirakannya. Warna bola tetap menunjukkan kematangan atau bukti skill. Nomor ditampilkan pada daftar dan saat kursor diarahkan."><b>Symbols.</b> Each item has a weather symbol, coloured by the main variable group it forecasts. Sphere colour still shows maturity or skill evidence. Numbers are shown in the list and on hover.</li>
+      <li data-id="<b>Variabel, contoh penggunaan, dan produk.</b> Setiap entri mencantumkan variabel yang dapat diprakirakan pendekatan tersebut, contoh penggunaan oleh institusi atau perusahaan lain, dan produk yang tersedia bila ada. Contoh dijelaskan sebagaimana dilaporkan sumbernya; contoh vendor dan riset diberi label."><b>Variables, use cases and products.</b> Each entry lists the variables the approach can forecast, examples of use by other institutions or companies, and existing products where one is available. Examples are described as the sources report them; vendor and research examples are labelled as such.</li>
+      <li data-id="<b>Penempatan dan kematangan.</b> Ini adalah penilaian Klimatikal per 14 November 2026 dan akan berubah seiring bukti. Mapan berarti rutin dipakai secara operasional; eksperimental berarti masih awal, terbatas, atau sedang diverifikasi."><b>Placement and maturity.</b> These are Klimatikal's assessments as of 14 November 2026 and will change as evidence does. Established means routine in operational use; experimental means early, limited or still being verified.</li>
+      <li data-id="<b>Bukti skill.</b> Tag menunjukkan di mana skill yang dikutip diukur: Indonesia atau Asia Tenggara, wilayah tropis lain, wilayah lintang tengah, atau studi global. Satu item dapat memiliki beberapa tag. Item tanpa angka ditandai sebagai tidak ditemukan atau tidak dapat diverifikasi karena berupa proyeksi atau model kerugian. Angka dikutip dari sumber untuk metrik, wilayah, dan periode yang digunakan masing-masing; angka tidak dapat dibandingkan antar pendekatan. Bila sumber berupa poster, preprint, atau materi vendor, entri menyebutkannya, dan bila tidak ada temuan untuk Indonesia, entri juga menyebutkannya."><b>Skill evidence.</b> The tags show where the cited skill was measured: Indonesia or Southeast Asia, other tropical regions, mid-latitude regions, or global studies. An item can carry several. Items with no figure are marked either as having none found or as not verifiable, because they are projections or loss models. Figures are quoted from the cited sources for the metric, region and period each used. They are not comparable across approaches. Where a source is a poster, preprint or vendor material, the entry says so, and where nothing was found for Indonesia, it says that too.</li>
+      <li data-id="<b>Lingkup.</b> Ini panduan memilih pendekatan, bukan prakiraan, dan bukan rekomendasi untuk keputusan tertentu."><b>Scope.</b> This is a guide to choosing an approach, not a forecast, and not a recommendation for any specific decision.</li>
+    </ul>
+  </details>
+  <details class="glos" id="glos">
+    <summary data-id="Daftar istilah">Glossary</summary>
+    <dl id="glossary"></dl>
+  </details>
+</section>
 <footer class="foot" data-id="© 2026 Klimatikal · Weather and Climate Intelligence · <a href=&quot;/privacy/&quot;>Privasi</a>">© 2026 Klimatikal · Weather and Climate Intelligence · <a href="/privacy/">Privacy</a></footer>
 <script>
 (function(){
