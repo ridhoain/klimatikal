@@ -57,6 +57,13 @@ noscript p{margin:0;padding:12px 16px;color:var(--text)}
 .grp>span{color:#52667a;font-size:12px;margin-right:2px}
 button.chip{border:1px solid #c5d0da;background:#f3f6f9;color:var(--kl-amethyst);border-radius:14px;padding:3px 10px;font:inherit;font-size:12.5px;cursor:pointer}
 button.chip:hover{border-color:#2E9C8A}
+label.tgl{cursor:pointer;gap:7px;font-size:12.5px}
+label.tgl input{position:absolute;opacity:0;width:0;height:0}
+.sw{width:30px;height:17px;border-radius:9px;background:#c5d0da;position:relative;transition:background .15s;flex:none}
+.sw::after{content:'';position:absolute;left:2px;top:2px;width:13px;height:13px;border-radius:50%;background:#fff;transition:left .15s}
+label.tgl input:checked+.sw{background:var(--kl-amethyst)}
+label.tgl input:checked+.sw::after{left:15px}
+label.tgl input:focus-visible+.sw{outline:2px solid #2E9C8A;outline-offset:2px}
 button.chip.on{background:var(--kl-amethyst);color:#fff;border-color:var(--kl-amethyst)}
 .bar a:focus-visible,.bar button:focus-visible{outline-color:var(--kl-amethyst)}
 .canvaswrap{position:relative;flex:1;min-height:320px;background:#fff}
@@ -70,7 +77,7 @@ canvas.drag{cursor:grabbing}
 .legend .lgbody h4:first-child{margin-top:2px}
 .legend.closed .lgbody{display:none}
 .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:4px;vertical-align:-1px}
-.hint{position:absolute;right:10px;top:8px;max-width:60%;font-size:11.5px;color:#3b4a5c;background:rgba(255,255,255,.9);padding:2px 8px;border-radius:8px}
+.hint{position:absolute;right:10px;top:5px;max-width:calc(100% - 20px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px;color:#3b4a5c;background:rgba(255,255,255,.9);padding:2px 8px;border-radius:8px}
 aside{background:var(--panel);border-left:1px solid var(--line);overflow:auto;min-height:0;padding:14px}
 aside h2{font-size:16px;margin:0 0 4px;color:var(--kl-lime);font-weight:600}
 .tags{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 8px}
@@ -136,7 +143,7 @@ abbr.gl{text-decoration:underline dotted;text-underline-offset:3px;cursor:help}
   <details class="how">
     <summary data-id="Cara membaca panduan ini">How to read this guide</summary>
     <ul>
-      <li data-id="<b>Posisi.</b> Tampilan bawaan dua dimensi: horizon perencanaan ke samping dan cakupan spasial ke atas, keduanya logaritmik, dengan item bernomor sepanjang diagonal dari skala kecil dan jangka pendek hingga skala besar dan jangka panjang. Memilih variabel dampak menyaring item yang memprakirakannya dan membuka tampilan tiga dimensi, tempat setiap bola juga direntangkan sesuai kedekatan dampak yang umumnya dicakup pendekatan itu."><b>Position.</b> The default view is two-dimensional: planning horizon across and spatial extent upward, both logarithmic, with items numbered along the diagonal from small and short-range to large and long-range. Selecting an impact variable filters the items that forecast it and opens the three-dimensional view, where each sphere is also stretched to the impact proximity that approach typically covers.</li>
+      <li data-id="<b>Posisi.</b> Tampilan bawaan dua dimensi: horizon perencanaan ke samping dan cakupan spasial ke atas, keduanya logaritmik, dengan item bernomor sepanjang diagonal dari skala kecil dan jangka pendek hingga skala besar dan jangka panjang. Sakelar 3D menambah kedekatan dampak sebagai sumbu ketiga yang menjauh ke dalam layar, tempat setiap bola juga direntangkan sesuai kedekatan dampak yang umumnya dicakup pendekatan itu. Memilih variabel dampak menyaring item yang memprakirakannya dan menyalakan 3D."><b>Position.</b> The default view is two-dimensional: planning horizon across and spatial extent upward, both logarithmic, with items numbered along the diagonal from small and short-range to large and long-range. The 3D switch adds impact proximity as a third axis running into the screen, where each sphere is also stretched to the impact proximity that approach typically covers. Selecting an impact variable filters the items that forecast it and switches 3D on.</li>
       <li data-id="<b>Area keputusan.</b> Pilih area keputusan untuk menampilkan hanya pendekatan yang umumnya dipertimbangkan untuk area itu, diurutkan menurut horizon perencanaan. Pemilihannya adalah penilaian Klimatikal."><b>Decision area.</b> Choose a decision area to show only the approaches usually considered for it, listed by planning horizon. The selection is Klimatikal's assessment.</li>
       <li data-id="<b>Simbol.</b> Setiap item memiliki simbol cuaca, diwarnai menurut kelompok variabel utama yang diprakirakannya. Warna bola tetap menunjukkan kematangan atau bukti skill. Nomor ditampilkan pada daftar dan saat kursor diarahkan."><b>Symbols.</b> Each item has a weather symbol, coloured by the main variable group it forecasts. Sphere colour still shows maturity or skill evidence. Numbers are shown in the list and on hover.</li>
       <li data-id="<b>Variabel, contoh penggunaan, dan produk.</b> Setiap entri mencantumkan variabel yang dapat diprakirakan pendekatan tersebut, contoh penggunaan oleh institusi atau perusahaan lain, dan produk yang tersedia bila ada. Contoh dijelaskan sebagaimana dilaporkan sumbernya; contoh vendor dan riset diberi label."><b>Variables, use cases and products.</b> Each entry lists the variables the approach can forecast, examples of use by other institutions or companies, and existing products where one is available. Examples are described as the sources report them; vendor and research examples are labelled as such.</li>
@@ -151,7 +158,7 @@ abbr.gl{text-decoration:underline dotted;text-underline-offset:3px;cursor:help}
 <div class="stage">
   <div class="bar">
     <label class="grp"><span data-id="Area keputusan">Decision area</span><select id="selSect"><option value="all" data-id="Semua">All</option></select></label>
-    <label class="grp"><span data-id="Tampilan">View</span><select id="selView"><option value="2d">2D</option><option value="3d">3D</option><option value="" hidden data-id="Kustom">Custom</option></select></label>
+    <label class="grp tgl"><input type="checkbox" id="tg3d"><span class="sw" aria-hidden="true"></span><span data-id="3D: kedekatan dampak">3D: impact proximity</span></label>
     <label class="grp"><span data-id="Variabel dampak">Impact variable</span><select id="selIv"><option value="all" data-id="Tidak ada">None</option></select></label>
     <label class="grp"><span data-id="Warna menurut">Colour by</span><select id="selColor"><option value="mat" data-id="Kematangan">Maturity</option><option value="cov" data-id="Bukti skill">Skill evidence</option></select></label>
     <label class="grp"><span data-id="Kematangan">Maturity</span><select id="selFm"><option value="all" data-id="Semua">All</option><option value="e" data-id="Mapan">Established</option><option value="x" data-id="Eksperimental">Experimental</option></select></label>
@@ -746,7 +753,7 @@ var ID={
 "Weather and hazards": "Cuaca dan bahaya",
 "Socioeconomic": "Sosioekonomi",
 "Impact": "Dampak",
-"Select an impact variable to add the third axis · ": "Pilih variabel dampak untuk menambah sumbu ketiga · ",
+"Switch on 3D to add impact proximity as the third axis · ": "Aktifkan 3D untuk menambah kedekatan dampak sebagai sumbu ketiga · ",
 "Drag to rotate · ": "Seret untuk memutar · ",
 "Decision area": "Area keputusan",
 "All": "Semua",
@@ -1039,7 +1046,7 @@ var GAPS=[{gap:true,id:'g1',h:[240,730],s:[0.01,10],foot:{h:[730,876600],s:[0.01
 
 /* ---------- geometry ---------- */
 var AX={h:[-0.3,6],s:[-2,4.3]};
-var DIM={x:2.0,y:1.2,z:2.0};
+var DIM={x:2.0,y:1.8,z:2.0};
 function nh(v){return (Math.log10(Math.max(v,0.5))-AX.h[0])/(AX.h[1]-AX.h[0]);}
 function ns(v){return (Math.log10(Math.max(v,0.01))-AX.s[0])/(AX.s[1]-AX.s[0]);}
 function widen(a,b,min){ if(b-a<min){var m=(a+b)/2;a=m-min/2;b=m+min/2;} return [a,b]; }
@@ -1053,7 +1060,7 @@ var EDGES=[[0,1],[2,3],[4,5],[6,7],[0,2],[1,3],[4,6],[5,7],[0,4],[1,5],[2,6],[3,
 function corners(b){var o=[];for(var i=0;i<8;i++){o.push([(i&1)?b.x1:b.x0,(i&2)?b.y1:b.y0,(i&4)?b.z1:b.z0]);}return o;}
 
 /* ---------- state ---------- */
-var S={yaw:0,pitch:Math.PI/2,persp:0,zoom:1,px:0,py:0,sel:null,hov:null,color:'mat',fm:'all',fc:'all',iv:'all',view:'2d',sector:'all'};
+var S={yaw:0,pitch:0,persp:0,zoom:1,px:0,py:0,sel:null,hov:null,color:'mat',fm:'all',fc:'all',iv:'all',view:'2d',sector:'all'};
 var cv=document.getElementById('cv'), ctx=cv.getContext('2d'), wrap=document.getElementById('wrap'), tip=document.getElementById('tip');
 var dpr=1, W=0, H=0, badges=[], raf=0, tween=null;
 
@@ -1136,16 +1143,7 @@ function wv(c,y){c.beginPath();for(var x=-.9;x<=.9;x+=.05){var yy=y+Math.sin(x*5
 function spir(c,R){c.beginPath();for(var a=0;a<=12.5;a+=.1){var r=a/12.5*R,x=Math.cos(a)*r,y=Math.sin(a)*r;if(a===0)c.moveTo(x,y);else c.lineTo(x,y);}c.stroke();}
 function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();}
 function drawGlyph(name,x,y,size,col){var c=ctx;c.save();c.translate(x,y);c.scale(size,size);c.lineWidth=1.6/size;c.lineCap='round';c.lineJoin='round';c.strokeStyle=col;c.fillStyle=col;GL[name](c);c.restore();}
-/* backdrop: faint isobars and wind streaks behind the grid */
-function backdrop(){
-  var c=ctx;c.save();
-  var g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#eef5fb');g.addColorStop(1,'#ffffff');c.fillStyle=g;c.fillRect(0,0,W,H);
-  c.lineWidth=1;c.strokeStyle='rgba(43,108,176,0.09)';
-  [[.82,.2,1],[.15,.85,1]].forEach(function(ct){for(var i=1;i<=7;i++){c.beginPath();c.ellipse(W*ct[0],H*ct[1],i*W*.09,i*H*.085,-.35,0,6.29);c.stroke();}});
-  c.strokeStyle='rgba(15,118,110,0.10)';c.lineWidth=1.4;c.lineCap='round';
-  for(var j=0;j<9;j++){var y0=H*(.1+j*.1),x0=W*((j*37%11)/22+0.02),L=W*(.12+(j%3)*.05);c.beginPath();c.moveTo(x0,y0);c.bezierCurveTo(x0+L*.4,y0-14,x0+L*.7,y0+14,x0+L,y0-4);c.stroke();}
-  c.restore();
-}
+function backdrop(){ctx.save();ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W,H);ctx.restore();}
 
 /* ---------- dynamic axis ticks for the 2D view ---------- */
 var HC=[],SC=[];
@@ -1167,19 +1165,29 @@ function pickTicks(C,pos,ext,gaps){
   return kept;
 }
 
+/* plot margins in the 2D view: the axes sit on the panel border */
+function mg(){return W<600?[58,10,10,44]:[76,16,30,50];}
 /* ---------- drawing ---------- */
 function draw(){
   var P=pal();
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,W,H);
   backdrop();
-  var nar=W<600, k=Math.min(W/(nar?3.9:3.1),H/(DIM.z+1.2))*S.zoom, cx=W/2+S.px+(nar?40:0), cy=H/2+S.py;
+  var nar=W<600, M=mg(), k=Math.min(W/(nar?3.9:3.1),H/(DIM.z+1.4))*S.zoom;
+  // fl: 1 in the flat 2D view (plot fills the panel), 0 once rotated into 3D; blended while turning
+  var fl=clamp(1-Math.max(Math.abs(S.pitch),Math.abs(S.yaw))/0.5,0,1), flat=Math.max(Math.abs(S.pitch),Math.abs(S.yaw))<0.12;
+  var kxF=(W-M[0]-M[1])/DIM.x*S.zoom, kyF=(H-M[2]-M[3])/DIM.z*S.zoom;
+  var kx=k+(kxF-k)*fl, ky=k+(kyF-k)*fl;
+  var cx3=W/2+S.px+(nar?40:0), cy3=H/2+S.py, cxF=M[0]+(W-M[0]-M[1])/2+S.px, cyF=M[2]+(H-M[2]-M[3])/2+S.py;
+  var cx=cx3+(cxF-cx3)*fl, cy=cy3+(cyF-cy3)*fl;
   var cyw=Math.cos(S.yaw), syw=Math.sin(S.yaw), cp=Math.cos(S.pitch), sp=Math.sin(S.pitch), DP=7;
+  // scene axes: x = planning horizon (right), y = spatial extent (up), z = impact proximity (into the screen)
   function pr(p){
-    var x1=p[0]*cyw-p[2]*syw, z1=p[0]*syw+p[2]*cyw;
-    var y2=p[1]*cp-z1*sp, z2=p[1]*sp+z1*cp;
+    var X=p[0], Y=-p[2], Z=-p[1];
+    var x1=X*cyw-Z*syw, z1=X*syw+Z*cyw;
+    var y2=Y*cp-z1*sp, z2=Y*sp+z1*cp;
     var f=1+(DP/(DP-z2)-1)*S.persp;
-    return [cx+x1*f*k, cy-y2*f*k, z2];
+    return [cx+x1*f*kx, cy-y2*f*ky, z2];
   }
   var hx=DIM.x/2, hy=DIM.y/2, hz=DIM.z/2;
   function line(a,b,col,w,dash){ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.strokeStyle=col;ctx.lineWidth=w||1;ctx.setLineDash(dash||[]);ctx.stroke();ctx.setLineDash([]);}
@@ -1188,7 +1196,6 @@ function draw(){
   var origin=pr([0,0,0]);
 
   // abstraction band planes (only meaningful once the impact axis is visible)
-  var flat=S.pitch>1.45;
   if(!flat)[3,7].forEach(function(a){
     var y=(a/10-0.5)*DIM.y, q=[pr([-hx,y,-hz]),pr([hx,y,-hz]),pr([hx,y,hz]),pr([-hx,y,hz])];
     ctx.beginPath();ctx.moveTo(q[0][0],q[0][1]);for(var i=1;i<4;i++)ctx.lineTo(q[i][0],q[i][1]);ctx.closePath();
@@ -1197,7 +1204,7 @@ function draw(){
   // floor grid
   var hT=[[1,'1 h'],[24,'1 d'],[168,'1 wk'],[730,'1 mo'],[8760,'1 yr'],[87600,'10 yr'],[876000,'100 yr']];
   var sT=[[0.01,'10 m'],[0.1,'100 m'],[1,'1 km'],[10,'10'],[100,'100'],[1000,'1,000'],[10000,'10,000 km']];
-  var fy=-hy;
+  var fy=flat?-hy:hy; // grid wall: the back wall in 3D
   var hs=null,ss=null;
   if(flat){
     hs=pickTicks(HC,function(v){return pr([(nh(v)-0.5)*DIM.x,fy,0])[0];},W,[36,56,68]);
@@ -1226,23 +1233,19 @@ function draw(){
     txt(tr('Planning horizon (log)'),Math.max(80,Math.min(W-80,cxm)),Math.min(H-8,ly+20),P.fg,'center',11.5,true);
     vtxt(tr('Spatial extent (log)'),Math.max(12,lx-60),Math.max(70,Math.min(H-70,cym)),P.fg,11.5,true);
   }
-  // horizon axis: nearer of two floor edges
-  var zE=(pr([0,fy,hz])[2]>=pr([0,fy,-hz])[2])?hz:-hz;
-  if(!flat&&slen([-hx,fy,zE],[hx,fy,zE])>40){
-  hT.forEach(function(t){if(flat&&t[0]===1)return;var x=(nh(t[0])-0.5)*DIM.x,p=away(pr([x,fy,zE]),12);txt(tr(t[1]),p[0],p[1],P.mute,'center',10.5);});
-  var tm=away(pr([0,fy,zE]),36);txt(tr('Planning horizon (log)'),tm[0],tm[1],P.fg,'center',11.5,true);}
-  // scale axis
-  var xE=(pr([hx,fy,0])[0]<=pr([-hx,fy,0])[0])?hx:-hx; // left-most floor edge on screen
-  if(!flat&&slen([xE,fy,-hz],[xE,fy,hz])>40){
-  sT.forEach(function(t){var z=-(ns(t[0])-0.5)*DIM.z,p=away(pr([xE,fy,z]),12);txt(tr(t[1]),p[0],p[1],P.mute,'center',10.5);});
-  var sm=away(pr([xE,fy,0]),42);vtxt(tr('Spatial extent (log)'),sm[0],sm[1],P.fg,11.5,true);}
-  // abstraction axis: leftmost vertical edge
-  var ve=[[-hx,-hz],[-hx,hz],[hx,-hz],[hx,hz]], best=ve[0], bx=1e9;
-  ve.forEach(function(e){var s=pr([e[0],fy,e[1]])[0]; if(s<bx){bx=s;best=e;}});
-  if(slen([best[0],-hy,best[1]],[best[0],hy,best[1]])>40){
-  [[0,'0'],[3,'3'],[7,'7'],[10,'10']].forEach(function(t){var y=(t[0]/10-0.5)*DIM.y,p=away(pr([best[0],y,best[1]]),12);txt(tr(t[1]),p[0],p[1],P.mute,'right',10.5);});
-  [[1.5,'Modes and indices'],[5,'Weather and hazards'],[8.5,'Socioeconomic']].forEach(function(t){var y=(t[0]/10-0.5)*DIM.y,p=away(pr([best[0],y,best[1]]),W<600?30:44);txt(tr(t[1]),p[0],p[1],P.mute,'right',10.5);});
-  var at=away(pr([best[0],hy,best[1]]),26);txt(tr(nar?'Impact':'Impact proximity'),at[0]-4,at[1]-10,P.fg,'right',11.5,true);}
+  // 3D axes: horizon along the bottom, spatial extent up the left, impact proximity receding along the right
+  var yE=(pr([0,-hy,0])[2]>=pr([0,hy,0])[2])?-hy:hy; // nearer wall carries the labels
+  if(!flat&&slen([-hx,yE,hz],[hx,yE,hz])>40){
+  hT.forEach(function(t){if(t[0]===1)return;var x=(nh(t[0])-0.5)*DIM.x,p=away(pr([x,yE,hz]),12);txt(tr(t[1]),p[0],p[1],P.mute,'center',10.5);});
+  var tm=away(pr([0,yE,hz]),36);txt(tr('Planning horizon (log)'),tm[0],tm[1],P.fg,'center',11.5,true);}
+  var xE=(pr([hx,yE,0])[0]<=pr([-hx,yE,0])[0])?hx:-hx; // left-most vertical edge on screen
+  if(!flat&&slen([xE,yE,-hz],[xE,yE,hz])>40){
+  sT.forEach(function(t){var z=-(ns(t[0])-0.5)*DIM.z,p=away(pr([xE,yE,z]),12);txt(tr(t[1]),p[0],p[1],P.mute,'center',10.5);});
+  var sm=away(pr([xE,yE,0]),42);vtxt(tr('Spatial extent (log)'),sm[0],sm[1],P.fg,11.5,true);}
+  var xR=(pr([hx,0,hz])[0]>=pr([-hx,0,hz])[0])?hx:-hx; // right-most bottom edge, receding
+  if(!flat&&slen([xR,-hy,hz],[xR,hy,hz])>40){
+  [[1.5,'Modes and indices'],[5,'Weather and hazards'],[8.5,'Socioeconomic']].forEach(function(t){var y=(t[0]/10-0.5)*DIM.y,p=away(pr([xR,y,hz]),14);txt(tr(t[1]),p[0],p[1],P.mute,'left',10.5);});
+  var at=away(pr([xR,hy,hz]),16);txt(tr(nar?'Impact':'Impact proximity'),at[0]+4,at[1]-8,P.fg,'left',11.5,true);}
 
   // boxes
   var list=ITEMS.filter(visible).map(function(it){var c=pr(it.ctr);return {it:it,c:c};});
@@ -1356,7 +1359,7 @@ cv.addEventListener('pointermove',function(e){
   }
   if(moved<4 && ptrs.size===1 && Math.hypot(e.clientX-startX,e.clientY-startY)<4) return;
   cv.classList.add('drag');
-  if(p.btn===2||p.shift||e.shiftKey||S.pitch>1.45){S.px+=dx;S.py+=dy;}
+  if(p.btn===2||p.shift||e.shiftKey||S.view==='2d'){S.px+=dx;S.py+=dy;}
   else{
     S.yaw+=dx*0.008; S.pitch=clamp(S.pitch+dy*0.006,-1.5708,1.5708);
     if(S.persp<1){S.persp=1;}
@@ -1378,8 +1381,8 @@ cv.addEventListener('pointercancel',endPtr);
 cv.addEventListener('pointerleave',function(){tip.style.display='none';if(S.hov!==null){S.hov=null;request();}});
 cv.addEventListener('wheel',function(e){
   e.preventDefault();var old=S.zoom;S.zoom=clamp(old*Math.exp(-e.deltaY*0.0015),0.4,20);
-  if(S.pitch>1.45){ // 2D: keep the point under the cursor fixed
-    var rect=cv.getBoundingClientRect(),sx=e.clientX-rect.left,sy=e.clientY-rect.top,cx=W/2+S.px+(W<600?40:0),cy=H/2+S.py,q=S.zoom/old;
+  if(S.view==='2d'){ // 2D: keep the point under the cursor fixed
+    var rect=cv.getBoundingClientRect(),sx=e.clientX-rect.left,sy=e.clientY-rect.top,M=mg(),cx=M[0]+(W-M[0]-M[1])/2+S.px,cy=M[2]+(H-M[2]-M[3])/2+S.py,q=S.zoom/old;
     S.px+=(sx-cx)*(1-q);S.py+=(sy-cy)*(1-q);
   }
   request();
@@ -1389,7 +1392,7 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 function byId(id){return typeof id==='string'?GAPS.filter(function(g){return g.id===id;})[0]:ITEMS[id-1];}
 
 /* view presets with tween */
-var PRESETS={'3d':{yaw:-0.62,pitch:0.42,persp:1},'2d':{yaw:0,pitch:Math.PI/2,persp:0}};
+var PRESETS={'3d':{yaw:0.65,pitch:0.32,persp:1},'2d':{yaw:0,pitch:0,persp:0}};
 function cancelTween(){tween=null;}
 function goView(name){
   var t=PRESETS[name]; S.view=name; setViewChip(name); updateHint();
@@ -1409,9 +1412,9 @@ function loop(){
   function step(now){ if(!tween) return; var more=tween(now); if(more) requestAnimationFrame(step); else tween=null; }
   requestAnimationFrame(step);
 }
-function resetView(){ goView(S.iv==='all'?'2d':'3d'); updateHint(); }
-function updateHint(){ document.getElementById('hint').textContent=S.view==='2d'?tr('Select an impact variable to add the third axis · ')+tr('drag to pan · scroll or pinch to zoom · click a sphere'):tr('Drag to rotate · ')+tr('scroll or pinch to zoom · shift+drag to pan · click a sphere'); }
-function setViewChip(n){document.getElementById('selView').value=n||'';}
+function resetView(){ goView(S.view); updateHint(); }
+function updateHint(){ document.getElementById('hint').textContent=S.view==='2d'?tr('Switch on 3D to add impact proximity as the third axis · ')+tr('drag to pan · scroll or pinch to zoom · click a sphere'):tr('Drag to rotate · ')+tr('scroll or pinch to zoom · shift+drag to pan · click a sphere'); }
+function setViewChip(n){var c=document.getElementById('tg3d');if(n==='3d')c.checked=true;else if(n==='2d')c.checked=false;}
 
 /* ---------- UI ---------- */
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -1478,7 +1481,7 @@ function renderLegend(){
 function setLegend(open){var l=document.getElementById('legend'),b=document.getElementById('lgtoggle');l.classList.toggle('closed',!open);b.setAttribute('aria-expanded',open?'true':'false');b.textContent=tr(open?'Legend ▾':'Legend ▸');}
 document.getElementById('lgtoggle').addEventListener('click',function(){setLegend(document.getElementById('legend').classList.contains('closed'));});
 setLegend(window.innerWidth>=1100);
-document.getElementById('selView').addEventListener('change',function(){if(this.value)goView(this.value);});
+document.getElementById('tg3d').addEventListener('change',function(){goView(this.checked?'3d':'2d');});
 document.getElementById('selColor').addEventListener('change',function(){S.color=this.value;renderLegend();renderList();request();});
 function filt(id,key){document.getElementById(id).addEventListener('change',function(){S[key]=this.value;if(S.sel!==null&&!visible(byId(S.sel)))S.sel=null;renderList();renderDetail();request();});}
 filt('selFm','fm'); filt('selFc','fc');
