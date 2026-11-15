@@ -38,7 +38,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--kl-lime);outline-of
 .eyebrow{margin:0 0 2px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--kl-teal)}
 .intro h1{margin:0;font-size:22px;line-height:1.2;color:var(--kl-lime);font-weight:600}
 .intro p{margin:4px 0 0;color:var(--mute);font-size:13px;max-width:110ch}
-.intro p.lead{text-align:justify;text-justify:inter-word}
+.intro p.lead{max-width:none;text-align:justify;text-justify:inter-word}
 .how{margin-top:6px;font-size:13px;color:var(--mute);max-width:110ch}
 .how summary{cursor:pointer;color:var(--kl-teal);width:max-content}
 .how summary:hover{color:var(--kl-lime)}
@@ -71,12 +71,16 @@ button.chip.on{background:var(--kl-amethyst);color:#fff;border-color:var(--kl-am
 canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
 canvas.drag{cursor:grabbing}
 .tip{position:absolute;pointer-events:none;background:var(--kl-lime);color:var(--kl-amethyst);padding:3px 8px;border-radius:6px;font-size:12px;display:none;max-width:240px;z-index:3}
-.legend{position:absolute;left:10px;bottom:8px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;font-size:12px;color:#3b4a5c;background:rgba(255,255,255,.92);padding:6px 8px;border-radius:8px;max-width:calc(100% - 20px);max-height:calc(100% - 16px);overflow:auto;z-index:2}
+.legend{position:absolute;right:10px;top:32px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;font-size:12px;color:#3b4a5c;background:rgba(255,255,255,.92);padding:6px 8px;border-radius:8px;max-width:calc(100% - 20px);max-height:calc(100% - 16px);overflow:auto;z-index:2}
 .legend button{font:inherit;font-size:12px;font-weight:600;color:#0D0630;background:none;border:0;padding:0;cursor:pointer}
 .legend .lgbody{display:flex;flex-direction:column;gap:3px}
 .legend .lgbody h4{margin:6px 0 1px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#52667a}
 .legend .lgbody h4:first-child{margin-top:2px}
 .legend.closed .lgbody{display:none}
+.legend details{margin-top:4px}
+.legend summary{cursor:pointer;font-size:11.5px;color:#52667a}
+.legend details[open] summary{margin-bottom:2px}
+.legend details>span,.legend details>h4{display:block}
 .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:4px;vertical-align:-1px}
 .hint{position:absolute;right:10px;top:5px;max-width:calc(100% - 20px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px;color:#3b4a5c;background:rgba(255,255,255,.9);padding:2px 8px;border-radius:8px}
 aside{background:var(--panel);border-left:1px solid var(--line);overflow:auto;min-height:0;padding:14px}
@@ -105,7 +109,7 @@ aside h2{font-size:16px;margin:0 0 4px;color:var(--kl-lime);font-weight:600}
 .glos dt{font-weight:600;color:#0D0630;break-after:avoid}.glos dd{margin:0 0 7px;break-inside:avoid}
 abbr.gl{text-decoration:underline dotted;text-underline-offset:3px;cursor:help}
 .plain{margin:2px 0 8px;font-size:13.5px}
-.foot{margin-top:16px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;color:var(--mute)}
+.foot{flex:none;padding:8px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--mute)}
 @media (min-width:901px){html,body{height:100%}body{height:100vh;overflow:hidden}}
 @media (max-width:900px){
   .app{grid-template-columns:1fr}
@@ -181,9 +185,9 @@ abbr.gl{text-decoration:underline dotted;text-underline-offset:3px;cursor:help}
   <div id="detail"><p class="empty"></p></div>
   <div class="list"><h3 data-id="Semua item">All items</h3><div id="list"></div></div>
   <div class="cta" data-id="Belum yakin pendekatan mana yang sesuai dengan keputusan Anda? <a href=&quot;/contact-us/&quot;>Hubungi kami</a>">Not sure which approach fits your decision? <a href="/contact-us/">Talk to us</a></div>
-  <div class="foot" data-id="© 2026 Klimatikal · Weather and Climate Intelligence · <a href=&quot;/privacy/&quot;>Privasi</a>">© 2026 Klimatikal · Weather and Climate Intelligence · <a href="/privacy/">Privacy</a></div>
 </aside>
 </div>
+<footer class="foot" data-id="© 2026 Klimatikal · Weather and Climate Intelligence · <a href=&quot;/privacy/&quot;>Privasi</a>">© 2026 Klimatikal · Weather and Climate Intelligence · <a href="/privacy/">Privacy</a></footer>
 <script>
 (function(){
 "use strict";
@@ -734,6 +738,9 @@ var ID={
 "Select a sphere on the map or an item in the list to see its skill and evidence. The ? marks a zone with no forecast product; select it to see why.": "Pilih sebuah bola pada peta atau item pada daftar untuk melihat skill dan buktinya. Tanda ? menandai zona tanpa produk prakiraan; pilih untuk melihat alasannya.",
 "Sphere colour": "Warna bola",
 "Shape": "Bentuk",
+"Sphere colour: maturity": "Warna bola: kematangan",
+"Sphere colour: skill evidence": "Warna bola: bukti skill",
+"Other legends": "Legenda lain",
 "● product": "● produk",
 "◆ driver or method": "◆ pendorong atau metode",
 "? zone with no product": "? zona tanpa produk",
@@ -1177,7 +1184,7 @@ function draw(){
   var nar=W<600, M=mg(), k=Math.min(W/(nar?3.9:3.1),H/(DIM.z+1.4))*S.zoom;
   // fl: 1 in the flat 2D view (plot fills the panel), 0 once rotated into 3D; blended while turning
   var fl=clamp(1-Math.max(Math.abs(S.pitch),Math.abs(S.yaw))/0.5,0,1), flat=Math.max(Math.abs(S.pitch),Math.abs(S.yaw))<0.12;
-  var kxF=(W-M[0]-M[1])/DIM.x*S.zoom, kyF=(H-M[2]-M[3])/DIM.z*S.zoom;
+  var side=Math.min(W-M[0]-M[1],H-M[2]-M[3]), kxF=side/DIM.x*S.zoom, kyF=side/DIM.z*S.zoom;
   var kx=k+(kxF-k)*fl, ky=k+(kyF-k)*fl;
   var cx3=W/2+S.px+(nar?40:0), cy3=H/2+S.py, cxF=M[0]+(W-M[0]-M[1])/2+S.px, cyF=M[2]+(H-M[2]-M[3])/2+S.py;
   var cx=cx3+(cxF-cx3)*fl, cy=cy3+(cyF-cy3)*fl;
@@ -1471,17 +1478,25 @@ document.getElementById('list').addEventListener('click',function(e){
 });
 function renderLegend(){
   var g=document.getElementById('lgbody'), h='';
-  h+='<h4>'+tr('Sphere colour')+'</h4>';
-  if(S.color==='mat') h+='<span><i style="background:'+MAT.e.c+'"></i>'+tr('Established')+'</span><span><i style="background:'+MAT.x.c+'"></i>'+tr('Experimental')+'</span>';
-  else Object.keys(COV).forEach(function(k){h+='<span><i style="background:'+COV[k].c+'"></i>'+esc(tr(COVLEG[k]))+'</span>';});
+  function colourBlock(mode){
+    var s='';
+    if(mode==='mat') s+='<span><i style="background:'+MAT.e.c+'"></i>'+tr('Established')+'</span><span><i style="background:'+MAT.x.c+'"></i>'+tr('Experimental')+'</span>';
+    else Object.keys(COV).forEach(function(k){s+='<span><i style="background:'+COV[k].c+'"></i>'+esc(tr(COVLEG[k]))+'</span>';});
+    return s;
+  }
+  var other=S.color==='mat'?'cov':'mat';
+  h+='<h4>'+tr(S.color==='mat'?'Sphere colour: maturity':'Sphere colour: skill evidence')+'</h4>'+colourBlock(S.color);
+  h+='<details><summary>'+tr('Other legends')+'</summary>';
+  h+='<h4>'+tr(other==='mat'?'Sphere colour: maturity':'Sphere colour: skill evidence')+'</h4>'+colourBlock(other);
   h+='<h4>'+tr('Shape')+'</h4><span>'+tr('● product')+'</span><span>'+tr('◆ driver or method')+'</span><span>'+tr('? zone with no product')+'</span>';
   h+='<h4>'+tr('Symbol colour, main variable')+'</h4>';
   Object.keys(GC).forEach(function(k){h+='<span><i style="background:'+GC[k]+';border-radius:50%"></i>'+esc(tr(IV[k]))+'</span>';});
+  h+='</details>';
   g.innerHTML=h;
 }
 function setLegend(open){var l=document.getElementById('legend'),b=document.getElementById('lgtoggle');l.classList.toggle('closed',!open);b.setAttribute('aria-expanded',open?'true':'false');b.textContent=tr(open?'Legend ▾':'Legend ▸');}
 document.getElementById('lgtoggle').addEventListener('click',function(){setLegend(document.getElementById('legend').classList.contains('closed'));});
-setLegend(window.innerWidth>=1100);
+setLegend(window.innerWidth>=901);
 document.getElementById('tg3d').addEventListener('change',function(){goView(this.checked?'3d':'2d');});
 document.getElementById('selColor').addEventListener('change',function(){S.color=this.value;renderLegend();renderList();request();});
 function filt(id,key){document.getElementById(id).addEventListener('change',function(){S[key]=this.value;if(S.sel!==null&&!visible(byId(S.sel)))S.sel=null;renderList();renderDetail();request();});}
