@@ -136,3 +136,15 @@ h3 { margin: 0; font-size: 17px; font-weight: 600; color: var(--text); }
 .cstatus.bad { color: #ffb3a8; }
 .cnote { font-size: 12.5px; line-height: 1.6; color: var(--kl-teal); margin: 4px 0 0; }
 .or { margin: 32px 0 10px; color: var(--kl-teal); font-size: 14px; }
+
+/* profile links, experience blurbs, collapsible publications */
+.links { margin: 8px 0 0; display: flex; gap: 18px; font-size: 15px; }
+.blurb { margin: 4px 0 0; max-width: 62ch; color: var(--text); opacity: .85; font-size: 15px; }
+.pubs summary {
+  cursor: pointer; font-weight: 600; color: var(--kl-lime); padding: 6px 0; list-style: none;
+}
+.pubs summary::-webkit-details-marker { display: none; }
+.pubs summary::before { content: "\25B8"; display: inline-block; width: 1.1em; transition: transform .15s; }
+.pubs[open] summary::before { transform: rotate(90deg); }
+.pubs summary:focus-visible { outline: 2px solid var(--kl-lime); outline-offset: 3px; border-radius: 3px; }
+.pubs .count { color: var(--kl-teal); font-weight: 400; }
