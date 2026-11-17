@@ -2430,8 +2430,8 @@ class App {
   // first: it matters most, and the largest file (provinces) goes last.
   // --- terrain ---------------------------------------------------------------
   // Hillshade from the AWS Terrain Tiles (Terrarium encoding), drawn above the
-  // weather and satellite and below the coastlines. The sea floor shades too (the
-  // data includes bathymetry); at this strength it reads as a faint texture.
+  // weather and satellite and below the coastlines. The sea floor is left out (the
+  // data includes bathymetry, which registerLandTerrain flattens).
   setTerrain(on) {
     this.terrainOn = on;
     if (this.terrainBtn) this.terrainBtn.setAttribute("aria-pressed", String(on));
@@ -2440,13 +2440,37 @@ class App {
     this.paintCredit();
   }
 
+  // The elevation tiles include the sea floor. MapLibre shades whatever it is
+  // given, so the tiles pass through here first: every negative elevation becomes
+  // exactly 0 (Terrarium stores metres as R*256 + G + B/256 - 32768, so R < 128
+  // means below sea level). A flat sea shades to nothing; only land shows relief.
+  registerLandTerrain() {
+    if (this.landTerrainRegistered) return;
+    this.landTerrainRegistered = true;
+    maplibregl.addProtocol("landterrain", async (params, abort) => {
+      const res = await fetch("https://" + params.url.slice("landterrain://".length), { signal: abort.signal });
+      if (!res.ok) throw new Error(`terrain tile ${res.status}`);
+      const bmp = await createImageBitmap(await res.blob(), { colorSpaceConversion: "none", premultiplyAlpha: "none" });
+      const cv = document.createElement("canvas");
+      cv.width = bmp.width; cv.height = bmp.height;
+      const g = cv.getContext("2d", { willReadFrequently: true });
+      g.drawImage(bmp, 0, 0);
+      const img = g.getImageData(0, 0, cv.width, cv.height), d = img.data;
+      for (let i = 0; i < d.length; i += 4) if (d[i] < 128) { d[i] = 128; d[i + 1] = 0; d[i + 2] = 0; }
+      g.putImageData(img, 0, 0);
+      const blob = await new Promise((ok) => cv.toBlob(ok, "image/png"));
+      return { data: await blob.arrayBuffer() };
+    });
+  }
+
   ensureTerrain() {
     const m = this.map;
     if (!m || !m.getLayer("coast-casing")) return;          // added once the boundaries exist
     if (this.terrainOn && !m.getSource("terrain")) {
+      this.registerLandTerrain();
       m.addSource("terrain", {
         type: "raster-dem", encoding: "terrarium", tileSize: 256, maxzoom: 12,
-        tiles: ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"],
+        tiles: ["landterrain://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"],
       });
       m.addLayer({
         id: "terrain-shade", type: "hillshade", source: "terrain",
@@ -2574,17 +2598,19 @@ class App {
                      "text-allow-overlap": true, "text-optional": true };
       const halo = { "text-color": "#101a33", "text-halo-color": "rgba(255,255,255,0.92)", "text-halo-width": 1.6 };
       const L = (l) => map.addLayer(l);
-      L({ id: "trop-past-casing", type: "line", source: "trop-past", layout: { "line-cap": "round", "line-join": "round" },
+      // Tracks are drawn only for the system that was clicked (setTropicalSel).
+      const none = ["==", ["get", "id"], ""];
+      L({ id: "trop-past-casing", type: "line", source: "trop-past", filter: none, layout: { "line-cap": "round", "line-join": "round" },
           paint: { "line-color": "rgba(8,12,24,0.55)", "line-width": 4 } });
-      L({ id: "trop-past", type: "line", source: "trop-past", layout: { "line-cap": "round", "line-join": "round" },
+      L({ id: "trop-past", type: "line", source: "trop-past", filter: none, layout: { "line-cap": "round", "line-join": "round" },
           paint: { "line-color": "#ffffff", "line-width": 2 } });
-      L({ id: "trop-fc-casing", type: "line", source: "trop-fc", paint: { "line-color": "rgba(8,12,24,0.55)", "line-width": 4 } });
-      L({ id: "trop-fc", type: "line", source: "trop-fc", paint: { "line-color": "#ffffff", "line-width": 2, "line-dasharray": [2, 2] } });
-      L({ id: "trop-fcpts", type: "circle", source: "trop-fcpts",
+      L({ id: "trop-fc-casing", type: "line", source: "trop-fc", filter: none, paint: { "line-color": "rgba(8,12,24,0.55)", "line-width": 4 } });
+      L({ id: "trop-fc", type: "line", source: "trop-fc", filter: none, paint: { "line-color": "#ffffff", "line-width": 2, "line-dasharray": [2, 2] } });
+      L({ id: "trop-fcpts", type: "circle", source: "trop-fcpts", filter: none,
           paint: { "circle-radius": ["case", ["get", "big"], 5, 3.5], "circle-color": ktColor,
                    "circle-stroke-color": "#fff", "circle-stroke-width": 1.2 } });
       L({ id: "trop-fclabel", type: "symbol", source: "trop-fcpts", minzoom: 3.5,
-          filter: ["get", "big"], layout: { ...text, "text-field": ["get", "h"], "text-size": 10 }, paint: halo });
+          filter: ["all", ["get", "big"], none], layout: { ...text, "text-field": ["get", "h"], "text-size": 10 }, paint: halo });
       // Invests: hollow ring. Warned cyclones: filled disc.
       // The cyclone symbol: a two-armed spiral round an eye. Drawn once per
       // intensity colour and hemisphere (it turns clockwise south of the
@@ -2603,6 +2629,7 @@ class App {
       L({ id: "trop-tc", type: "symbol", source: "trop-pts", filter: ["==", ["get", "kind"], "tc"],
           layout: { ...iconBase, "icon-image": ["concat", "tc-", ["to-string", ["step", ["get", "kt"], 0, 34, 1, 64, 2, 83, 3, 96, 4, 113, 5]], "-", hemi] } });
       L({ id: "trop-label", type: "symbol", source: "trop-pts", layout: { ...text, "text-field": ["get", "label"], "text-offset": [0, 1.45] }, paint: halo });
+      this.tropicalTrackIds = ["trop-past-casing", "trop-past", "trop-fc-casing", "trop-fc", "trop-fcpts", "trop-fclabel"];
       this.tropicalIds = ["trop-past-casing", "trop-past", "trop-fc-casing", "trop-fc", "trop-fcpts", "trop-fclabel",
                           "trop-invest", "trop-tc", "trop-label"];
       // The symbols pulse (slow, so it draws the eye without nagging), unless the
@@ -2624,6 +2651,17 @@ class App {
       for (const [id, data] of Object.entries(names)) map.getSource(id).setData(data);
     }
     this.showTropical(this.tropicalOn);
+  }
+
+  // Show the past and forecast track of one system, or none (id = "").
+  setTropicalSel(id) {
+    this.tropicalSel = id;
+    if (!this.map) return;
+    const only = ["==", ["get", "id"], id];
+    for (const layer of this.tropicalTrackIds || []) {
+      if (!this.map.getLayer(layer)) continue;
+      this.map.setFilter(layer, layer === "trop-fclabel" ? ["all", ["get", "big"], only] : only);
+    }
   }
 
   showTropical(on) {
@@ -2664,9 +2702,11 @@ class App {
       rows.join("") +
       (fc ? `<table style="width:100%;margin-top:6px;border-collapse:collapse;font-size:11px"><caption style="text-align:left;color:#a9b5d0">JTWC forecast</caption>${fc}</table>` : "") +
       `<div style="margin-top:5px;color:#a9b5d0">As of ${when(s.t)} · <a href="${s.url ? escapeHTML(s.url) : "https://www.metoc.navy.mil/jtwc/jtwc.html"}" target="_blank" rel="noopener">JTWC</a></div></div>`;
-    if (this.tropicalPop) this.tropicalPop.remove();
+    if (this.tropicalPop) this.tropicalPop.remove();        // clears the previous selection
     this.tropicalPop = new maplibregl.Popup({ maxWidth: "320px", closeButton: true })
       .setLngLat(e.features[0].geometry.coordinates).setHTML(html).addTo(this.map);
+    this.setTropicalSel(id);
+    this.tropicalPop.on("close", () => this.setTropicalSel(""));
   }
 
   addBoundaries() {
