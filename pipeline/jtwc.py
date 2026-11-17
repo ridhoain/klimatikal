@@ -217,11 +217,41 @@ def current_product_links(rss: str) -> list[str]:
     return [u for u in dict.fromkeys(links) if "/abpw" not in u and "/abio" not in u]
 
 
-def merge_history(systems: list[dict], previous: dict | None, now: datetime) -> list[dict]:
-    """Attach `past` from the last published file, extended by the new position."""
+SAME_SYSTEM_DEG = 4.0     # an invest this close to a warned cyclone of the same basin is its remnant
+
+
+def absorb_invests(systems: dict[str, dict], texts: dict[str, str]) -> dict[str, str]:
+    """Drop an invest once it has become a numbered cyclone, and say which.
+
+    JTWC renumbers (INVEST 95P becomes 08P) and the outlook can keep listing the
+    old area for a while, which would draw two symbols on one storm. An invest
+    goes if its id is named in a warning's text, or if it sits within a few
+    degrees of a warned cyclone of the same basin letter. Returns
+    {cyclone id: invest id} so the cyclone can inherit the invest's track.
+    """
+    alias: dict[str, str] = {}
+    tcs = [s for s in systems.values() if s["kind"] == "tc"]
+    for iid in [i for i, s in systems.items() if s["kind"] == "invest"]:
+        inv = systems[iid]
+        for tc in tcs:
+            named = re.search(rf"\b{re.escape(iid)}\b", texts.get(tc["id"], ""))
+            near = (tc["id"][-1] == iid[-1]
+                    and abs(tc["lat"] - inv["lat"]) <= SAME_SYSTEM_DEG
+                    and abs(((tc["lon"] - inv["lon"] + 180) % 360) - 180) <= SAME_SYSTEM_DEG)
+            if named or near:
+                alias.setdefault(tc["id"], iid)
+                del systems[iid]
+                break
+    return alias
+
+
+def merge_history(systems: list[dict], previous: dict | None, now: datetime,
+                  alias: dict[str, str] | None = None) -> list[dict]:
+    """Attach `past` from the last published file, extended by the new position.
+    A cyclone that was an invest picks up the invest's track."""
     old = {s["id"]: s for s in (previous or {}).get("systems", [])}
     for s in systems:
-        prev = old.get(s["id"])
+        prev = old.get(s["id"]) or old.get((alias or {}).get(s["id"], ""))
         past = [list(p) for p in (prev or {}).get("past", [])]
         # The previous file's own current position becomes part of the past.
         if prev and prev.get("t") and prev["t"] != s["t"] and "lat" in prev:
@@ -239,6 +269,7 @@ def merge_history(systems: list[dict], previous: dict | None, now: datetime) -> 
 def build(now: datetime, previous: dict | None, getter=fetch) -> dict:
     rss = getter(RSS)
     systems: dict[str, dict] = {}
+    texts: dict[str, str] = {}              # warning text by cyclone id
     for url in OUTLOOKS:
         for s in parse_outlook(getter(url), now):
             systems[s["id"]] = s
@@ -251,6 +282,7 @@ def build(now: datetime, previous: dict | None, getter=fetch) -> dict:
         w = parse_warning(text, now)
         if w:
             w["url"] = url
+            texts[w["id"]] = text
             systems[w["id"]] = {**systems.get(w["id"], {}), **w}   # a warning outranks its old invest entry
             continue
         a = parse_tcfa(text, now)
@@ -265,10 +297,11 @@ def build(now: datetime, previous: dict | None, getter=fetch) -> dict:
                 base.update({k: v for k, v in a.items() if v is not None})
                 base["url"] = url
                 systems[a["id"]] = base
+    alias = absorb_invests(systems, texts)
     ordered = sorted(systems.values(), key=lambda s: (s["kind"] != "tc", s["id"]))
     ordered = [s for s in ordered if "lat" in s and "lon" in s]
     return {"updated": iso(now), "attribution": ATTRIBUTION,
-            "systems": merge_history(ordered, previous, now)}
+            "systems": merge_history(ordered, previous, now, alias)}
 
 
 # --- output ----------------------------------------------------------------

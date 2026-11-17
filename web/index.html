@@ -2551,15 +2551,25 @@ class App {
         KT_COLORS.forEach((c, i) => map.addImage(`tc-${i}-${hemi}`, stormIcon(c, true, hemi === "s"), { pixelRatio: 2 }));
         for (const [k, c] of Object.entries(POT_COLORS)) map.addImage(`iv-${k}-${hemi}`, stormIcon(c, false, hemi === "s"), { pixelRatio: 2 });
       }
-      const iconBase = { "icon-allow-overlap": true, "icon-ignore-placement": true };
+      const iconBase = { "icon-allow-overlap": true, "icon-ignore-placement": true, "icon-size": 0.8 };
       const hemi = ["get", "hemi"];
       L({ id: "trop-invest", type: "symbol", source: "trop-pts", filter: ["==", ["get", "kind"], "invest"],
           layout: { ...iconBase, "icon-image": ["concat", "iv-", ["match", ["get", "potential"], "high", "high", "medium", "med", "low"], "-", hemi] } });
       L({ id: "trop-tc", type: "symbol", source: "trop-pts", filter: ["==", ["get", "kind"], "tc"],
           layout: { ...iconBase, "icon-image": ["concat", "tc-", ["to-string", ["step", ["get", "kt"], 0, 34, 1, 64, 2, 83, 3, 96, 4, 113, 5]], "-", hemi] } });
-      L({ id: "trop-label", type: "symbol", source: "trop-pts", layout: { ...text, "text-field": ["get", "label"], "text-offset": [0, 1.7] }, paint: halo });
+      L({ id: "trop-label", type: "symbol", source: "trop-pts", layout: { ...text, "text-field": ["get", "label"], "text-offset": [0, 1.45] }, paint: halo });
       this.tropicalIds = ["trop-past-casing", "trop-past", "trop-fc-casing", "trop-fc", "trop-fcpts", "trop-fclabel",
                           "trop-invest", "trop-tc", "trop-label"];
+      // The symbols pulse (slow, so it draws the eye without nagging), unless the
+      // visitor has asked their system for less motion.
+      if (!this.tropicalBlink && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        const t0 = performance.now();
+        this.tropicalBlink = setInterval(() => {
+          if (!this.tropicalOn || document.hidden) return;
+          const o = 0.65 + 0.35 * Math.cos(((performance.now() - t0) / 1600) * 2 * Math.PI);   // 0.3 to 1, every 1.6 s
+          for (const id of ["trop-invest", "trop-tc"]) if (map.getLayer(id)) map.setPaintProperty(id, "icon-opacity", o);
+        }, 100);
+      }
       for (const id of ["trop-invest", "trop-tc"]) {
         map.on("click", id, (e) => this.tropicalPopup(e));
         map.on("mouseenter", id, () => { map.getCanvas().style.cursor = "pointer"; });

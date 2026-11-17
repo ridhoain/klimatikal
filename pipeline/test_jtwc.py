@@ -76,3 +76,34 @@ def test_build_merges_tcfa_into_outlook_and_extends_the_past():
     p95 = next(s for s in doc["systems"] if s["id"] == "95P")
     assert p95["tcfa"] is True and p95["url"].endswith("sh9527web.txt")
     assert p95["past"] == [[-9.2, -157.1, "2026-11-14T13:00Z", 28]]
+
+
+def _sys(i, kind, lat, lon):
+    return {"id": i, "kind": kind, "lat": lat, "lon": lon, "t": "2026-11-15T06:00Z"}
+
+
+def test_invest_that_became_a_cyclone_is_dropped():
+    systems = {"95W": _sys("95W", "invest", 12.0, 130.0), "08W": _sys("08W", "tc", 12.8, 129.0),
+               "92B": _sys("92B", "invest", 9.0, 86.0), "96S": _sys("96S", "invest", 12.5, 129.5)}
+    alias = jtwc.absorb_invests(systems, {})
+    assert set(systems) == {"08W", "92B", "96S"}      # 96S is near but another basin letter
+    assert alias == {"08W": "95W"}
+
+
+def test_invest_named_in_the_warning_is_dropped_even_when_far():
+    systems = {"91W": _sys("91W", "invest", 5.0, 150.0), "09W": _sys("09W", "tc", 15.0, 140.0)}
+    alias = jtwc.absorb_invests(systems, {"09W": "TYPHOON 09W (X) ... FORMERLY INVEST 91W ..."})
+    assert set(systems) == {"09W"} and alias == {"09W": "91W"}
+
+
+def test_dateline_neighbours_count_as_near():
+    systems = {"94P": _sys("94P", "invest", -15.0, 179.0), "05P": _sys("05P", "tc", -15.5, -179.0)}
+    assert jtwc.absorb_invests(systems, {}) == {"05P": "94P"}
+
+
+def test_cyclone_inherits_the_invests_track():
+    prev = {"systems": [{"id": "95W", "t": "2026-11-15T00:00Z", "lat": 11.0, "lon": 131.0, "wind_kt": 25,
+                         "past": [[10.0, 133.0, "2026-11-14T18:00Z", 20]]}]}
+    tc = {"id": "08W", "kind": "tc", "lat": 12.8, "lon": 129.0, "t": "2026-11-15T06:00Z", "wind_kt": 40}
+    out = jtwc.merge_history([tc], prev, NOW, alias={"08W": "95W"})
+    assert out[0]["past"] == [[10.0, 133.0, "2026-11-14T18:00Z", 20], [11.0, 131.0, "2026-11-15T00:00Z", 25]]
