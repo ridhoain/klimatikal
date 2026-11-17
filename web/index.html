@@ -132,6 +132,8 @@
   #maptools button[aria-pressed="true"] { background: #dbe7ff; color: #1f55d6; }
   #maptools button:focus-visible { outline: 2px solid #2d6cf6; outline-offset: -2px; }
   #maptools svg { width: 15px; height: 15px; }
+  #maptools button.busy { opacity: .5; }
+  #maptools button.err { color: #c62828; }
   #maptools .aa { font: 700 12px/1 ui-sans-serif, system-ui, sans-serif; }
   #timeopts { display: flex; gap: 6px; align-items: center; }
   #tz, #dn { display: flex; border: 1px solid rgba(255,255,255,.18); border-radius: 7px; overflow: hidden; }
@@ -1224,8 +1226,59 @@ class App {
     this.runStart = this.parseRun(this.manifest.run);
 
     this.readURL();
+    if (!this.view) this.view = await this.visitorView();
     this.buildChrome();
     this.startMap();
+  }
+
+  // Where to open the map for someone with no view in the link. Indonesia keeps
+  // the national view; anywhere else opens on the visitor's region (about 1,000 km
+  // across), from the location Cloudflare derives from the request (/api/where).
+  // The answer is waited for only briefly: a slow or missing answer means the
+  // default view, never a delayed map. `?geo=35.7,139.7,JP` previews another visitor.
+  async visitorView() {
+    try {
+      const q = new URLSearchParams(location.search).get("geo");
+      let w;
+      if (q) {
+        const [lat, lon, country] = q.split(",");
+        w = { lat: +lat, lon: +lon, country };
+      } else {
+        const ctl = new AbortController();
+        const timer = setTimeout(() => ctl.abort(), 800);
+        const res = await fetch("/api/where", { signal: ctl.signal, cache: "no-store" });
+        clearTimeout(timer);
+        if (!res.ok || !/json/.test(res.headers.get("content-type") || "")) return null;
+        w = await res.json();
+      }
+      if (!w || w.country === "ID" || !Number.isFinite(w.lat) || !Number.isFinite(w.lon)) return null;
+      if (Math.abs(w.lat) > 85) return null;
+      return [w.lon, w.lat, 5];
+    } catch (err) {
+      return null;
+    }
+  }
+
+  locateMe(btn) {
+    const fail = (why) => {
+      console.warn("location unavailable:", why);
+      btn.title = "Location unavailable (check the browser's permission for this site)";
+      btn.classList.add("err");
+      setTimeout(() => { btn.classList.remove("err"); btn.title = "Zoom to my location"; }, 3500);
+    };
+    if (!navigator.geolocation) return fail("not supported");
+    btn.classList.add("busy");
+    navigator.geolocation.getCurrentPosition((pos) => {
+      btn.classList.remove("busy");
+      const c = [pos.coords.longitude, pos.coords.latitude];
+      this.map.flyTo({ center: c, zoom: Math.max(this.map.getZoom(), 7), duration: 1200 });
+      // A dot on the spot, kept for the rest of the visit.
+      if (!this.map.getSource("me")) {
+        this.map.addSource("me", { type: "geojson", data: { type: "Point", coordinates: c } });
+        this.map.addLayer({ id: "me-halo", type: "circle", source: "me", paint: { "circle-radius": 11, "circle-color": "#2d6cf6", "circle-opacity": 0.25 } });
+        this.map.addLayer({ id: "me", type: "circle", source: "me", paint: { "circle-radius": 5.5, "circle-color": "#2d6cf6", "circle-stroke-color": "#fff", "circle-stroke-width": 2 } });
+      } else this.map.getSource("me").setData({ type: "Point", coordinates: c });
+    }, (err) => { btn.classList.remove("busy"); fail(err.message); }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 });
   }
 
   async fetchJSON(url) {
@@ -1812,6 +1865,15 @@ class App {
       this.showLabels(this.labelsOn); this.writeURL();
     };
     tools.appendChild(labels);
+
+    // Locate me: asks the browser for the exact position only when clicked, so
+    // nobody gets a permission prompt just for opening the page.
+    const locate = document.createElement("button");
+    locate.title = "Zoom to my location";
+    locate.setAttribute("aria-label", "Zoom to my location");
+    locate.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v2.6M8 12.4V15M1 8h2.6M12.4 8H15"/></svg>';
+    locate.onclick = () => this.locateMe(locate);
+    tools.appendChild(locate);
 
     // Day and night (lines only, so no weather colour is tinted): a button in
     // the time bar, next to Local / UTC, since it follows the shown time.
