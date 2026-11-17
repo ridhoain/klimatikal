@@ -1195,6 +1195,7 @@ class App {
     this.satSwap = 0;         // latest-wins token for frame swaps while scrubbing
     this.satBad = new Set();  // images that failed to load; dropped from the axis
     this.playing = false;
+    this.terrainOn = false;   // relief shading (AWS Terrain Tiles); ?terrain=1
     this.tropicalOn = true;   // JTWC invests and warned cyclones; ?storms=0 hides them
     this.tropical = null;
     this.useUTC = tzStore.get() === "utc";
@@ -1926,6 +1927,17 @@ class App {
     const windSep = document.createElement("span");
     windSep.className = "sep";
     box.appendChild(windSep);
+    // Terrain: relief shading under the coastlines, off by default. Elevation
+    // tiles come from AWS Open Data (Terrain Tiles) only once it is switched on.
+    const terrain = document.createElement("button");
+    terrain.className = "toggle";
+    terrain.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.2 13.2 5.8 4.6l3 5.2 1.6-2.6 4.4 6z"/><path d="M4.4 7.2 5.8 8.6 7 7.4"/></svg>';
+    terrain.setAttribute("aria-label", "Terrain");
+    terrain.title = "Terrain relief shading";
+    terrain.setAttribute("aria-pressed", String(this.terrainOn));
+    terrain.onclick = () => this.setTerrain(!this.terrainOn);
+    box.appendChild(terrain);
+    this.terrainBtn = terrain;
     const wind = document.createElement("button");
     wind.className = "toggle";
     wind.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 6h8a2.2 2.2 0 1 0-2.2-2.2"/><path d="M1.5 10h10.5a2.2 2.2 0 1 1-2.2 2.2"/><path d="M1.5 8h5"/></svg>';
@@ -1994,9 +2006,10 @@ class App {
     // layer is on and the manifest names a source. The demo manifest has none.
     const rm = this.radarManifest;
     const radar = this.radarOn && rm && !rm.demo && rm.attribution ? ` · ${escapeHTML(rm.attribution)}` : "";
+    const terr = this.terrainOn ? " · Terrain: AWS Open Data Terrain Tiles (NASA SRTM, USGS, ETOPO1 and others)" : "";
     const storms = this.tropicalOn && this.tropical && this.tropical.attribution ? ` · ${escapeHTML(this.tropical.attribution)}` : "";
     document.getElementById("credit").innerHTML =
-      `© 2026 Klimatikal · ${escapeHTML(this.manifest.attribution)} · run ${escapeHTML(this.manifest.run)}${sat}${radar}${storms} · <a href="/privacy/">Privacy</a>`;
+      `© 2026 Klimatikal · ${escapeHTML(this.manifest.attribution)} · run ${escapeHTML(this.manifest.run)}${sat}${radar}${storms}${terr} · <a href="/privacy/">Privacy</a>`;
   }
 
   // Colour key for the active layer, built from the same RAMPS table the
@@ -2330,6 +2343,7 @@ class App {
     if (h.get("night") === "1") this.nightOn = true;
     if (h.get("wind") === "0") this.windOn = false;
     if (h.get("storms") === "0") this.tropicalOn = false;
+    if (h.get("terrain") === "1") this.terrainOn = true;
   }
 
   writeURL() {
@@ -2344,6 +2358,7 @@ class App {
       ...(this.nightOn ? { night: "1" } : {}),
       ...(this.windOn ? {} : { wind: "0" }),
       ...(this.tropicalOn ? {} : { storms: "0" }),
+      ...(this.terrainOn ? { terrain: "1" } : {}),
     });
     history.replaceState(null, "", `#${h}`);
   }
@@ -2413,6 +2428,36 @@ class App {
   // the coast stays readable, each with a dark casing so it also reads over
   // pale cloud. Added after the weather layer, so they sit above it. Coast
   // first: it matters most, and the largest file (provinces) goes last.
+  // --- terrain ---------------------------------------------------------------
+  // Hillshade from the AWS Terrain Tiles (Terrarium encoding), drawn above the
+  // weather and satellite and below the coastlines. The sea floor shades too (the
+  // data includes bathymetry); at this strength it reads as a faint texture.
+  setTerrain(on) {
+    this.terrainOn = on;
+    if (this.terrainBtn) this.terrainBtn.setAttribute("aria-pressed", String(on));
+    this.ensureTerrain();
+    this.writeURL();
+    this.paintCredit();
+  }
+
+  ensureTerrain() {
+    const m = this.map;
+    if (!m || !m.getLayer("coast-casing")) return;          // added once the boundaries exist
+    if (this.terrainOn && !m.getSource("terrain")) {
+      m.addSource("terrain", {
+        type: "raster-dem", encoding: "terrarium", tileSize: 256, maxzoom: 12,
+        tiles: ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"],
+      });
+      m.addLayer({
+        id: "terrain-shade", type: "hillshade", source: "terrain",
+        paint: { "hillshade-exaggeration": 0.8, "hillshade-illumination-direction": 315,
+                 "hillshade-shadow-color": "#10172c", "hillshade-highlight-color": "#ffffff",
+                 "hillshade-accent-color": "#10172c" },
+      }, "coast-casing");
+    }
+    if (m.getLayer("terrain-shade")) m.setLayoutProperty("terrain-shade", "visibility", this.terrainOn ? "visible" : "none");
+  }
+
   // --- boundary lines, loaded by cell -------------------------------------
   // geo/tiles/<layer>/<cx>-<cy>.json are 30-degree cells (pipeline/split_geo.py).
   // Cells under the view, plus a margin of 25% of it, are fetched once and kept;
@@ -2658,6 +2703,7 @@ class App {
     });
     this.paintBoundaryStyle();
     this.addLabels();
+    this.ensureTerrain();      // ?terrain=1 in the link
     if (this.geoIndex) {
       this.geoCells = { coast: new Map(), admin0: new Map(), admin1: new Map() };
       this.geoDirty = new Set();
