@@ -782,7 +782,10 @@ const UPDATE_FS = `
     // Respawn a slice of the particles each frame, or they all drain into the
     // convergence zones and the map goes bald.
     float speed = length(w);
-    float dropChance = u_drop + smoothstep(0.0, 1.5, 1.0 - speed) * 0.02;
+    // A particle lingers in slow air, so with one respawn rate the slow areas
+    // fill up and the fast ones thin out. Respawning in proportion to 1/speed
+    // makes the time spent in a place cancel out: even density everywhere.
+    float dropChance = u_drop * clamp(8.0 / max(speed, 0.7), 1.0, 10.0);
     vec2 seed = v_uv * u_rand;
     if (rand(seed) < dropChance || next.y < 0.002 || next.y > 0.998) {
       next = vec2(rand(seed + 1.3), rand(seed + 2.7) * 0.92 + 0.04);
