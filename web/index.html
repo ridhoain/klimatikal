@@ -192,6 +192,12 @@
   .storm-fc { pointer-events: none; }
   .storm-fc .maplibregl-popup-content { padding: 4px 8px; }
   .front-tip { pointer-events: none; }
+  /* Name tag over an icon-only button. One fixed element, because the layer bar scrolls
+     sideways and would clip a tag drawn inside it. */
+  #tip { position: fixed; z-index: 6; pointer-events: none; padding: 3px 8px; border-radius: 6px;
+    font-size: 11px; color: #e9edf7; background: rgba(12,18,34,.92); white-space: nowrap;
+    transform: translate(-50%, -100%); }
+  #tip[hidden] { display: none; }
   .front-tip .maplibregl-popup-content { padding: 6px 9px; }
   #readout b { font-weight: 600; font-size: 13px; }
   /* The attribution is a licence condition, so it stays on screen and legible:
@@ -2104,6 +2110,26 @@ class App {
     };
     box.appendChild(front);
 
+    // Icon-only buttons get a name tag on hover or keyboard focus.
+    const tip = document.createElement("div");
+    tip.id = "tip"; tip.hidden = true;
+    document.body.appendChild(tip);
+    for (const [btn, name] of [[terrain, "Terrain"], [wind, "Wind streaks"], [storm, "Tropical cyclones"], [front, "Fronts and troughs"]]) {
+      btn.dataset.tip = name;
+      btn.removeAttribute("title");              // the native tooltip would double it
+      const showTip = () => {
+        const r = btn.getBoundingClientRect();
+        tip.textContent = name;
+        tip.hidden = false;
+        const half = tip.offsetWidth / 2 + 6;                     // stay inside the window
+        tip.style.left = `${Math.max(half, Math.min(innerWidth - half, r.left + r.width / 2))}px`;
+        tip.style.top = `${r.top - 6}px`;
+      };
+      btn.addEventListener("mouseenter", showTip);
+      btn.addEventListener("focus", showTip);
+      for (const ev of ["mouseleave", "blur"]) btn.addEventListener(ev, () => { tip.hidden = true; });
+    }
+
     const slider = document.getElementById("slider");
     this.axis = this.buildAxis();
     slider.max = String(this.axis.length - 1);
@@ -2477,6 +2503,11 @@ class App {
     if (h.get("step")) {
       this.stepIndex = Math.max(0, Math.min(this.steps.length - 1, +h.get("step")));
       this.stepFromURL = true;
+    } else {
+      // First visit: open on the forecast step nearest to now, not on the start of the
+      // run, so a run that is hours old (the next one is still being built) still
+      // shows the present. Past the end of the run this is its last step.
+      this.stepIndex = Math.round(this.siAt(new Date()));
     }
     this.view = h.get("at") ? h.get("at").split(",").map(Number) : null;
     if (h.get("grid") !== null) this.gridOn = h.get("grid") !== "0";
