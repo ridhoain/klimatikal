@@ -1170,6 +1170,7 @@ function stormIcon(color, solid, clockwise) {
   g.fillStyle = solid ? "#101a33" : "#ffffff"; g.beginPath(); g.arc(c, c, 2.6, 0, Math.PI * 2); g.fill();   // the eye
   return g.getImageData(0, 0, px, px);
 }
+const SAT_BLANK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
 const RADAR_LABEL =ICON_RADAR + "Radar";
 const SAT_LABEL = ICON_SAT + "Satellite IR";
 
@@ -1225,6 +1226,7 @@ class App {
     this.steps = this.manifest.steps;
     this.runStart = this.parseRun(this.manifest.run);
 
+    this.loadGeoIndex();      // a few hundred bytes; settled long before the lines are added
     this.readURL();
     if (!this.view) this.view = await this.visitorView();
     this.buildChrome();
@@ -2388,7 +2390,11 @@ class App {
     });
     this.map.on("move", () => this.drawGrid());
     this.map.on("resize", () => this.drawGrid());
-    this.map.on("moveend", () => { this.writeURL(); this.scheduleContourLabels(); this.updateNight(); });
+    this.map.on("moveend", () => {
+      this.writeURL(); this.scheduleContourLabels(); this.updateNight(); this.geoSync();
+      // Tiles that came into view need this frame's image (a no-op when none did).
+      if (this.axis && this.satOn && this.satLoaded) this.applySatelliteTime(this.axis[Math.round(this.pos)]);
+    });
     // The isobar spacing follows zoom, and the key quotes it.
     this.map.on("zoomend", () => { if (this.preset) this.paintLegend(); });
     this.map.on("mousemove", (e) => this.probe(e.lngLat));
@@ -2399,6 +2405,60 @@ class App {
   // the coast stays readable, each with a dark casing so it also reads over
   // pale cloud. Added after the weather layer, so they sit above it. Coast
   // first: it matters most, and the largest file (provinces) goes last.
+  // --- boundary lines, loaded by cell -------------------------------------
+  // geo/tiles/<layer>/<cx>-<cy>.json are 30-degree cells (pipeline/split_geo.py).
+  // Cells under the view, plus a margin of 25% of it, are fetched once and kept;
+  // each source is then rebuilt from the cells loaded so far.
+  async loadGeoIndex() {
+    try {
+      const res = await fetch(new URL("geo/tiles/index.json", location.href), { cache: "no-cache" });
+      if (res.ok) this.geoIndex = await res.json();
+    } catch (err) { /* whole files, as before */ }
+  }
+
+  geoSync() {
+    if (!this.geoIndex || !this.geoCells || !this.map) return;
+    const cell = this.geoIndex.cell, cols = 360 / cell, rows = 180 / cell;
+    const b = this.map.getBounds(), z = this.map.getZoom(), pad = 0.25;
+    const spanLon = b.getEast() - b.getWest(), spanLat = b.getNorth() - b.getSouth();
+    const cxs = new Set();
+    if (spanLon * (1 + 2 * pad) >= 360) for (let x = 0; x < cols; x++) cxs.add(x);
+    else {
+      const w = b.getWest() - spanLon * pad, e = b.getEast() + spanLon * pad;
+      for (let x = Math.floor((w + 180) / cell); x <= Math.floor((e + 180) / cell); x++) cxs.add(((x % cols) + cols) % cols);
+    }
+    const y0 = Math.max(0, Math.floor((b.getSouth() - spanLat * pad + 90) / cell));
+    const y1 = Math.min(rows - 1, Math.floor((b.getNorth() + spanLat * pad + 90) / cell));
+    for (const layer of Object.keys(this.geoCells)) {
+      if (layer === "admin1" && z < 2) continue;            // province lines only draw from zoom 2
+      const have = new Set(this.geoIndex.layers[layer] || []);
+      for (const cx of cxs) for (let cy = y0; cy <= y1; cy++) {
+        const key = `${cx}-${cy}`;
+        if (!have.has(key) || this.geoCells[layer].has(key)) continue;
+        this.geoCells[layer].set(key, null);                  // requested
+        fetch(new URL(`geo/tiles/${layer}/${key}.json`, location.href))
+          .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
+          .then((f) => { this.geoCells[layer].set(key, f.geometry.coordinates); this.geoDirty.add(layer); this.geoFlushSoon(); })
+          .catch(() => this.geoCells[layer].delete(key));     // tried again on the next move
+      }
+    }
+  }
+
+  geoFlushSoon() {
+    if (this.geoTimer) return;
+    this.geoTimer = setTimeout(() => {
+      this.geoTimer = null;
+      for (const layer of this.geoDirty) {
+        const src = this.map.getSource(layer);
+        if (!src) continue;
+        const lines = [];
+        for (const c of this.geoCells[layer].values()) if (c) for (const l of c) lines.push(l);
+        src.setData({ type: "Feature", properties: {}, geometry: { type: "MultiLineString", coordinates: lines } });
+      }
+      this.geoDirty.clear();
+    }, 60);
+  }
+
   // --- tropical systems (JTWC) -------------------------------------------
   // pipeline/jtwc.py publishes tropical/tropical.json every half hour: invests
   // (hollow rings, coloured by development chance) and warned tropical cyclones
@@ -2556,8 +2616,12 @@ class App {
       ...extra,
     });
     const w = (a, b) => ["interpolate", ["linear"], ["zoom"], 2, a, 8, b];
+    // With the cell index (pipeline/split_geo.py) the sources start empty and
+    // geoSync fills them with the cells under the view; without it, as before,
+    // each file is loaded whole.
+    const EMPTY = { type: "FeatureCollection", features: [] };
     const add = (name, layers) => {
-      this.map.addSource(name, { type: "geojson", data: geo(name) });
+      this.map.addSource(name, { type: "geojson", data: this.geoIndex ? EMPTY : geo(name) });
       layers();
     };
     add("coast", () => {
@@ -2576,6 +2640,11 @@ class App {
     });
     this.paintBoundaryStyle();
     this.addLabels();
+    if (this.geoIndex) {
+      this.geoCells = { coast: new Map(), admin0: new Map(), admin1: new Map() };
+      this.geoDirty = new Set();
+      this.geoSync();
+    }
     // Storm markers go last so they sit above the coastlines and place names.
     this.loadTropical();
     if (!this.tropicalTimer) this.tropicalTimer = setInterval(() => this.tropicalOn && this.loadTropical(), 15 * 60e3);
@@ -2797,24 +2866,53 @@ class App {
   // future). Frames are fetched and decoded off-screen first and the latest
   // request wins, so dragging the slider does not queue up a stack of 4 MB
   // downloads and never shows a half-loaded picture.
-  // Fetch and decode every tile of a frame once; the promise is kept so the
-  // slider, the play loop and the prefetch all share one download. satReady
-  // holds the frames that are fully in the browser cache.
-  satFetch(frame) {
+  // Which tiles of a frame the current view needs: those that overlap the map
+  // (plus a margin of 15% of its width), so a visitor to Indonesia fetches one or
+  // two of the four longitude tiles, not all. The others are fetched when the
+  // view moves or zooms out (see the moveend handler).
+  satWanted(frame) {
+    const all = frame.tiles.map((_, i) => i);
+    if (!this.map) return all;
+    const b = this.map.getBounds();
+    const span = b.getEast() - b.getWest();
+    if (span >= 300) return all;
+    const pad = Math.max(2, span * 0.15);
+    const w = b.getWest() - pad, e = b.getEast() + pad;
+    // The view may sit on another copy of the world: test it shifted by whole turns.
+    const hit = (t) => {
+      for (let k = -2; k <= 2; k++) if (t.bounds.east > w + 360 * k && t.bounds.west < e + 360 * k) return true;
+      return false;
+    };
+    return all.filter((i) => hit(frame.tiles[i]));
+  }
+
+  // Fetch and decode one tile once; the promise is kept so the slider, the play
+  // loop and the prefetch share a download. satReady holds the tiles that are in
+  // the browser cache.
+  satTile(t) {
     if (!this.satFetched) { this.satFetched = new Map(); this.satReady = new Set(); }
-    let p = this.satFetched.get(frame.image);
+    let p = this.satFetched.get(t.image);
     if (!p) {
-      p = Promise.all(frame.tiles.map((t) => new Promise((resolve, reject) => {
+      p = new Promise((resolve, reject) => {
         const img = new Image();
         img.crossOrigin = "anonymous";
         img.onload = () => resolve(`${DATA}/sat/${t.image}`);
         img.onerror = () => reject(new Error(`failed to load ${t.image}`));
         img.src = `${DATA}/sat/${t.image}`;
-      })));
-      p.then(() => this.satReady.add(frame.image), () => this.satFetched.delete(frame.image));
-      this.satFetched.set(frame.image, p);
+      });
+      p.then(() => this.satReady.add(t.image), () => this.satFetched.delete(t.image));
+      this.satFetched.set(t.image, p);
     }
     return p;
+  }
+
+  // The wanted tiles of a frame: resolves to [{i, url}].
+  satFetch(frame) {
+    return Promise.all(this.satWanted(frame).map((i) => this.satTile(frame.tiles[i]).then((url) => ({ i, url }))));
+  }
+
+  satFrameReady(frame) {
+    return this.satWanted(frame).every((i) => this.satReady && this.satReady.has(frame.tiles[i].image));
   }
 
   // Is everything needed to draw slider position p already loaded? Starts the
@@ -2830,7 +2928,7 @@ class App {
         this.satBad.add(entry.frame.image);
         this.rebuildAxis();
       });
-      if (!this.satReady.has(entry.frame.image)) ok = false;
+      if (!this.satFrameReady(entry.frame)) ok = false;
     }
     const i = Math.floor(p), j = Math.min(i + 1, n - 1);
     const si = this.axis[i].si + (this.axis[j].si - this.axis[i].si) * (p - i);
@@ -2856,20 +2954,35 @@ class App {
       if (this.satFrame) { this.satFrame = null; this.paintLegend(); }
       return;
     }
-    this.showSatellite(true);
-    if (this.satShown && this.satShown.image === frame.image) {
+    // What each tile layer is showing, so a tile that is not on this frame's
+    // image (not yet fetched, or left over from another time) stays hidden
+    // instead of showing a different time next to the rest of the mosaic.
+    const shown = this.satTileShown || (this.satTileShown = []);
+    const sync = () => {
+      frame.tiles.forEach((t, i) => {
+        const id = `sat-${i}`;
+        if (this.map.getLayer(id))
+          this.map.setLayoutProperty(id, "visibility", shown[i] === t.image ? "visible" : "none");
+      });
+    };
+    const wanted = this.satWanted(frame);
+    if (wanted.every((i) => shown[i] === frame.tiles[i].image)) {
+      sync();
       if (this.satFrame !== frame) { this.satFrame = frame; this.paintLegend(); }
       return;
     }
+    sync();
     const token = ++this.satSwap;
-    // Every tile of the frame is fetched first and they are swapped in together,
-    // so the mosaic never shows half of one time and half of another.
-    this.satFetch(frame).then((urls) => {
+    // The wanted tiles are fetched first and swapped in together, so the part
+    // of the mosaic in view never shows two different times.
+    this.satFetch(frame).then((tiles) => {
       if (token !== this.satSwap) return;                // a newer request superseded this one
-      frame.tiles.forEach((t, i) => {
+      for (const { i, url } of tiles) {
         const src = this.map.getSource(`sat-${i}`);
-        if (src) src.updateImage({ url: urls[i], coordinates: this.satCoordinates(t.bounds) });
-      });
+        if (src) src.updateImage({ url, coordinates: this.satCoordinates(frame.tiles[i].bounds) });
+        shown[i] = frame.tiles[i].image;
+      }
+      sync();
       this.satShown = frame;
       this.satFrame = frame;
       this.paintLegend();
@@ -2888,7 +3001,7 @@ class App {
       if (!m.frames || !m.frames.length) throw new Error("no satellite frames published yet");
       this.satManifest = m;
       const latest = m.frames[m.frames.length - 1];
-      this.satShown = latest;
+      this.satTileShown = [];
       const before = this.radarLayerIds.length && this.map.getLayer(this.radarLayerIds[0])
         ? this.radarLayerIds[0]
         : (this.map.getLayer("coast-casing") ? "coast-casing" : undefined);
@@ -2897,8 +3010,10 @@ class App {
       this.satLayerIds = [];
       for (let i = 0; i < tileCount; i++) {
         const t = latest.tiles[Math.min(i, latest.tiles.length - 1)];
+        // A 1x1 transparent placeholder: the real image is fetched only when the
+        // view needs this tile (applySatelliteTime).
         this.map.addSource(`sat-${i}`, {
-          type: "image", url: `${DATA}/sat/${t.image}`, coordinates: this.satCoordinates(t.bounds),
+          type: "image", url: SAT_BLANK, coordinates: this.satCoordinates(t.bounds),
         });
         this.map.addLayer({
           id: `sat-${i}`, type: "raster", source: `sat-${i}`,
