@@ -2371,6 +2371,14 @@ class App {
       center: [lng, lat], zoom, minZoom: 1, maxZoom: 9,
       attributionControl: { compact: true, customAttribution: "Boundaries: Natural Earth" },
     });
+    // No view in the link and no visitor location: open on Indonesia fitted to the
+    // screen (it fills a desktop window; on a phone it never goes below the old
+    // zoom 3.2), instead of one fixed zoom for every screen size.
+    if (!(this.view && this.view.length === 3)) {
+      const m = this.map;
+      m.fitBounds([[94.5, -11.5], [141.5, 6.5]], { padding: { top: 80, bottom: 180, left: 20, right: 60 }, animate: false, maxZoom: 5 });
+      if (m.getZoom() < 3.2) m.jumpTo({ center: [lng, lat], zoom: 3.2 });
+    }
     this.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     // The weather layer and the grid are north-up. Rotating would skew both.
     this.map.dragRotate.disable();
