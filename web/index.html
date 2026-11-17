@@ -2006,7 +2006,7 @@ class App {
     // layer is on and the manifest names a source. The demo manifest has none.
     const rm = this.radarManifest;
     const radar = this.radarOn && rm && !rm.demo && rm.attribution ? ` · ${escapeHTML(rm.attribution)}` : "";
-    const osm = this.osmReady ? " · Detailed coastline: © OpenStreetMap contributors via OpenFreeMap" : "";
+    const osm = this.osmReady ? " · Coast and lakes: © OpenStreetMap contributors via OpenFreeMap" : "";
     const terr = this.terrainOn ? " · Terrain: AWS Open Data Terrain Tiles (NASA SRTM, USGS, ETOPO1 and others)" : "";
     const storms = this.tropicalOn && this.tropical && this.tropical.attribution ? ` · ${escapeHTML(this.tropical.attribution)}` : "";
     document.getElementById("credit").innerHTML =
@@ -2416,7 +2416,7 @@ class App {
     this.map.on("resize", () => this.drawGrid());
     this.map.on("moveend", () => {
       this.writeURL(); this.scheduleContourLabels(); this.updateNight(); this.geoSync();
-      if (this.map.getZoom() >= 6) this.ensureOsmCoast();
+      if (this.map.getZoom() >= 5) this.ensureOsmCoast();
       // Tiles that came into view need this frame's image (a no-op when none did).
       if (this.axis && this.satOn && this.satLoaded) this.applySatelliteTime(this.axis[Math.round(this.pos)]);
     });
@@ -2434,8 +2434,9 @@ class App {
   // The bundled coast is Natural Earth 10m: right to about 4 km, so it turns
   // angular when you zoom in. From zoom 6 the coast is drawn from OpenStreetMap
   // instead (the ocean polygons of OpenFreeMap's vector tiles) and the 10m line
-  // fades out. Nothing is requested from that service until a visitor zooms in
-  // that far, and if it cannot be reached the 10m coast stays.
+  // fades out; lakes are outlined from zoom 5. Nothing is requested from that
+  // service until a visitor zooms in to zoom 5, and if it cannot be reached the
+  // 10m coast stays.
   ensureOsmCoast() {
     const m = this.map;
     if (this.osmAdded || !m || !m.getLayer("coast-casing")) return;
@@ -2450,6 +2451,15 @@ class App {
     }, "admin0-casing");
     layer("coast-hi-casing", "rgba(8,12,24,0.5)", 2.2);
     layer("coast-hi", "rgba(255,255,255,0.92)", 1.1);
+    // Lakes: their outline, from zoom 5 (large lakes first; the tiles hold the
+    // smaller ones as you zoom in). Drawn thinner than the sea coast.
+    const lake = (id, color, width) => m.addLayer({
+      id, type: "line", source: "osm", "source-layer": "water", filter: ["==", ["get", "class"], "lake"], minzoom: 5,
+      layout: { "line-join": "round", "line-cap": "round" },
+      paint: { "line-color": color, "line-width": width },
+    }, "admin0-casing");
+    lake("lake-hi-casing", "rgba(8,12,24,0.45)", 1.6);
+    lake("lake-hi", "rgba(255,255,255,0.85)", 0.8);
     this.paintBoundaryStyle();
     // Fade the 10m coast out only once the detailed tiles are really there.
     const onData = (e) => {
@@ -2509,7 +2519,7 @@ class App {
       });
       m.addLayer({
         id: "terrain-shade", type: "hillshade", source: "terrain",
-        paint: { "hillshade-exaggeration": 0.8, "hillshade-illumination-direction": 315,
+        paint: { "hillshade-exaggeration": 0.5, "hillshade-illumination-direction": 315,
                  "hillshade-shadow-color": "#10172c", "hillshade-highlight-color": "#ffffff",
                  "hillshade-accent-color": "#10172c" },
       }, "coast-casing");
@@ -2779,7 +2789,7 @@ class App {
     this.paintBoundaryStyle();
     this.addLabels();
     this.ensureTerrain();      // ?terrain=1 in the link
-    if (this.map.getZoom() >= 6) this.ensureOsmCoast();
+    if (this.map.getZoom() >= 5) this.ensureOsmCoast();
     if (this.geoIndex) {
       this.geoCells = { coast: new Map(), admin0: new Map(), admin1: new Map() };
       this.geoDirty = new Set();
@@ -2814,6 +2824,14 @@ class App {
     set("coast-casing", casingColor); set("coast-hi-casing", casingColor);
     // The detailed (OpenStreetMap) coast, from zoom 6: same look, a little heavier as you zoom in.
     const zw = (a, b) => ["interpolate", ["linear"], ["zoom"], 6, a, 9, b];
+    const lw = (a, b) => ["interpolate", ["linear"], ["zoom"], 5, a, 9, b];
+    set("lake-hi", lb ? dark + "0.65)" : light ? dark + "0.85)" : pale + "0.85)");
+    set("lake-hi-casing", lb ? dark + "0.2)" : light ? pale + "0.55)" : dark + "0.45)");
+    if (m.getLayer("lake-hi")) m.setPaintProperty("lake-hi", "line-width", lb ? lw(0.4, 0.8) : lw(0.7, 1.3));
+    if (m.getLayer("lake-hi-casing")) {
+      m.setPaintProperty("lake-hi-casing", "line-width", lb ? lw(4, 6) : lw(1.5, 2.6));
+      m.setPaintProperty("lake-hi-casing", "line-blur", lb ? 2.5 : 0);
+    }
     if (m.getLayer("coast-hi")) m.setPaintProperty("coast-hi", "line-width", lb ? zw(0.6, 1.0) : zw(1.1, 1.8));
     if (m.getLayer("coast-hi-casing")) {
       m.setPaintProperty("coast-hi-casing", "line-width", lb ? zw(7, 10) : zw(2.2, 3.4));
