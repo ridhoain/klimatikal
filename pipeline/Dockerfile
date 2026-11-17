@@ -7,7 +7,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY encoding.py build_run.py ./
+COPY encoding.py fronts.py build_run.py ./
 
 # Fails loudly at build time rather than at 02:00 if the GRIB stack is broken.
 RUN python -c "import cfgrib, ecmwf.opendata, boto3; print('grib stack ok')"

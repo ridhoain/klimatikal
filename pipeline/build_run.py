@@ -32,6 +32,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
+from fronts import detect_fronts
 from encoding import (FORMAT_VERSION, LAYERS, NLAT, NLON, REVISION, encode, layer_manifest, reproject,
                       smooth_over_terrain, terrain_weight)
 
@@ -56,6 +57,8 @@ CONVERSIONS = {
     "hcc": ("%", lambda a: a * 100.0),
     "u850": ("m s-1", lambda a: a),            # pressure-level fields: GRIB short name + level
     "v850": ("m s-1", lambda a: a),
+    "t850": ("degC", lambda a: a - 273.15),    # Kelvin; with r850, only for the front detection
+    "r850": ("%", lambda a: a),
     "tp": ("mm", lambda a: a * 1000.0),        # metres of water equivalent
     "tcc": ("%", lambda a: a * 100.0),         # 0..1 fraction
     "msl": ("hPa", lambda a: a / 100.0),       # Pascals
@@ -65,9 +68,9 @@ CONVERSIONS = {
 ALL_PARAMS = sorted({p for spec in LAYERS.values() for p in spec["params"]})
 # Fields on a pressure level are a second request (levtype "pl"). Their names
 # here are the GRIB short name with the level appended.
-PL_FIELDS = {"u850": "u", "v850": "v"}
+PL_FIELDS = {"u850": "u", "v850": "v", "t850": "t", "r850": "r"}
 PL_LEVEL = 850
-EXTRA_PARAMS = ["sp"]       # read but not stored as a layer
+EXTRA_PARAMS = ["sp", "t850", "r850"]       # read but not stored as a layer
 SFC_PARAMS = [p for p in ALL_PARAMS + EXTRA_PARAMS if p not in PL_FIELDS]
 
 CACHE_RUN_FILES = "public, max-age=31536000, immutable"
@@ -282,6 +285,7 @@ def synthetic_fields(step: int) -> dict[str, np.ndarray]:
         "lcc": np.clip(40 + 50 * swirl, 0, 100),
         "mcc": np.clip(30 + 40 * np.roll(swirl, 60, axis=1), 0, 100),
         "hcc": np.clip(20 + 50 * np.roll(swirl, 150, axis=1), 0, 100),
+        "t850": warm - 8.0, "r850": np.clip(60 + 30 * swirl, 0, 100),
         "u850": 15.0 * swirl, "v850": 10.0 * np.cos(np.deg2rad(lon) * 2 + phase) * np.cos(np.deg2rad(lat)),
     }
 
@@ -322,7 +326,7 @@ def build(args) -> None:
     log(f"building run {run_id}, {len(steps)} steps, {len(LAYERS)} layers")
 
     # Seconds spent per phase, so a slow build says where the time went.
-    spent = {"download": 0.0, "read": 0.0, "encode": 0.0, "png": 0.0, "upload": 0.0}
+    spent = {"download": 0.0, "read": 0.0, "fronts": 0.0, "encode": 0.0, "png": 0.0, "upload": 0.0}
     build_started = time.perf_counter()
     workdir = Path(tempfile.mkdtemp(prefix="klimatikal-"))
     previous_tp: np.ndarray | None = None
@@ -363,6 +367,13 @@ def build(args) -> None:
                 terrain_w = terrain_weight(fields["sp"])
             fields["msl"] = smooth_over_terrain(fields["msl"], terrain_w)
 
+            t0 = time.perf_counter()
+            front_lines = detect_fronts(fields["t850"], fields["r850"], fields["u850"], fields["v850"], fields["msl"], terrain_w)
+            spent["fronts"] += time.perf_counter() - t0
+            sink.put(f"runs/{run_id}/fronts/f{step:03d}.json",
+                     json.dumps(front_lines, separators=(",", ":")).encode(), "application/json", CACHE_RUN_FILES)
+            written += 1
+
             for layer, spec in LAYERS.items():
                 t0 = time.perf_counter()
                 rgba = encode(layer, [fields[p] for p in spec["params"]])
@@ -402,6 +413,7 @@ def build(args) -> None:
             },
             "steps": steps,
             "layers": {name: layer_manifest(name) for name in LAYERS},
+            "fronts": True,        # fronts/fNNN.json per step: GeoJSON, see fronts.py
             "attribution": ATTRIBUTION,
             "licence": "CC BY 4.0",
         }

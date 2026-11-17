@@ -191,6 +191,8 @@
   /* Forecast table: a small glass box right beside the clicked storm. */
   .storm-fc { pointer-events: none; }
   .storm-fc .maplibregl-popup-content { padding: 4px 8px; }
+  .front-tip { pointer-events: none; }
+  .front-tip .maplibregl-popup-content { padding: 6px 9px; }
   #readout b { font-weight: 600; font-size: 13px; }
   /* The attribution is a licence condition, so it stays on screen and legible:
      small, but full-contrast text on the panel, on its own line under the slider. */
@@ -300,7 +302,7 @@ const DATA =
 // Each parameter has its own colour map, chosen for what it measures:
 //   wind      speed, sequential, white when calm, then blue -> green -> red -> purple
 //   temp      diverging around freezing: purple/blue cold, green mild, red hot
-//   precip    white when dry or missing, then pale green -> green -> yellow -> red -> purple
+//   precip    white when dry or missing, then pale green -> green -> yellow -> red -> purple -> blue
 //   cloud     white with rising opacity, so clear sky stays clear
 //   msl       diverging around the standard 1013 hPa: purple low, orange high
 // stops are [value, [r, g, b, alpha 0..255]]; `opacity` multiplies the alpha
@@ -323,11 +325,13 @@ const RAMPS = {
       [0,   [159, 216, 238, 255]], [8, [127, 207, 138, 255]], [16, [230, 227, 115, 255]],
       [24,  [245, 166, 64, 255]], [32, [226, 85, 58, 255]], [40, [168, 20, 46, 255]],
       [45,  [110, 10, 36, 255]]] },
-  precip: { display: [0, 20], unitLabel: "mm/3h", opacity: 0.9, evenLegend: true, legendMinWhite: true,
+  // The data is the 3-hour accumulation (mm/3h); `showScale` turns it into the
+  // mm/h that the key and the hover value show, so the stops are 3 x the rate.
+  precip: { display: [0, 90], unitLabel: "mm/h", showScale: 1 / 3, opacity: 0.9, evenLegend: true, legendMinWhite: true,
     stops: [
-      [0,   [255, 255, 255, 235]], [0.1, [214, 240, 220, 235]], [0.5, [155, 231, 164, 215]],
-      [1,   [31, 158, 79, 210]], [2.5, [243, 227, 71, 235]], [5,   [245, 154, 43, 245]],
-      [10,  [226, 54, 46, 250]], [20,  [176, 18, 154, 255]]] },
+      [0,   [255, 255, 255, 235]], [0.3, [214, 240, 220, 235]], [1.5, [155, 231, 164, 215]],
+      [3,   [31, 158, 79, 210]], [7.5, [243, 227, 71, 235]], [15,  [245, 154, 43, 245]],
+      [30,  [226, 54, 46, 250]], [60,  [176, 18, 154, 255]], [90, [38, 58, 200, 255]]] },
   cloud: { display: [0, 100], unitLabel: "%", opacity: 0.9, ticks: [0, 25, 50, 75, 100],
     stops: [
       [0,   [255, 255, 255, 0]],   [20, [235, 240, 250, 40]], [50, [235, 240, 250, 120]],
@@ -417,29 +421,25 @@ const PRESETS = {
     label: "Synoptic overview",
     goal: "What is the big-picture pattern?",
     main: "msl",
-    noKey: true,          // no pressure bar: the isobars carry their own values
+    keyRamp: "precip",    // the colour bar is the rain scale; the isobars carry their own values
     lightBase: true,      // white map with black clouds, black coast; see paintBoundaryStyle
+    fronts: true,         // detected fronts (cold, warm, occluded) from the run's fronts/ files
     stack: [
-      { kind: "fill", ramp: "lowcloud" },
-      { kind: "fill", ramp: "midcloud" },
-      { kind: "fill", ramp: "highcloud" },
+      { kind: "fill", ramp: "precip" },     // the same colours and settings as the Precipitation layer
       // Isobars of mean sea-level pressure, blue low to red high. Spacing follows
       // zoom (the tropics are nearly flat); heavy every 10 hPa. The number goes on
       // the line every `labelEvery` hPa, and H / L mark the centres: the biggest or
       // smallest value within 4 degrees and 1.5 hPa clear of the ring around it.
       { kind: "contour", layer: "msl", ramp: "mslline", heavy: 10,
-        intervalByZoom: [[0, 5], [2.5, 2], [3.5, 1]], alpha: 0.95, majorAlpha: 1, width: 0.4, majorWidth: 0.75, shadow: 0.35,
+        intervalByZoom: [[0, 5], [2.5, 2], [3.5, 1]], alpha: 0.95, majorAlpha: 1, width: 0.28, majorWidth: 0.5, shadow: 0.35,
         labelEvery: 4, extrema: { radius: 16, depth: 1.5 } },
       { kind: "particles", layer: "wind850", opacity: 1.0, tint: { layer: "msl", ramp: "mslline" } },
     ],
-    keys: [{ title: "Cloud density", rows: [
-      { swatch: [195, 197, 200], text: "Sparse" },
-      { swatch: [140, 142, 148], text: "Moderate" },
-      { swatch: [85, 87, 94], text: "Dense" },
-    ] }],
     explain: [
+      "Colour: rain rate, averaged over the previous 3 hours (bar at right), the same scale as the Precipitation layer.",
       "Lines: sea-level pressure every {interval} hPa, bold every 10. Blue is low, red is high.",
       "H and L: centres of high and low pressure.",
+      "Fronts: blue triangles cold, red semicircles warm, purple both occluded; the symbols point the way the front moves. Black lines: the monsoon trough (long faint dashes) and pressure troughs (short dashes). All detected from the model's own fields, so approximations.",
       "Streaks: 850 hPa wind, coloured by the sea-level pressure under them (the same colours as the lines).",
     ],
   },
@@ -729,7 +729,7 @@ const CONTOUR_FS = `
     // A soft dark halo just wider than the line, under it, so the line stays
     // readable over any background colour (u_shadow = its strength, 0 = none).
     float halo = u_shadow > 0.0
-      ? max(lineAt(v, u_interval, u_width + 2.2, perPx), lineAt(v, u_interval * u_major, u_majorWidth + 2.2, perPx)) * u_shadow
+      ? max(lineAt(v, u_interval, u_width + 1.8, perPx), lineAt(v, u_interval * u_major, u_majorWidth + 1.8, perPx)) * u_shadow
       : 0.0;
     float outA = a + halo * (1.0 - a);
     if (outA < 0.01) discard;
@@ -1231,6 +1231,7 @@ class App {
     this.satBad = new Set();  // images that failed to load; dropped from the axis
     this.playing = false;
     this.terrainOn = false;   // relief shading (AWS Terrain Tiles); ?terrain=1
+    this.frontsOn = true;     // fronts on Synoptic overview; ?fronts=0 hides them
     this.tropicalOn = true;   // JTWC invests and warned cyclones; ?storms=0 hides them
     this.tropical = null;
     this.useUTC = tzStore.get() === "utc";
@@ -1398,7 +1399,7 @@ class App {
 
   scheduleContourLabels() {
     clearTimeout(this.clTimer);
-    this.clTimer = setTimeout(() => { this.updateContourLabels(); this.updateHazard(); }, 150);
+    this.clTimer = setTimeout(() => { this.updateContourLabels(); this.updateHazard(); this.updateFronts(); }, 150);
   }
 
   // The layer's values as a Float32Array on the PNG's own grid. Cached, newest
@@ -1606,6 +1607,96 @@ class App {
     }
     this.hzKey = key;
     src.setData({ type: "FeatureCollection", features });
+  }
+
+  // ---- Fronts ------------------------------------------------------------------
+  // Detected in the pipeline (fronts.py) from the model's 850 hPa wet-bulb
+  // temperature, one GeoJSON per forecast step. Every line is oriented with the
+  // side the front moves towards on its left, so a symbol that stands "up" from the
+  // line (icon anchored at its base, rotated with the line) points the right way:
+  // cold = triangles, warm = semicircles, occluded = both, alternating.
+  async updateFronts() {
+    const map = this.map, src = map && map.getSource("fronts");
+    if (!src) return;
+    const want = this.frontsOn && this.preset && PRESETS[this.preset].fronts && this.manifest.fronts;
+    const i = Math.max(0, Math.min(this.steps.length - 1, Math.round(this.stepIndex)));
+    const key = want ? this.steps[i] : null;
+    if (key === this.frontKey) return;
+    this.frontKey = key;
+    const empty = { type: "FeatureCollection", features: [] };
+    if (key === null) { src.setData(empty); return; }
+    this.frontCache = this.frontCache || new Map();
+    if (!this.frontCache.has(key)) {
+      this.frontCache.set(key, fetch(`${this.runPrefix}/fronts/f${String(key).padStart(3, "0")}.json`)
+        .then((r) => (r.ok ? r.json() : empty)).catch(() => empty));
+      if (this.frontCache.size > 12) this.frontCache.delete(this.frontCache.keys().next().value);
+    }
+    const data = await this.frontCache.get(key);
+    if (this.frontKey === key) src.setData(data);
+  }
+
+  addFrontLayers() {
+    const map = this.map;
+    const COLD = "#1b4fd8", WARM = "#d8231b", OCC = "#7a2fb5";
+    // Symbols are drawn pointing up from a flat base on the line, with a little
+    // clear space either side so they do not touch.
+    const draw = (w, parts, fill) => {
+      const H = 16, cv = document.createElement("canvas"); cv.width = w; cv.height = H;
+      const c = cv.getContext("2d");
+      c.fillStyle = fill;
+      let x = 0;
+      for (const kind of parts) {
+        c.beginPath();
+        if (kind === "tri") { c.moveTo(x + 3, H); c.lineTo(x + 19, H); c.lineTo(x + 11, 2); }
+        else c.arc(x + 11, H, 8, Math.PI, 0);
+        c.closePath(); c.fill();
+        x += 22;
+      }
+      return c.getImageData(0, 0, w, H);
+    };
+    map.addImage("front-cold", draw(22, ["tri"], COLD), { pixelRatio: 2 });
+    map.addImage("front-warm", draw(22, ["semi"], WARM), { pixelRatio: 2 });
+    map.addImage("front-occ", draw(44, ["semi", "tri"], OCC), { pixelRatio: 2 });
+    map.addSource("fronts", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+    const colour = ["match", ["get", "t"], "c", COLD, "w", WARM, OCC];
+    // Troughs: plain black lines, no symbols. Both dashed: long dashes, fainter, for the monsoon trough; short dashes for a pressure trough.
+    map.addLayer({ id: "trough-m", type: "line", source: "fronts", filter: ["==", ["get", "t"], "m"],
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": "#111", "line-width": ["interpolate", ["linear"], ["zoom"], 1, 1.4, 6, 2.2], "line-dasharray": [6, 3], "line-opacity": 0.5 } });
+    map.addLayer({ id: "trough-p", type: "line", source: "fronts", filter: ["==", ["get", "t"], "p"],
+      layout: { "line-join": "round" },
+      paint: { "line-color": "#111", "line-width": ["interpolate", ["linear"], ["zoom"], 1, 1.1, 6, 1.7], "line-dasharray": [3, 2], "line-opacity": 0.9 } });
+    map.addLayer({ id: "fronts-line", type: "line", source: "fronts", filter: ["in", ["get", "t"], ["literal", ["c", "w", "o"]]],
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": colour, "line-width": ["interpolate", ["linear"], ["zoom"], 1, 0.9, 6, 1.3], "line-opacity": 0.95 } });
+    // A wide, almost invisible copy of the line to hover over; the tip explains the front.
+    map.addLayer({ id: "fronts-hit", type: "line", source: "fronts", paint: { "line-color": "#000", "line-width": 14, "line-opacity": 0.01 } });
+    const TIPS = {
+      c: ["Cold front", "Colder air pushes in under warmer air. Expect a band of showers or storms and gusts, then a drop in temperature and clearer air behind."],
+      w: ["Warm front", "Warmer air rises over colder air. Cloud thickens and lowers with steady rain ahead of it, then milder, more humid air behind."],
+      m: ["Monsoon trough", "The line where westerly winds on the equator side meet easterlies. Cloud and heavy showers gather along it, and tropical cyclones often form on it."],
+      p: ["Pressure trough", "An elongated band of low pressure. Winds turn and converge along it, so expect cloud, showers and a change in wind direction as it passes."],
+      o: ["Occluded front", "A cold front has caught up with a warm front and lifted the warm air off the ground. Cloud and rain, often near a deep low, and cooler after."],
+    };
+    const tip = () => this.frontTip || (this.frontTip = new maplibregl.Popup({ closeButton: false, closeOnClick: false, anchor: "left",
+      offset: 14, maxWidth: "none", className: "front-tip" }));
+    const show = (e) => {
+      const [name, text] = TIPS[e.features[0].properties.t] || TIPS.c;
+      map.getCanvas().style.cursor = "pointer";
+      tip().setLngLat(e.lngLat).setHTML(`<div style="font:11px/1.4 ui-sans-serif,system-ui,sans-serif;color:#e9edf7;width:210px;white-space:normal">` +
+        `<b>${name}</b><br>${text}<br><span style="color:#a9b5d0">Detected from the model's own fields, so approximate.</span></div>`).addTo(map);
+    };
+    map.on("mouseenter", "fronts-hit", show);
+    map.on("mousemove", "fronts-hit", show);
+    map.on("click", "fronts-hit", show);          // touch screens have no hover
+    map.on("mouseleave", "fronts-hit", () => { map.getCanvas().style.cursor = ""; if (this.frontTip) this.frontTip.remove(); });
+    for (const [id, t, icon, spacing] of [["fronts-cold", "c", "front-cold", 22], ["fronts-warm", "w", "front-warm", 22], ["fronts-occ", "o", "front-occ", 22]]) {
+      map.addLayer({ id, type: "symbol", source: "fronts", filter: ["==", ["get", "t"], t],
+        layout: { "symbol-placement": "line", "symbol-spacing": spacing, "icon-image": icon, "icon-anchor": "bottom",
+                  "icon-rotation-alignment": "map", "icon-keep-upright": false,
+                  "icon-allow-overlap": true, "icon-ignore-placement": true,
+                  "icon-size": 1 } });
+    }
   }
 
   addHazardLayer() {
@@ -1998,6 +2089,21 @@ class App {
     box.appendChild(storm);
     this.tropicalBtn = storm;
 
+    // Fronts (Synoptic overview): a line with a triangle and a semicircle, next to the cyclone button.
+    const front = document.createElement("button");
+    front.className = "toggle";
+    front.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="none"><rect x="1" y="9.6" width="14" height="1.5" rx=".7"/><path d="M2.6 9.6 L5.6 9.6 L4.1 5.6Z"/><path d="M8.6 9.6 A2.1 2.1 0 0 1 12.8 9.6Z"/></svg>';
+    front.setAttribute("aria-label", "Weather fronts");
+    front.title = "Fronts and troughs on Synoptic overview: cold (triangles), warm (semicircles), occluded, monsoon and pressure troughs";
+    front.setAttribute("aria-pressed", String(this.frontsOn));
+    front.onclick = () => {
+      this.frontsOn = !this.frontsOn;
+      front.setAttribute("aria-pressed", String(this.frontsOn));
+      this.frontKey = -1;               // force the redraw
+      this.updateFronts(); this.writeURL();
+    };
+    box.appendChild(front);
+
     const slider = document.getElementById("slider");
     this.axis = this.buildAxis();
     slider.max = String(this.axis.length - 1);
@@ -2054,8 +2160,9 @@ class App {
     const preset = this.preset && PRESETS[this.preset];
     // The key follows what is drawn: a preset whose main layer is shown as lines
     // names the ramp those lines use.
-    const r = RAMPS[this.layer];
-    const spec = this.manifest.layers[this.layer];
+    const keyLayer = (preset && preset.keyRamp) || this.layer;
+    const r = RAMPS[keyLayer];
+    const spec = this.manifest.layers[keyLayer];
     if (!r) return;
     const [lo, hi] = r.display;
     const n = r.stops.length;
@@ -2068,12 +2175,12 @@ class App {
         : `rgba(${c[0]},${c[1]},${c[2]},${(c[3] / 255 * r.opacity).toFixed(3)}) ${(at(i) * 100).toFixed(1)}%`
     ).join(", ");
     const ticks = r.evenLegend
-      ? r.stops.map(([v], i) => ({ v, p: at(i) }))
+      ? r.stops.map(([v], i) => ({ v: Number((v * (r.showScale || 1)).toFixed(2)), p: at(i) }))
       : r.ticks.map((v) => ({ v, p: (v - lo) / (hi - lo) }));
     // A ramp with `marks` names its thresholds (heat danger levels): each gets a
     // line across the bar and its name beside it.
     const named = r.marks && r.marks.map(([v, name]) => ({ v, text: `${name} ${v}`, p: (v - lo) / (hi - lo) }));
-    let html = preset && preset.noKey ? "" : this.legendColumn(spec ? spec.label : this.layer, r.unitLabel, gradient, named || ticks, "", !!named);
+    let html = this.legendColumn(spec ? spec.label : keyLayer, r.unitLabel, gradient, named || ticks, "", !!named);
     if (this.radarOn) html += this.radarLegendHTML();
     if (this.satOn && this.satManifest) html += this.satLegendHTML();
     // "i" shows the plain-language reading of the map; hidden until asked for.
@@ -2379,6 +2486,7 @@ class App {
     if (h.get("night") === "1") this.nightOn = true;
     if (h.get("wind") === "0") this.windOn = false;
     if (h.get("storms") === "0") this.tropicalOn = false;
+    if (h.get("fronts") === "0") this.frontsOn = false;
     if (h.get("terrain") === "1") this.terrainOn = true;
   }
 
@@ -2394,6 +2502,7 @@ class App {
       ...(this.nightOn ? { night: "1" } : {}),
       ...(this.windOn ? {} : { wind: "0" }),
       ...(this.tropicalOn ? {} : { storms: "0" }),
+      ...(this.frontsOn ? {} : { fronts: "0" }),
       ...(this.terrainOn ? { terrain: "1" } : {}),
     });
     history.replaceState(null, "", `#${h}`);
@@ -2950,6 +3059,7 @@ class App {
 
     this.addContourLabels();
     this.addHazardLayer();
+    this.addFrontLayers();
     this.addNightLayers();
     this.scheduleContourLabels();
     const vis = this.labelsOn ? "visible" : "none";
@@ -2958,6 +3068,9 @@ class App {
     const bucketZoom = (k) => Math.max(0, k - 1.5);
     const bucket = (k) => ["all", [">=", ["get", "mz"], k], ["<", ["get", "mz"], k + 1]];
     const FONT = ["Open Sans Semibold"];
+    // Near full zoom-out the map is a crowd of names: city and sea names fade out
+    // from zoom 3 to 2 (oceans too; country names stay, they are what you read at that scale).
+    const fadeNear = ["interpolate", ["linear"], ["zoom"], 2, 0, 3, 1];
 
     // Water first, so cities and countries sit on top of it.
     map.addSource("labels-water", { type: "geojson", data: geo("labels-water") });
@@ -2972,7 +3085,7 @@ class App {
           "text-letter-spacing": 0.14, "text-max-width": 6, "text-padding": 4,
           "symbol-sort-key": ["get", "mz"],
         },
-        paint: { "text-color": "rgba(170,205,255,0.95)", ...halo("rgba(8,14,34,0.9)") },
+        paint: { "text-color": "rgba(170,205,255,0.95)", ...halo("rgba(8,14,34,0.9)"), "text-opacity": fadeNear },
       });
     }
     // Oceans are huge: letter-spaced capitals that fade out once you are in close.
@@ -2982,7 +3095,7 @@ class App {
       layout: { "text-field": ["upcase", ["get", "n"]], "text-font": FONT, "text-size": 15,
                 "text-letter-spacing": 0.3, "text-max-width": 8 },
       paint: { "text-color": "rgba(150,190,250,0.85)", ...halo("rgba(8,14,34,0.9)"),
-               "text-opacity": ["interpolate", ["linear"], ["zoom"], 4.5, 1, 5.5, 0] },
+               "text-opacity": ["interpolate", ["linear"], ["zoom"], 2, 0, 3, 1, 4.5, 1, 5.5, 0] },
     });
 
     map.addSource("labels-cities", { type: "geojson", data: geo("labels-cities") });
@@ -2992,14 +3105,14 @@ class App {
         filter: bucket(k), minzoom: bucketZoom(k),
         layout: {
           "icon-image": "city-dot",
-          "icon-size": ["case", ["==", ["get", "cap"], 1], 1, 0.8],
+          "icon-size": ["case", ["==", ["get", "cap"], 1], 0.8, 0.65],
           "text-field": ["get", "n"], "text-font": FONT,
-          "text-size": ["case", ["==", ["get", "cap"], 1], 13, 11.5],
+          "text-size": ["case", ["==", ["get", "cap"], 1], 11, 10],
           "text-variable-anchor": ["right", "left", "top", "bottom"],
-          "text-radial-offset": 0.6, "text-max-width": 8, "text-padding": 2,
+          "text-radial-offset": 0.5, "text-max-width": 8, "text-padding": 2,
           "symbol-sort-key": ["-", 0, ["get", "pop"]],
         },
-        paint: { "text-color": "#fff", ...halo("rgba(8,12,24,0.9)") },
+        paint: { "text-color": "#fff", ...halo("rgba(8,12,24,0.9)"), "text-opacity": fadeNear, "icon-opacity": fadeNear },
       });
     }
     // Countries sit above cities (added last, so they win collisions) and fade
@@ -3374,7 +3487,7 @@ class App {
       this.probeCache.drawn = key;
     }
     const px = this.probeCtx.getImageData(Math.max(0, x), Math.max(0, y), 1, 1).data;
-    const value = decodeOnCPU(spec, px);
+    const value = decodeOnCPU(spec, px) * (RAMPS[this.layer].showScale || 1);
     const unit = RAMPS[this.layer].unitLabel;
     const el = document.getElementById("readout");
     el.hidden = false;

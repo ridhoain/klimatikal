@@ -29,6 +29,7 @@ on:
     paths:
       - pipeline/build_run.py
       - pipeline/encoding.py
+      - pipeline/fronts.py
       - pipeline/requirements.txt
   workflow_dispatch:        # always pair this with a schedule: it is how you test
     inputs:

@@ -38,7 +38,8 @@ FORMAT_VERSION = 1
 #      so a 2 hPa isobar comes out as thick wandering bands, not a line
 #   6  added 850 hPa wind and low/mid/high cloud cover for the synoptic preset
 #   7  msl is smoothed over high ground (see smooth_over_terrain)
-REVISION = 7
+#   8  fronts/fNNN.json per step (see fronts.py)
+REVISION = 8
 
 # Grid of the ECMWF open data 0.25 degree product.
 NLAT, NLON = 721, 1440

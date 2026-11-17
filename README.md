@@ -64,15 +64,14 @@ is in the URL as `#preset=<id>`.
 | id | question | stack |
 |---|---|---|
 | `heat` | Is it dangerous to work outdoors? | NWS heat index, cloud haze (less sun), wind |
-| `synoptic` | What is the big-picture pattern? | low / mid / high cloud as stacked black veils on a white map (darker where levels overlap), sea-level pressure isobars (blue low, red high) with values on the lines and H / L at the centres, 850 hPa wind |
+| `synoptic` | What is the big-picture pattern? | precipitation rate (mm/h, from the 3-hour totals) on a white map (same colours as the Precipitation layer, continuous colour bar), sea-level pressure isobars (blue low, red high) with values on the lines and H / L at the centres, 850 hPa wind |
 
 Two pipeline consequences. `heatindex` is derived in `encoding.py` from the 2 m
 temperature and dewpoint (`2d`), so the map and the hover value read the same
 bytes; it is the shade, light-wind NWS index, and full sun adds several degrees.
 `msl` is 16-bit, because isobars drawn from 8-bit pressure come out as thick
 bands in the tropics (a dozen distinct levels over 20 x 30 degrees). The
-synoptic preset also uses 850 hPa wind (`wind850`) and low/mid/high cloud cover
-(`lcc`, `mcc`, `hcc`); the pressure-level wind is a second request per step
+synoptic preset also uses 850 hPa wind (`wind850`); the pressure-level wind is a second request per step
 (`levtype=pl`). The contour numbers and the H / L markers are not drawn by the
 shader: the page traces the same pressure field on the CPU (`traceContours`,
 `findExtrema` in `web/index.html`) and gives MapLibre lines and points to label.
@@ -103,6 +102,8 @@ The wind icon at the end of the layer bar turns the wind streaks on or off for a
 
 The contour shader interpolates pressure by hand on exact texel centres and takes the line width from the change per grid cell; the hardware filter's 8-bit weights broke flat-field isobars into dashes when zoomed in.
 
+Fronts (Synoptic overview, `fronts: true`): `pipeline/fronts.py` finds them in the 850 hPa wet-bulb temperature (thermal front parameter, Hewson 1998), one GeoJSON per step at `runs/<run>/fronts/fNNN.json` (`fronts: true` in the manifest). The wind across the front decides cold (triangles) or warm (semicircles); a slow front close to a deep low is drawn occluded (both symbols, alternating), which is an approximation. Each line is stored with the side the front moves towards on its left, so the map's line-placed symbols point the right way. Thresholds (2 K per 100 km, about 700 km long, poleward of 10 degrees) are at the top of `fronts.py`. Runs built before revision 8 have none and just show no fronts. The same file carries two kinds of plain black line, with no symbols: the monsoon trough (long faint dashes; where the smoothed 850 hPa westerlies turn to easterlies with latitude, within 20 degrees of the equator) and pressure troughs (short dashes; the axis of strongest upward curvature of the smoothed sea-level pressure, 15 to 70 degrees latitude, off high ground). The front icon beside the cyclone button turns them on or off (`#fronts=0`), and hovering a line explains that kind of front. The symbols are sized to match the thin isobars.
+
 Presets are listed in the order given by their `order` (Synoptic overview first).
 
 A preset can also carry `hazard`: warning triangles where its field reaches a
@@ -116,7 +117,7 @@ preset (it has no layer button of its own).
 
 The legend is one column. A preset's plain-language reading (`explain`) stays
 hidden until the "i" on the legend is pressed (remembered per browser), a
-preset's colour keys for layers without a bar (`keys`, the cloud levels) get a
+preset's colour keys for layers without a bar (`keys`) get a
 box of their own, and a ramp with `marks` (the heat index) draws its named
 thresholds across the bar.
 
