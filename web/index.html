@@ -179,7 +179,17 @@
   #legend .bar { position: relative; width: 9px; border-radius: 3px; background-color: #0b1020;
     border: 1px solid rgba(255,255,255,.25); }
   #legend .note { margin-top: 4px; max-width: 76px; text-align: right; font-size: 9px; color: #b4c0dc; }
-  #readout { padding: 6px 8px; top: 12px; right: 56px; min-width: 100px; line-height: 1.25; font-variant-numeric: tabular-nums; }
+  /* Top-right column left of the zoom control: cursor value, then the storm details. */
+  #rstack { position: absolute; top: 12px; right: 56px; z-index: 2; display: flex; flex-direction: column;
+    align-items: flex-end; gap: 6px; max-width: min(260px, calc(100vw - 70px)); pointer-events: none; }
+  #rstack .panel { position: static; pointer-events: auto; }
+  #readout { padding: 6px 8px; min-width: 100px; line-height: 1.25; font-variant-numeric: tabular-nums; }
+  #storm { padding: 8px 10px; width: 100%; font-size: 12px; line-height: 1.35; position: relative; }
+  #storm .x { position: absolute; top: 2px; right: 4px; background: none; border: 0; color: #e9edf7; font-size: 17px;
+    cursor: pointer; padding: 0 5px; }
+  #storm .x:hover { background: rgba(255,255,255,.12); border-radius: 4px; }
+  /* Forecast table: a small glass box right beside the clicked storm. */
+  .storm-fc .maplibregl-popup-content { padding: 6px 8px; }
   #readout b { font-weight: 600; font-size: 13px; }
   /* The attribution is a licence condition, so it stays on screen and legible:
      small, but full-contrast text on the panel, on its own line under the slider. */
@@ -239,10 +249,13 @@
   <div id="legend" class="panel glass" aria-label="Colour scale"></div>
 </div>
 
-<div id="readout" class="panel glass" hidden>
-  <div id="readout-label" style="font-size:10px;color:#b4c0dc"></div>
-  <b id="readout-value">—</b>
-  <div id="readout-pos" style="font-size:9.5px;color:#a9b5d0;margin-top:1px"></div>
+<div id="rstack">
+  <div id="readout" class="panel glass" hidden>
+    <div id="readout-label" style="font-size:10px;color:#b4c0dc"></div>
+    <b id="readout-value">—</b>
+    <div id="readout-pos" style="font-size:9.5px;color:#a9b5d0;margin-top:1px"></div>
+  </div>
+  <div id="storm" class="panel glass" hidden></div>
 </div>
 
 <div id="time" class="panel glass">
@@ -2687,6 +2700,9 @@ class App {
           for (const id of ["trop-invest", "trop-tc"]) if (map.getLayer(id)) map.setPaintProperty(id, "icon-opacity", o);
         }, 100);
       }
+      map.on("click", (e) => {
+        if (this.tropicalSel && !map.queryRenderedFeatures(e.point, { layers: ["trop-invest", "trop-tc"] }).length) this.clearTropicalSel();
+      });
       for (const id of ["trop-invest", "trop-tc"]) {
         map.on("click", id, (e) => this.tropicalPopup(e));
         map.on("mouseenter", id, () => { map.getCanvas().style.cursor = "pointer"; });
@@ -2719,7 +2735,7 @@ class App {
     this.tropicalOn = on;
     if (this.tropicalBtn) this.tropicalBtn.setAttribute("aria-pressed", String(on));
     if (on && !this.tropical) this.loadTropical(); else this.showTropical(on);
-    if (!on && this.tropicalPop) this.tropicalPop.remove();
+    if (!on) this.clearTropicalSel();
     this.writeURL();
     this.paintCredit();
   }
@@ -2740,18 +2756,33 @@ class App {
     if (s.move) rows.push(row("Moving", `${s.move.deg}° at ${s.move.kt} kt`));
     if (s.potential) rows.push(row("Chance of becoming a cyclone (24 h)", s.potential));
     if (s.tcfa) rows.push(`<div style="color:#ff9a8f;margin-top:3px">Formation alert issued by JTWC</div>`);
-    const fc = (s.forecast || []).map((f) => `<tr><td>+${f.h} h</td><td>${when(f.t)}</td><td style="text-align:right">${f.kt} kt</td></tr>`).join("");
-    const html = `<div style="font:12px/1.35 ui-sans-serif,system-ui,sans-serif;color:#e9edf7;min-width:210px">` +
-      `<div style="font-weight:600;font-size:13px">${escapeHTML(s.name)}</div>` +
+    const fc = (s.forecast || []).map((f) => `<tr><td style="padding-right:8px">+${f.h} h</td><td style="padding-right:8px">${when(f.t)}</td><td style="text-align:right">${f.kt} kt</td></tr>`).join("");
+    const box = document.getElementById("storm");
+    box.innerHTML = `<button class="x" aria-label="Close">×</button>` +
+      `<div style="font-weight:600;font-size:13px;padding-right:18px">${escapeHTML(s.name)}</div>` +
       `<div style="color:#a9b5d0;margin-bottom:4px">${escapeHTML(s.class)}${s.basin ? " · " + escapeHTML(s.basin) : ""}</div>` +
       rows.join("") +
-      (fc ? `<table style="width:100%;margin-top:6px;border-collapse:collapse;font-size:11px"><caption style="text-align:left;color:#a9b5d0">JTWC forecast</caption>${fc}</table>` : "") +
-      `<div style="margin-top:5px;color:#a9b5d0">As of ${when(s.t)} · <a href="${s.url ? escapeHTML(s.url) : "https://www.metoc.navy.mil/jtwc/jtwc.html"}" target="_blank" rel="noopener">JTWC</a></div></div>`;
-    if (this.tropicalPop) this.tropicalPop.remove();        // clears the previous selection
-    this.tropicalPop = new maplibregl.Popup({ maxWidth: "320px", closeButton: true })
-      .setLngLat(e.features[0].geometry.coordinates).setHTML(html).addTo(this.map);
+      `<div style="margin-top:5px;color:#a9b5d0">As of ${when(s.t)} · <a href="${s.url ? escapeHTML(s.url) : "https://www.metoc.navy.mil/jtwc/jtwc.html"}" target="_blank" rel="noopener">JTWC</a></div>`;
+    box.hidden = false;
+    box.querySelector(".x").onclick = () => this.clearTropicalSel();
+    // The forecast table sits right beside the clicked symbol, next to the track.
+    if (this.tropicalPop) this.tropicalPop.remove();
+    this.tropicalPop = null;
+    if (fc) {
+      this.tropicalPop = new maplibregl.Popup({ closeButton: false, closeOnClick: false, anchor: "left", offset: 18,
+                                                maxWidth: "300px", className: "storm-fc" })
+        .setLngLat(e.features[0].geometry.coordinates)
+        .setHTML(`<table style="border-collapse:collapse;font:11px/1.45 ui-sans-serif,system-ui,sans-serif;color:#e9edf7"><caption style="text-align:left;color:#a9b5d0;padding-bottom:2px">JTWC forecast</caption>${fc}</table>`)
+        .addTo(this.map);
+    }
     this.setTropicalSel(id);
-    this.tropicalPop.on("close", () => this.setTropicalSel(""));
+  }
+
+  clearTropicalSel() {
+    if (this.tropicalPop) { this.tropicalPop.remove(); this.tropicalPop = null; }
+    const box = document.getElementById("storm");
+    if (box) box.hidden = true;
+    this.setTropicalSel("");
   }
 
   addBoundaries() {
