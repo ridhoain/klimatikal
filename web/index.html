@@ -424,7 +424,7 @@ const PRESETS = {
       // the line every `labelEvery` hPa, and H / L mark the centres: the biggest or
       // smallest value within 4 degrees and 1.5 hPa clear of the ring around it.
       { kind: "contour", layer: "msl", ramp: "mslline", heavy: 10,
-        intervalByZoom: [[0, 5], [2.5, 2], [3.5, 1]], alpha: 0.95, majorAlpha: 1, width: 0.4, majorWidth: 0.75,
+        intervalByZoom: [[0, 5], [2.5, 2], [3.5, 1]], alpha: 0.95, majorAlpha: 1, width: 0.4, majorWidth: 0.75, shadow: 0.35,
         labelEvery: 4, extrema: { radius: 16, depth: 1.5 } },
       { kind: "particles", layer: "wind850", opacity: 1.0, tint: { layer: "msl", ramp: "mslline" } },
     ],
@@ -664,7 +664,7 @@ const CONTOUR_FS = `
   ${GLSL_SMOOTH}
   uniform sampler2D u_now, u_next, u_ramp;
   uniform float u_blend, u_interval, u_major, u_width, u_majorWidth, u_px, u_base;
-  uniform float u_dlo, u_dhi, u_alpha, u_majorAlpha;
+  uniform float u_dlo, u_dhi, u_alpha, u_majorAlpha, u_shadow;
   varying vec2 v_merc;
   // The value minus u_base (a multiple of the heavy-line spacing, so the lines
   // do not move). float32 near 1010 hPa resolves only ~1e-4 hPa, about what
@@ -722,8 +722,15 @@ const CONTOUR_FS = `
     // Colour by the line's own value: back to absolute, through the ramp.
     float t = clamp((v + u_base - u_dlo) / (u_dhi - u_dlo), 0.0, 1.0);
     float a = max(minor * u_alpha, major * u_majorAlpha);
-    if (a < 0.01) discard;
-    gl_FragColor = vec4(texture2D(u_ramp, vec2(t, 0.5)).rgb, a);
+    // A soft dark halo just wider than the line, under it, so the line stays
+    // readable over any background colour (u_shadow = its strength, 0 = none).
+    float halo = u_shadow > 0.0
+      ? max(lineAt(v, u_interval, u_width + 2.2, perPx), lineAt(v, u_interval * u_major, u_majorWidth + 2.2, perPx)) * u_shadow
+      : 0.0;
+    float outA = a + halo * (1.0 - a);
+    if (outA < 0.01) discard;
+    vec3 col = texture2D(u_ramp, vec2(t, 0.5)).rgb;
+    gl_FragColor = vec4((col * a + vec3(0.03, 0.05, 0.1) * halo * (1.0 - a)) / outA, outA);
   }`;
 
 // ---------------------------------------------------------------------------
@@ -989,6 +996,7 @@ class WeatherLayer {
         gl.uniform1f(f.loc.u_dhi, ramp.display[1]);
         gl.uniform1f(f.loc.u_alpha, item.alpha);
         gl.uniform1f(f.loc.u_majorAlpha, item.majorAlpha);
+        gl.uniform1f(f.loc.u_shadow, item.shadow || 0);
       } else {
         const ramp = RAMPS[item.ramp];
         gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, this.ramp(item.ramp));
