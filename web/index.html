@@ -189,7 +189,8 @@
     cursor: pointer; padding: 0 5px; }
   #storm .x:hover { background: rgba(255,255,255,.12); border-radius: 4px; }
   /* Forecast table: a small glass box right beside the clicked storm. */
-  .storm-fc .maplibregl-popup-content { padding: 6px 8px; }
+  .storm-fc { pointer-events: none; }
+  .storm-fc .maplibregl-popup-content { padding: 4px 8px; }
   #readout b { font-weight: 600; font-size: 13px; }
   /* The attribution is a licence condition, so it stays on screen and legible:
      small, but full-contrast text on the panel, on its own line under the slider. */
@@ -2655,7 +2656,7 @@ class App {
         const line = [here, ...s.forecast.map((f, i) => [flons[i + 1], f.lat])];
         fc.push({ type: "Feature", properties: { id: s.id }, geometry: { type: "LineString", coordinates: line } });
         s.forecast.forEach((f, i) => fcPts.push({
-          type: "Feature", properties: { id: s.id, kt: f.kt, h: `+${f.h}h`, big: f.h % 24 === 0 },
+          type: "Feature", properties: { id: s.id, kt: f.kt, h: `+${f.h}h`, hh: f.h, t: f.t, big: f.h % 24 === 0 },
           geometry: { type: "Point", coordinates: line[i + 1] } }));
       }
     }
@@ -2721,8 +2722,12 @@ class App {
           for (const id of ["trop-invest", "trop-tc"]) if (map.getLayer(id)) map.setPaintProperty(id, "icon-opacity", o);
         }, 100);
       }
+      map.on("mouseenter", "trop-fcpts", (e) => { map.getCanvas().style.cursor = "pointer"; this.forecastTip(e); });
+      map.on("mousemove", "trop-fcpts", (e) => this.forecastTip(e));
+      map.on("mouseleave", "trop-fcpts", () => { map.getCanvas().style.cursor = ""; if (this.fcTip) this.fcTip.remove(); });
+      map.on("click", "trop-fcpts", (e) => this.forecastTip(e));   // touch screens have no hover
       map.on("click", (e) => {
-        if (this.tropicalSel && !map.queryRenderedFeatures(e.point, { layers: ["trop-invest", "trop-tc"] }).length) this.clearTropicalSel();
+        if (this.tropicalSel && !map.queryRenderedFeatures(e.point, { layers: ["trop-invest", "trop-tc", "trop-fcpts"] }).length) this.clearTropicalSel();
       });
       for (const id of ["trop-invest", "trop-tc"]) {
         map.on("click", id, (e) => this.tropicalPopup(e));
@@ -2777,7 +2782,6 @@ class App {
     if (s.move) rows.push(row("Moving", `${s.move.deg}° at ${s.move.kt} kt`));
     if (s.potential) rows.push(row("Chance of becoming a cyclone (24 h)", s.potential));
     if (s.tcfa) rows.push(`<div style="color:#ff9a8f;margin-top:3px">Formation alert issued by JTWC</div>`);
-    const fc = (s.forecast || []).map((f) => `<tr><td style="padding-right:8px">+${f.h} h</td><td style="padding-right:8px">${when(f.t)}</td><td style="text-align:right">${f.kt} kt</td></tr>`).join("");
     const box = document.getElementById("storm");
     box.innerHTML = `<button class="x" aria-label="Close">×</button>` +
       `<div style="font-weight:600;font-size:13px;padding-right:18px">${escapeHTML(s.name)}</div>` +
@@ -2786,20 +2790,25 @@ class App {
       `<div style="margin-top:5px;color:#a9b5d0">As of ${when(s.t)} · <a href="${s.url ? escapeHTML(s.url) : "https://www.metoc.navy.mil/jtwc/jtwc.html"}" target="_blank" rel="noopener">JTWC</a></div>`;
     box.hidden = false;
     box.querySelector(".x").onclick = () => this.clearTropicalSel();
-    // The forecast table sits right beside the clicked symbol, next to the track.
-    if (this.tropicalPop) this.tropicalPop.remove();
-    this.tropicalPop = null;
-    if (fc) {
-      this.tropicalPop = new maplibregl.Popup({ closeButton: false, closeOnClick: false, anchor: "left", offset: 18,
-                                                maxWidth: "300px", className: "storm-fc" })
-        .setLngLat(e.features[0].geometry.coordinates)
-        .setHTML(`<table style="border-collapse:collapse;font:11px/1.45 ui-sans-serif,system-ui,sans-serif;color:#e9edf7"><caption style="text-align:left;color:#a9b5d0;padding-bottom:2px">JTWC forecast</caption>${fc}</table>`)
-        .addTo(this.map);
-    }
+    // Forecast lines are not shown together: each forecast point shows its own
+    // line while hovered or tapped (see forecastTip).
+    if (this.tropicalPop) { this.tropicalPop.remove(); this.tropicalPop = null; }
     this.setTropicalSel(id);
   }
 
+  // One forecast point's line, in a small glass box beside the point.
+  forecastTip(e) {
+    const f = e.features[0], p = f.properties;
+    const tp = tzParts(new Date(p.t), this.useUTC);
+    const html = `<div style="font:11px/1.4 ui-sans-serif,system-ui,sans-serif;color:#e9edf7;white-space:nowrap">` +
+      `<span style="color:#a9b5d0">+${p.hh} h</span> &nbsp;${tp.day} ${tp.hm} ${tp.label} &nbsp;<b>${p.kt} kt</b></div>`;
+    if (!this.fcTip) this.fcTip = new maplibregl.Popup({ closeButton: false, closeOnClick: false, anchor: "left", offset: 10,
+                                                         maxWidth: "none", className: "storm-fc" });
+    this.fcTip.setLngLat(f.geometry.coordinates).setHTML(html).addTo(this.map);
+  }
+
   clearTropicalSel() {
+    if (this.fcTip) this.fcTip.remove();
     if (this.tropicalPop) { this.tropicalPop.remove(); this.tropicalPop = null; }
     const box = document.getElementById("storm");
     if (box) box.hidden = true;
