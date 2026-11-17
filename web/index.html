@@ -2006,10 +2006,11 @@ class App {
     // layer is on and the manifest names a source. The demo manifest has none.
     const rm = this.radarManifest;
     const radar = this.radarOn && rm && !rm.demo && rm.attribution ? ` · ${escapeHTML(rm.attribution)}` : "";
+    const osm = this.osmReady ? " · Detailed coastline: © OpenStreetMap contributors via OpenFreeMap" : "";
     const terr = this.terrainOn ? " · Terrain: AWS Open Data Terrain Tiles (NASA SRTM, USGS, ETOPO1 and others)" : "";
     const storms = this.tropicalOn && this.tropical && this.tropical.attribution ? ` · ${escapeHTML(this.tropical.attribution)}` : "";
     document.getElementById("credit").innerHTML =
-      `© 2026 Klimatikal · ${escapeHTML(this.manifest.attribution)} · run ${escapeHTML(this.manifest.run)}${sat}${radar}${storms}${terr} · <a href="/privacy/">Privacy</a>`;
+      `© 2026 Klimatikal · ${escapeHTML(this.manifest.attribution)} · run ${escapeHTML(this.manifest.run)}${sat}${radar}${storms}${terr}${osm} · <a href="/privacy/">Privacy</a>`;
   }
 
   // Colour key for the active layer, built from the same RAMPS table the
@@ -2415,6 +2416,7 @@ class App {
     this.map.on("resize", () => this.drawGrid());
     this.map.on("moveend", () => {
       this.writeURL(); this.scheduleContourLabels(); this.updateNight(); this.geoSync();
+      if (this.map.getZoom() >= 6) this.ensureOsmCoast();
       // Tiles that came into view need this frame's image (a no-op when none did).
       if (this.axis && this.satOn && this.satLoaded) this.applySatelliteTime(this.axis[Math.round(this.pos)]);
     });
@@ -2428,6 +2430,39 @@ class App {
   // the coast stays readable, each with a dark casing so it also reads over
   // pale cloud. Added after the weather layer, so they sit above it. Coast
   // first: it matters most, and the largest file (provinces) goes last.
+  // --- detailed coastline --------------------------------------------------
+  // The bundled coast is Natural Earth 10m: right to about 4 km, so it turns
+  // angular when you zoom in. From zoom 6 the coast is drawn from OpenStreetMap
+  // instead (the ocean polygons of OpenFreeMap's vector tiles) and the 10m line
+  // fades out. Nothing is requested from that service until a visitor zooms in
+  // that far, and if it cannot be reached the 10m coast stays.
+  ensureOsmCoast() {
+    const m = this.map;
+    if (this.osmAdded || !m || !m.getLayer("coast-casing")) return;
+    this.osmAdded = true;
+    m.addSource("osm", { type: "vector", url: "https://tiles.openfreemap.org/planet" });
+    const only = ["==", ["get", "class"], "ocean"];
+    const fadeIn = ["interpolate", ["linear"], ["zoom"], 6.5, 0, 7.5, 1];
+    const layer = (id, color, width) => m.addLayer({
+      id, type: "line", source: "osm", "source-layer": "water", filter: only, minzoom: 6,
+      layout: { "line-join": "round", "line-cap": "round" },
+      paint: { "line-color": color, "line-width": width, "line-opacity": fadeIn },
+    }, "admin0-casing");
+    layer("coast-hi-casing", "rgba(8,12,24,0.5)", 2.2);
+    layer("coast-hi", "rgba(255,255,255,0.92)", 1.1);
+    this.paintBoundaryStyle();
+    // Fade the 10m coast out only once the detailed tiles are really there.
+    const onData = (e) => {
+      if (e.sourceId !== "osm" || !e.isSourceLoaded) return;
+      m.off("sourcedata", onData);
+      const fadeOut = ["interpolate", ["linear"], ["zoom"], 6.5, 1, 7.5, 0];
+      for (const id of ["coast", "coast-casing"]) m.setPaintProperty(id, "line-opacity", fadeOut);
+      this.osmReady = true;
+      this.paintCredit();
+    };
+    m.on("sourcedata", onData);
+  }
+
   // --- terrain ---------------------------------------------------------------
   // Hillshade from the AWS Terrain Tiles (Terrarium encoding), drawn above the
   // weather and satellite and below the coastlines. The sea floor is left out (the
@@ -2744,6 +2779,7 @@ class App {
     this.paintBoundaryStyle();
     this.addLabels();
     this.ensureTerrain();      // ?terrain=1 in the link
+    if (this.map.getZoom() >= 6) this.ensureOsmCoast();
     if (this.geoIndex) {
       this.geoCells = { coast: new Map(), admin0: new Map(), admin1: new Map() };
       this.geoDirty = new Set();
@@ -2772,8 +2808,17 @@ class App {
     const light = lb || LIGHT_FIELDS.has(this.layer);
     const dark = "rgba(0,0,0,", pale = "rgba(255,255,255,";
     const set = (id, color) => { if (m.getLayer(id)) m.setPaintProperty(id, "line-color", color); };
-    set("coast", lb ? dark + "0.75)" : light ? dark + "0.95)" : pale + "0.92)");   // a lighter black on the white map, so the isobars lead
-    set("coast-casing", lb ? dark + "0.28)" : light ? pale + "0.6)" : dark + "0.5)");
+    const coastColor = lb ? dark + "0.75)" : light ? dark + "0.95)" : pale + "0.92)";   // a lighter black on the white map, so the isobars lead
+    const casingColor = lb ? dark + "0.28)" : light ? pale + "0.6)" : dark + "0.5)";
+    set("coast", coastColor); set("coast-hi", coastColor);
+    set("coast-casing", casingColor); set("coast-hi-casing", casingColor);
+    // The detailed (OpenStreetMap) coast, from zoom 6: same look, a little heavier as you zoom in.
+    const zw = (a, b) => ["interpolate", ["linear"], ["zoom"], 6, a, 9, b];
+    if (m.getLayer("coast-hi")) m.setPaintProperty("coast-hi", "line-width", lb ? zw(0.6, 1.0) : zw(1.1, 1.8));
+    if (m.getLayer("coast-hi-casing")) {
+      m.setPaintProperty("coast-hi-casing", "line-width", lb ? zw(7, 10) : zw(2.2, 3.4));
+      m.setPaintProperty("coast-hi-casing", "line-blur", lb ? 3 : 0);
+    }
     set("admin0", light ? dark + "0.7)" : pale + "0.7)");
     set("admin0-casing", light ? pale + "0.45)" : dark + "0.45)");
     set("admin1", light ? dark + "0.5)" : pale + "0.35)");
