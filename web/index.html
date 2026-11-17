@@ -413,7 +413,7 @@ const PRESETS = {
     label: "Synoptic overview",
     goal: "What is the big-picture pattern?",
     main: "msl",
-    keyRamp: "mslline",   // the legend is the isobar colours, not the pressure fill's
+    noKey: true,          // no pressure bar: the isobars carry their own values
     lightBase: true,      // white map with black clouds, black coast; see paintBoundaryStyle
     stack: [
       { kind: "fill", ramp: "lowcloud" },
@@ -2032,7 +2032,7 @@ class App {
     const preset = this.preset && PRESETS[this.preset];
     // The key follows what is drawn: a preset whose main layer is shown as lines
     // names the ramp those lines use.
-    const r = RAMPS[(preset && preset.keyRamp) || this.layer];
+    const r = RAMPS[this.layer];
     const spec = this.manifest.layers[this.layer];
     if (!r) return;
     const [lo, hi] = r.display;
@@ -2051,7 +2051,7 @@ class App {
     // A ramp with `marks` names its thresholds (heat danger levels): each gets a
     // line across the bar and its name beside it.
     const named = r.marks && r.marks.map(([v, name]) => ({ v, text: `${name} ${v}`, p: (v - lo) / (hi - lo) }));
-    let html = this.legendColumn(spec ? spec.label : this.layer, r.unitLabel, gradient, named || ticks, "", !!named);
+    let html = preset && preset.noKey ? "" : this.legendColumn(spec ? spec.label : this.layer, r.unitLabel, gradient, named || ticks, "", !!named);
     if (this.radarOn) html += this.radarLegendHTML();
     if (this.satOn && this.satManifest) html += this.satLegendHTML();
     // "i" shows the plain-language reading of the map; hidden until asked for.
