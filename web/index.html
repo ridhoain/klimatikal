@@ -310,10 +310,10 @@ const DATA =
 const RAMPS = {
   // Winds above 25 m/s are rare, so the colours run out at 25 (purple, and
   // anything stronger stays purple) and the common 10-20 m/s range gets more of them.
-  wind: { display: [0, 25], unitLabel: "m/s", opacity: 0.7, legendMinWhite: true, ticks: [0, 5, 10, 15, 20, 25],
+  wind: { display: [0, 25], unitLabel: "m/s", opacity: 0.7, ticks: [0, 5, 10, 15, 20, 25],
     stops: [
-      [0,  [255, 255, 255, 220]], [0.1, [255, 255, 255, 220]], [1.5, [150, 190, 235, 175]],
-      [3.5, [43, 95, 168, 170]], [5.5, [43, 163, 181, 215]], [7.5, [58, 190, 140, 225]],
+      [0,  [22, 38, 112, 200]], [1.5, [30, 62, 140, 185]],
+      [3.5, [43, 105, 178, 185]], [5.5, [43, 163, 181, 215]], [7.5, [58, 190, 140, 225]],
       [9.5, [111, 208, 106, 235]], [11.5, [188, 222, 88, 240]], [13.5, [242, 224, 74, 245]],
       [17, [245, 154, 58, 250]], [21, [229, 71, 63, 255]], [25, [184, 35, 154, 255]]] },
   temp: { display: [-40, 45], unitLabel: "°C", opacity: 0.72, ticks: [-40, -30, -20, -10, 0, 10, 20, 30, 40],
