@@ -39,7 +39,9 @@ FORMAT_VERSION = 1
 #   6  added 850 hPa wind and low/mid/high cloud cover for the synoptic preset
 #   7  msl is smoothed over high ground (see smooth_over_terrain)
 #   8  fronts/fNNN.json per step (see fronts.py)
-REVISION = 8
+#   9  added utci_sun and utci_shade (see thermal.py; needs the radiation fields)
+#  10  added wetbulb and uvi (see thermal.py)
+REVISION = 10
 
 # Grid of the ECMWF open data 0.25 degree product.
 NLAT, NLON = 721, 1440
@@ -97,6 +99,36 @@ LAYERS: dict[str, dict] = {
         "unit": "degC",
         "range": [-10.0, 70.0],
         "label": "heat index",
+    },
+    # UTCI (feels-like temperature, degC) for a standing person in direct sun and
+    # in shade. Computed in the pipeline (thermal.py) from the 10 m wind, 2 m
+    # temperature and dewpoint and the radiation fields, then stored like any
+    # scalar: "computed" means the param is filled by build_run, not read from
+    # the GRIB. 8 bits over 80 degC is 0.31 degC a step, finer than the 6 degC
+    # categories the page colours.
+    "utci_sun": {
+        "params": ["utci_sun"], "computed": True, "hidden": True,
+        "encoding": "scalar8", "unit": "degC", "range": [-20.0, 60.0],
+        "label": "UTCI, in direct sun",
+    },
+    "utci_shade": {
+        "params": ["utci_shade"], "computed": True, "hidden": True,
+        "encoding": "scalar8", "unit": "degC", "range": [-20.0, 60.0],
+        "label": "UTCI, in shade",
+    },
+    # Wet-bulb temperature (Stull): can sweat still cool the body? No sun or wind in it.
+    # Colours are tuned for the tropics, where it mostly sits at 24 to 28 degC.
+    "wetbulb": {
+        "params": ["wetbulb"], "computed": True, "hidden": True,
+        "encoding": "scalar8", "unit": "degC", "range": [-10.0, 40.0],
+        "label": "wet-bulb temperature",
+    },
+    # Estimated UV index, cloud-adjusted. 8 bits over 0 to 16 is 0.06 a step; the
+    # WHO classes change at 3, 6, 8 and 11.
+    "uvi": {
+        "params": ["uvi"], "computed": True, "hidden": True,
+        "encoding": "scalar8", "unit": "UVI", "range": [0.0, 16.0],
+        "label": "estimated UV index",
     },
     "precip": {
         "params": ["tp"],

@@ -363,6 +363,35 @@ Object.assign(RAMPS, {
       [24, [255, 255, 255, 235]], [27, [250, 232, 96, 190]],
       [32, [246, 162, 52, 230]], [41, [224, 62, 50, 245]], [54, [150, 26, 150, 255]],
       [56, [110, 14, 120, 255]]] },
+  // UTCI, the feels-like temperature for a standing person. Category edges are
+  // the standard UTCI heat-stress classes: 26 moderate, 32 strong, 38 very
+  // strong, 46 extreme (all degC). Below 26 there is no heat stress and the
+  // field fades to white. utci_shade draws the same colours from the shade layer;
+  // the sun / shade toggle picks which data layer the page reads (fieldSource).
+  utci_sun: { display: [20, 48], unitLabel: "°C", opacity: 0.78, legendMinWhite: true, ticks: [26, 32, 38, 46],
+    marks: [[26, "Moderate"], [32, "Strong"], [38, "Very strong"], [46, "Extreme"]],
+    marksBelow: "No heat stress",
+    stops: [
+      [20, [255, 255, 255, 235]], [26, [250, 232, 96, 190]],
+      [32, [246, 162, 52, 230]], [38, [224, 62, 50, 245]], [46, [150, 26, 150, 255]],
+      [48, [110, 14, 120, 255]]] },
+  // Wet-bulb temperature. In Indonesia it mostly sits at 24 to 28 degC and the
+  // commonly cited serious-risk range starts near 31, so the colours spend their
+  // contrast on 22 to 33 instead of spanning dangerous values only (the map would
+  // otherwise be one flat colour). Not a standard category scale: the legend says so.
+  wetbulb: { display: [20, 34], unitLabel: "°C", opacity: 0.78, legendMinWhite: true, ticks: [24, 26, 28, 30, 31],
+    stops: [
+      [20, [255, 255, 255, 235]], [22, [214, 238, 228, 170]], [24, [196, 226, 128, 190]],
+      [26, [250, 226, 92, 205]], [28, [246, 162, 52, 230]], [30, [224, 62, 50, 245]],
+      [31, [190, 30, 80, 250]], [34, [110, 14, 120, 255]]] },
+  // Estimated UV index, WHO classes: low below 3, moderate 3, high 6, very high 8, extreme 11.
+  // Hard steps at the class edges; near-zero (night) is transparent.
+  uvi: { display: [0, 13], unitLabel: "UVI", opacity: 0.78, legendMinWhite: true, ticks: [3, 6, 8, 11],
+    marks: [[3, "Moderate"], [6, "High"], [8, "Very high"], [11, "Extreme"]], marksBelow: "Low",
+    stops: [
+      [0, [88, 180, 96, 0]], [0.4, [88, 180, 96, 0]], [0.6, [88, 180, 96, 170]], [2.95, [88, 180, 96, 170]],
+      [3, [250, 222, 66, 200]], [5.95, [250, 222, 66, 200]], [6, [246, 150, 50, 225]], [7.95, [246, 150, 50, 225]],
+      [8, [224, 62, 50, 240]], [10.95, [224, 62, 50, 240]], [11, [150, 60, 160, 255]], [13, [110, 14, 120, 255]]] },
   // Cloud by level, all black on the white map: each level is a black veil whose
   // strength follows its cover, and the veils stack, so where low, middle and
   // high cloud overlap the map is darkest. Thin cloud already starts at a mid
@@ -402,6 +431,56 @@ Object.assign(RAMPS, {
 // ---------------------------------------------------------------------------
 const PRESETS = {
   heat: {
+    order: 1,
+    label: "Heat stress",
+    goal: "How hot does it feel outdoors?",
+    main: "utci_sun",
+    sunShade: true,      // shows the sun / shade toggle; the data layer follows it (fieldSource)
+    hazard: { layer: "utci_sun", level: "Very strong", blockPx: 44 },
+    stack: [
+      { kind: "fill", ramp: "utci_sun" },
+      { kind: "fill", ramp: "cloudveil", opacity: 0.55 },
+      { kind: "particles", layer: "wind", opacity: 0.45 },
+    ],
+    explain: [
+      "UTCI: the temperature it feels like for a person standing outdoors, from air temperature, humidity, wind and radiation. The Sun / Shade button switches between direct sun and shade.",
+      "Pale haze: cloud cover (less sun).",
+      "Streaks: 10 m wind.",
+      "Warning triangle: an area at or above Very strong heat stress, with its peak. Nearby areas merge into one as you zoom out.",
+      "Grid of 0.25°; street-level conditions in dense cities can differ, especially wind.",
+    ],
+  },
+  wetbulb: {
+    order: 1.1,
+    label: "Wet-bulb",
+    goal: "Can sweat still cool the body?",
+    main: "wetbulb",
+    stack: [
+      { kind: "fill", ramp: "wetbulb" },
+      { kind: "particles", layer: "wind", opacity: 0.45 },
+    ],
+    explain: [
+      "Wet-bulb temperature: how well sweat can still cool the body. It does not depend on sun or wind. It is not WBGT, which also counts radiation.",
+      "The colour scale is tuned for the tropics, where wet-bulb mostly sits at 24 to 28 °C; values near 31 °C and above are the commonly cited serious-risk range.",
+      "Streaks: 10 m wind.",
+    ],
+  },
+  uv: {
+    order: 1.2,
+    label: "UV index",
+    goal: "How strong is the sun's UV?",
+    main: "uvi",
+    stack: [
+      { kind: "fill", ramp: "uvi" },
+    ],
+    explain: [
+      "Estimated UV index (WHO classes), from the sun's height, a fixed ozone column and the forecast cloud.",
+      "Haze, smoke and aerosols are not modelled, so during smoke episodes the real UV is lower but the sun is not safe: more of it arrives as diffuse light. Clear-sky values may read a little high.",
+    ],
+  },
+  // The earlier heat index version, offered only by a run published before UTCI existed.
+  heatlegacy: {
+    legacy: true,
     order: 1,
     label: "Heat stress",
     goal: "Is it dangerous to work outdoors?",
@@ -473,7 +552,7 @@ const WIND_SPEED = Number(new URLSearchParams(location.search).get("windspeed"))
 const WIND_TRAIL_STEPS = 24;
 
 // Fields pale enough that white coastlines disappear on them.
-const LIGHT_FIELDS = new Set(["cloud", "msl", "precip", "heatindex"]);
+const LIGHT_FIELDS = new Set(["cloud", "msl", "precip", "heatindex", "utci_sun", "utci_shade", "wetbulb", "uvi"]);
 // A satellite manifest comes in two shapes: sat/global.json (frames split into
 // longitude tiles) and the older sat/manifest.json (one image per frame). Make
 // both look the same: every frame gets `tiles`, and `image` becomes a key that
@@ -1237,6 +1316,7 @@ class App {
     this.satBad = new Set();  // images that failed to load; dropped from the axis
     this.playing = false;
     this.terrainOn = false;   // relief shading (AWS Terrain Tiles); ?terrain=1
+    this.shadeOn = false;     // heat preset: UTCI in shade instead of direct sun; ?shade=1
     this.frontsOn = true;     // fronts on Synoptic overview; ?fronts=0 hides them
     this.tropicalOn = true;   // JTWC invests and warned cyclones; ?storms=0 hides them
     this.tropical = null;
@@ -1569,13 +1649,14 @@ class App {
     const x1 = clamp(Math.ceil((b.getEast() + pad + 180) / res), x0, g.width - 1);
     const y0 = clamp(Math.floor((90 - (b.getNorth() + pad)) / res), 0, g.height - 1);
     const y1 = clamp(Math.ceil((90 - (b.getSouth() - pad)) / res), y0, g.height - 1);
-    const key = [h.layer, level, k, Math.round(this.stepIndex * 4), x0, x1, y0, y1].join();
+    const key = [this.fieldSource(h.layer), level, k, Math.round(this.stepIndex * 4), x0, x1, y0, y1].join();
     if (key === this.hzKey) return;
     const token = this.hzToken = (this.hzToken || 0) + 1;
 
     const i = Math.floor(this.stepIndex), blend = this.stepIndex - i;
     let A, B;
-    try { [A, B] = await Promise.all([this.valueGrid(h.layer, i), this.valueGrid(h.layer, i + 1)]); }
+    const hsrc = this.fieldSource(h.layer);
+    try { [A, B] = await Promise.all([this.valueGrid(hsrc, i), this.valueGrid(hsrc, i + 1)]); }
     catch (err) { console.warn("hazard symbols unavailable", err); return; }
     if (token !== this.hzToken) return;
 
@@ -1883,6 +1964,7 @@ class App {
     this.preset = id;
     if (id) this.layer = PRESETS[id].main;
     this.paintLayerButtons();
+    this.paintShadeButton && this.paintShadeButton();
     this.writeURL(); this.paintReadoutLabel(); this.paintLegend(); this.paintBoundaryStyle();
     this.scheduleContourLabels();
     this.map && this.map.triggerRepaint();
@@ -1900,6 +1982,7 @@ class App {
   // only 8-bit and bands in light wind); the particles still use u/v. Runs
   // published before that layer existed fall back to u/v.
   fieldSource(name) {
+    if (name === "utci_sun") return this.shadeOn && this.manifest.layers.utci_shade ? "utci_shade" : "utci_sun";
     const src = FIELD_SOURCE[name];
     return src && this.manifest.layers[src] ? src : name;
   }
@@ -1918,7 +2001,7 @@ class App {
 
   buildChrome() {
     const box = document.getElementById("layers");
-    const available = Object.keys(PRESETS).filter((id) => this.presetAvailable(id)).sort((a, b) => PRESETS[a].order - PRESETS[b].order);
+    const available = Object.keys(PRESETS).filter((id) => this.presetAvailable(id) && !(PRESETS[id].legacy && this.presetAvailable("heat"))).sort((a, b) => PRESETS[a].order - PRESETS[b].order);
     for (const id of available) {
       const b = document.createElement("button");
       b.className = "preset";
@@ -2110,6 +2193,29 @@ class App {
     };
     box.appendChild(front);
 
+    // Sun / shade (Heat stress): UTCI for a person in direct sun or in shade.
+    const shade = document.createElement("button");
+    shade.className = "toggle";
+    shade.hidden = true;
+    const paintShade = () => {
+      shade.textContent = this.shadeOn ? "Shade" : "Sun";
+      shade.setAttribute("aria-label", this.shadeOn ? "Feels like in shade" : "Feels like in direct sun");
+      shade.title = this.shadeOn ? "Showing UTCI in shade. Press for direct sun." : "Showing UTCI in direct sun. Press for shade.";
+      shade.setAttribute("aria-pressed", String(this.shadeOn));
+    };
+    shade.onclick = () => {
+      this.shadeOn = !this.shadeOn;
+      paintShade();
+      this.hzKey = null;
+      this.writeURL(); this.paintLegend(); this.updateHazard && this.updateHazard();
+      this.map && this.map.triggerRepaint();
+    };
+    paintShade();
+    box.appendChild(shade);
+    this.shadeBtn = shade;
+    this.paintShadeButton = () => { shade.hidden = !(this.preset && PRESETS[this.preset].sunShade && this.manifest.layers.utci_shade); paintShade(); };
+    this.paintShadeButton();
+
     // Icon-only buttons get a name tag on hover or keyboard focus.
     const tip = document.createElement("div");
     tip.id = "tip"; tip.hidden = true;
@@ -2188,7 +2294,7 @@ class App {
     // names the ramp those lines use.
     const keyLayer = (preset && preset.keyRamp) || this.layer;
     const r = RAMPS[keyLayer];
-    const spec = this.manifest.layers[keyLayer];
+    const spec = this.manifest.layers[keyLayer === "utci_sun" ? this.fieldSource(keyLayer) : keyLayer];
     if (!r) return;
     const [lo, hi] = r.display;
     const n = r.stops.length;
@@ -2518,6 +2624,7 @@ class App {
     if (h.get("wind") === "0") this.windOn = false;
     if (h.get("storms") === "0") this.tropicalOn = false;
     if (h.get("fronts") === "0") this.frontsOn = false;
+    if (h.get("shade") === "1") this.shadeOn = true;
     if (h.get("terrain") === "1") this.terrainOn = true;
   }
 
@@ -2534,6 +2641,7 @@ class App {
       ...(this.windOn ? {} : { wind: "0" }),
       ...(this.tropicalOn ? {} : { storms: "0" }),
       ...(this.frontsOn ? {} : { fronts: "0" }),
+      ...(this.shadeOn ? { shade: "1" } : {}),
       ...(this.terrainOn ? { terrain: "1" } : {}),
     });
     history.replaceState(null, "", `#${h}`);

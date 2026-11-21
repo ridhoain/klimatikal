@@ -249,3 +249,99 @@ def test_msl_is_smoothed_over_high_ground_only():
     assert out[230:270, 630:670].std() < 0.1 * msl[230:270, 630:670].std()  # plateau smoothed
     assert abs(out[230:270, 630:670].mean() - 1013.0) < 1.0                 # same level, no bias
     assert np.array_equal(encoding.smooth_over_terrain(msl, np.zeros_like(weight)), msl)
+
+
+# ---- thermal comfort (thermal.py) -------------------------------------------
+
+def test_utci_matches_reference_values():
+    """Reference points from the UTCI operational procedure (Broede et al. 2012)."""
+    import thermal
+    f = lambda *a: float(thermal.utci(*[np.array([x]) for x in a])[0])
+    assert abs(f(25.0, 50.0, 1.0, 25.0) - 24.6) < 0.3           # comfortable
+    assert abs(f(35.0, 60.0, 1.0, 35.0) - 38.5) < 1.5           # hot, humid: strong-very strong
+    assert f(30.0, 60.0, 1.0, 55.0) > f(30.0, 60.0, 1.0, 30.0) + 5.0   # radiant load raises it
+    assert f(30.0, 60.0, 8.0, 30.0) < f(30.0, 60.0, 1.0, 30.0)         # wind cools
+
+
+def test_sun_is_hotter_than_shade_and_night_is_equal():
+    import datetime as dt
+    import thermal
+    lat = np.array([[-6.2]]); lon = np.array([[106.8]])        # Jakarta
+    noon = dt.datetime(2026, 11, 18, 5, 0, tzinfo=dt.timezone.utc)   # 12:00 local
+    night = dt.datetime(2026, 11, 18, 17, 0, tzinfo=dt.timezone.utc)
+    for when, sunny in ((noon, True), (night, False)):
+        start, end = when - dt.timedelta(hours=1.5), when + dt.timedelta(hours=1.5)
+        mu0 = thermal.window_mean_mu0(lat, lon, start, end)
+        i0 = thermal.SOLAR_CONSTANT * thermal.earth_sun_factor(when)
+        ssrd = np.array([[700.0 if sunny else 0.0]])
+        args = (ssrd, 0.85 * ssrd, np.array([[420.0]]), np.array([[-60.0]]), mu0, i0)
+        sun = thermal.mean_radiant_temperature(*args, sun=True)[0, 0]
+        shade = thermal.mean_radiant_temperature(*args, sun=False)[0, 0]
+        if sunny:
+            assert sun > shade + 3.0 and 45 < sun < 75, (sun, shade)
+        else:
+            assert abs(sun - shade) < 1e-9
+
+
+def test_solar_noon_zenith_at_the_equator_in_equinox():
+    import datetime as dt
+    import thermal
+    mu0 = thermal.cos_zenith(np.array(0.0), np.array(0.0), dt.datetime(2026, 3, 20, 12, 0, tzinfo=dt.timezone.utc))
+    assert mu0 > 0.99
+
+
+def test_utci_layers_encode_and_stay_inside_the_range():
+    import datetime as dt
+    import thermal
+    lat, lon = thermal.grid_latlon(NLAT, NLON)
+    t = np.broadcast_to(32.0 + 0 * lat, (NLAT, NLON)).copy()
+    fields = {"2t": t, "2d": t - 6.0, "10u": 0 * t + 2.0, "10v": 0 * t}
+    ssrd = 600.0 * np.maximum(np.cos(np.deg2rad(lat)), 0) + 0 * lon
+    flux = {"ssrd": ssrd, "ssr": 0.85 * ssrd, "strd": 0 * ssrd + 420.0, "str": 0 * ssrd - 60.0}
+    when = dt.datetime(2026, 11, 18, 3, 0, tzinfo=dt.timezone.utc)
+    sun, shade = thermal.utci_sun_shade(fields, flux, when, when + dt.timedelta(hours=3))
+    assert np.isfinite(sun).all() and np.isfinite(shade).all()
+    assert (sun >= shade - 1e-6).all() and (sun - shade).max() > 3.0
+    assert -20.0 < sun.min() and sun.max() < 60.0
+
+
+def test_wet_bulb_matches_a_psychrometric_solution():
+    """Independent check: solve the psychrometer equation at 1013 hPa for the wet-bulb temperature."""
+    import thermal
+
+    def es(t):  # hPa, Magnus
+        return 6.1094 * np.exp(17.625 * t / (t + 243.04))
+
+    def psychrometric(t, rh, p=1013.25):
+        e = rh / 100.0 * es(t)
+        lo, hi = -20.0, t
+        for _ in range(60):
+            mid = (lo + hi) / 2
+            if es(mid) - 0.00066 * (1 + 0.00115 * mid) * p * (t - mid) > e:
+                hi = mid
+            else:
+                lo = mid
+        return (lo + hi) / 2
+
+    for t, rh in ((20, 50), (26, 85), (30, 70), (32, 60), (35, 50), (38, 40), (28, 95)):
+        got = float(thermal.wet_bulb(np.array(t, float), np.array(rh, float)))
+        assert abs(got - psychrometric(t, rh)) < 0.6, (t, rh, got, psychrometric(t, rh))
+    assert abs(float(thermal.wet_bulb(np.array(20.0), np.array(50.0))) - 13.7) < 0.2   # Stull's own check value
+
+
+def test_uv_index_clear_sky_jakarta_noon_cloud_and_night():
+    import datetime as dt
+    import thermal
+    lat = np.array([[-6.2]]); lon = np.array([[106.8]])
+    noon = dt.datetime(2026, 11, 18, 5, 0, tzinfo=dt.timezone.utc)      # 12:00 WIB
+    start = noon - dt.timedelta(hours=3)
+    ghi_clear = thermal.window_mean_haurwitz(lat, lon, start, noon)
+    tcc = np.array([[0.0]])
+    clear = thermal.uv_index({"tcc": tcc}, {"ssrd": 0.9 * ghi_clear}, start, noon, lat, lon)[0, 0]
+    assert 12.0 < clear < 15.5, clear                                   # the plan's sanity check: about 14 for Jakarta
+    overcast = thermal.uv_index({"tcc": tcc}, {"ssrd": 0.3 * ghi_clear}, start, noon, lat, lon)[0, 0]
+    assert 0.25 * clear < overcast < 0.4 * clear
+    night = dt.datetime(2026, 11, 18, 17, 0, tzinfo=dt.timezone.utc)
+    assert thermal.uv_index({"tcc": tcc}, None, night - dt.timedelta(hours=3), night, lat, lon)[0, 0] == 0.0
+    # no radiation window (step 0): cloud cover stands in
+    assert thermal.uv_index({"tcc": np.array([[100.0]])}, None, noon, noon, lat, lon)[0, 0] < 0.3 * clear

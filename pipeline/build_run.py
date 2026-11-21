@@ -33,6 +33,7 @@ import numpy as np
 from PIL import Image
 
 from fronts import detect_fronts
+from thermal import relative_humidity, utci_sun_shade, uv_index, wet_bulb
 from encoding import (FORMAT_VERSION, LAYERS, NLAT, NLON, REVISION, encode, layer_manifest, reproject,
                       smooth_over_terrain, terrain_weight)
 
@@ -63,14 +64,21 @@ CONVERSIONS = {
     "tcc": ("%", lambda a: a * 100.0),         # 0..1 fraction
     "msl": ("hPa", lambda a: a / 100.0),       # Pascals
     "sp": ("hPa", lambda a: a / 100.0),        # surface pressure: only decides where msl is smoothed
+    # Radiation is accumulated from the start of the forecast, J m-2. Kept raw
+    # here; the step loop differences consecutive steps into W m-2.
+    "ssrd": ("J m-2", lambda a: a),            # surface solar radiation downwards
+    "ssr": ("J m-2", lambda a: a),             # surface net solar radiation
+    "strd": ("J m-2", lambda a: a),            # surface thermal radiation downwards
+    "str": ("J m-2", lambda a: a),             # surface net thermal radiation
 }
 
-ALL_PARAMS = sorted({p for spec in LAYERS.values() for p in spec["params"]})
+ALL_PARAMS = sorted({p for spec in LAYERS.values() if not spec.get("computed") for p in spec["params"]})
 # Fields on a pressure level are a second request (levtype "pl"). Their names
 # here are the GRIB short name with the level appended.
 PL_FIELDS = {"u850": "u", "v850": "v", "t850": "t", "r850": "r"}
 PL_LEVEL = 850
-EXTRA_PARAMS = ["sp", "t850", "r850"]       # read but not stored as a layer
+RADIATION = ["ssrd", "ssr", "strd", "str"]   # accumulated; feed the UTCI layers
+EXTRA_PARAMS = ["sp", "t850", "r850"] + RADIATION       # read but not stored as a layer
 SFC_PARAMS = [p for p in ALL_PARAMS + EXTRA_PARAMS if p not in PL_FIELDS]
 
 CACHE_RUN_FILES = "public, max-age=31536000, immutable"
@@ -264,6 +272,17 @@ def log(message: str) -> None:
     print(f"[{stamp}] {message}", flush=True)
 
 
+def _synthetic_radiation(step: int, lat, lon, warm) -> dict[str, np.ndarray]:
+    """Accumulated radiation for --offline: sun follows local solar time, thermal is blackbody-ish."""
+    def flux(h: float):
+        return 900.0 * np.clip(np.cos(np.deg2rad(lat)) * np.cos(np.deg2rad(15.0 * (h + lon / 15.0 - 12.0))), 0, None)
+    hours = np.arange(0.0, step + 0.5, 0.5)
+    ssrd = sum(flux(h) for h in hours) * 0.5 * 3600.0 if step else np.zeros((NLAT, NLON))
+    ssrd = np.broadcast_to(ssrd, (NLAT, NLON)).copy()
+    strd = np.broadcast_to(5.670374419e-8 * (warm + 273.15 - 15.0) ** 4 * step * 3600.0, (NLAT, NLON)).copy()
+    return {"ssrd": ssrd, "ssr": 0.85 * ssrd, "strd": strd, "str": strd * -0.12}
+
+
 def synthetic_fields(step: int) -> dict[str, np.ndarray]:
     """Plausible-looking fields for --offline, so the plumbing either side of
     the download can be exercised without ECMWF or eccodes installed."""
@@ -286,6 +305,8 @@ def synthetic_fields(step: int) -> dict[str, np.ndarray]:
         "mcc": np.clip(30 + 40 * np.roll(swirl, 60, axis=1), 0, 100),
         "hcc": np.clip(20 + 50 * np.roll(swirl, 150, axis=1), 0, 100),
         "t850": warm - 8.0, "r850": np.clip(60 + 30 * swirl, 0, 100),
+        # accumulated like the real ones: a day-night cycle in W m-2, integrated over the steps
+        **_synthetic_radiation(step, lat, lon, warm),
         "u850": 15.0 * swirl, "v850": 10.0 * np.cos(np.deg2rad(lon) * 2 + phase) * np.cos(np.deg2rad(lat)),
     }
 
@@ -326,10 +347,11 @@ def build(args) -> None:
     log(f"building run {run_id}, {len(steps)} steps, {len(LAYERS)} layers")
 
     # Seconds spent per phase, so a slow build says where the time went.
-    spent = {"download": 0.0, "read": 0.0, "fronts": 0.0, "encode": 0.0, "png": 0.0, "upload": 0.0}
+    spent = {"thermal": 0.0, "download": 0.0, "read": 0.0, "fronts": 0.0, "encode": 0.0, "png": 0.0, "upload": 0.0}
     build_started = time.perf_counter()
     workdir = Path(tempfile.mkdtemp(prefix="klimatikal-"))
     previous_tp: np.ndarray | None = None
+    previous_rad: tuple[int, dict[str, np.ndarray]] | None = None
     terrain_w: np.ndarray | None = None     # fixed from the first step so the smoothing does not flicker
     written = 0
     total_bytes = 0
@@ -362,6 +384,28 @@ def build(args) -> None:
             else:
                 fields["tp"] = np.maximum(accumulated - previous_tp, 0.0)
             previous_tp = accumulated
+
+            # Same for radiation: the mean flux over the window since the step
+            # before, in W m-2. Step 0 has none; thermal.py says what it does then.
+            window = None
+            if step > 0:
+                if previous_rad is None:
+                    raise SystemExit(
+                        f"step {step} needs the step before it for radiation; "
+                        "run consecutive steps or start at 0"
+                    )
+                prev_step, prev = previous_rad
+                seconds = (step - prev_step) * 3600.0
+                window = {k: np.maximum(fields[k] - prev[k], 0.0) / seconds for k in RADIATION}
+                span = (run + dt.timedelta(hours=prev_step), run + dt.timedelta(hours=step))
+            else:
+                span = (run, run)
+            previous_rad = (step, {k: fields[k] for k in RADIATION})
+            t0 = time.perf_counter()
+            fields["utci_sun"], fields["utci_shade"] = utci_sun_shade(fields, window, *span)
+            fields["wetbulb"] = wet_bulb(fields["2t"], relative_humidity(fields["2t"], fields["2d"]))
+            fields["uvi"] = uv_index(fields, window, *span)
+            spent["thermal"] += time.perf_counter() - t0
 
             if terrain_w is None:
                 terrain_w = terrain_weight(fields["sp"])
