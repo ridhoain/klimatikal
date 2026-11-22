@@ -70,8 +70,9 @@
   #vars-toggle[aria-expanded="false"] svg { transform: rotate(180deg); }
   #vars[data-collapsed="true"] #layers { display: none; }
   /* Always one row: if the screen is too narrow it scrolls sideways instead of wrapping. */
-  #presets { display: flex; gap: 6px; flex-wrap: nowrap; justify-content: safe start; max-width: 100%;
-    padding: 6px 8px; overflow-x: auto; scrollbar-width: thin; }
+  #presets { display: flex; flex-direction: column; gap: 5px; align-items: stretch; width: max-content; max-width: 100%;
+    padding: 6px; overflow-y: auto; scrollbar-width: thin; }
+  #presets .grp { flex-wrap: wrap; }
   #presets button.preset { display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px 4px 4px;
     font-size: 12.5px; color: #cfd8ee; border-radius: 9px; cursor: pointer; white-space: nowrap; }
   #presets .pthumb { width: 46px; height: 30px; border-radius: 6px; object-fit: cover; flex: none;
@@ -103,6 +104,11 @@
   #ticks button { all: unset; cursor: pointer; position: absolute; top: 6px; transform: translateX(-50%);
     font-size: 9.5px; line-height: 1; color: #9fb0d4; white-space: nowrap; padding: 2px 3px;
     border-radius: 4px; font-variant-numeric: tabular-nums; }
+  /* The current time: a thin blinking line through the slider. */
+  #ticks i.now { top: -15px; width: 2px; height: 31px; margin-left: -1px; border-radius: 1px; pointer-events: none;
+    background: #ffd166; box-shadow: 0 0 4px rgba(255,209,102,.8); animation: nowblink 1.6s ease-in-out infinite; }
+  @keyframes nowblink { 0%, 100% { opacity: 1; } 50% { opacity: .15; } }
+  @media (prefers-reduced-motion: reduce) { #ticks i.now { animation: none; } }
   #ticks button[hidden] { display: none; }  /* `all: unset` above would otherwise show it */
   #ticks button.sat { color: #5ad1ff; }
   #ticks button:hover, #ticks button:focus-visible { color: #fff; background: #243156; }
@@ -900,9 +906,27 @@ const FIELD_VS = `
   attribute vec2 a_pos;
   uniform mat4 u_matrix;
   uniform float u_worldShift;
+  uniform float u_cap;      // 0 = the normal world mesh; +1 / -1 = the north / south polar cap (globe only)
   varying vec2 v_merc;
+  varying float v_cap;      // -1 off the caps; 0 at the cap's rim to 1 at the pole
   ${GLSL_PROJECT}
   void main() {
+    if (u_cap != 0.0) {
+      // Mercator ends at about 85.05 degrees; the globe shows the sphere beyond it. Here a_pos is
+      // (longitude 0..1, distance from the rim to the pole 0..1), drawn only on a settled globe.
+      if (u_globe < 0.5 || u_gtrans < 0.999) { v_merc = vec2(0.0); v_cap = -1.0; gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
+      const float GPI = 3.1415926535897932;
+      float lat = radians(u_cap * mix(85.051129, 90.0, a_pos.y));
+      float lon = a_pos.x * GPI * 2.0 + GPI;
+      vec3 p = vec3(sin(lon) * cos(lat), sin(lat), cos(lon) * cos(lat));
+      vec4 g = u_gmatrix * vec4(p, 1.0);
+      g.z = (1.0 - (dot(p, u_gclip.xyz) + u_gclip.w)) * g.w;
+      v_merc = vec2(a_pos.x, u_cap > 0.0 ? 0.0 : 1.0);   // the rim row of the data
+      v_cap = a_pos.y;
+      gl_Position = g;
+      return;
+    }
+    v_cap = -1.0;
     v_merc = a_pos;   // dataUV() takes fract(), so the shift need not travel
     gl_Position = projectWorld(vec2(a_pos.x + u_worldShift, a_pos.y));
   }`;
@@ -941,11 +965,22 @@ const FIELD_FS = `
   uniform float u_pat, u_thr, u_dpr, u_patRamp;
   uniform vec3 u_patColor;
   varying vec2 v_merc;
+  varying float v_cap;
   void main() {
     vec2 uv = dataUV(v_merc.x, v_merc.y);
     float a = decodeValue(sampleSmooth(u_now,  uv));
     float b = decodeValue(sampleSmooth(u_next, uv));
     float value = mix(a, b, u_blend);
+    if (v_cap >= 0.0) {
+      // Polar cap, beyond the data's mercator edge: start from the rim's own values and blur them
+      // into the average of the whole rim circle, which is the single colour at the pole.
+      float sum = 0.0;
+      for (int i = 0; i < 24; i++) {
+        vec2 q = dataUV(float(i) / 24.0, v_merc.y);
+        sum += mix(decodeValue(sampleSmooth(u_now, q)), decodeValue(sampleSmooth(u_next, q)), u_blend);
+      }
+      value = mix(value, sum / 24.0, smoothstep(0.0, 0.85, v_cap));
+    }
     if (u_pat > 0.5) {
       float inside = smoothstep(u_thr - 0.03, u_thr + 0.03, value);
       if (inside < 0.01) discard;
@@ -1250,6 +1285,16 @@ class WeatherLayer {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.mesh);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(mesh), gl.STATIC_DRAW);
     this.meshCount = G * G * 6;
+    // Polar cap: a fan of rings from the mercator rim (t = 0) to the pole (t = 1).
+    const CR = 8, cap = [];
+    for (let j = 0; j < CR; j++) for (let i = 0; i < G; i++) {
+      const x0 = i / G, x1 = (i + 1) / G, y0 = j / CR, y1 = (j + 1) / CR;
+      cap.push(x0,y0, x1,y0, x0,y1, x0,y1, x1,y0, x1,y1);
+    }
+    this.capMesh = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.capMesh);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cap), gl.STATIC_DRAW);
+    this.capCount = G * CR * 6;
 
     const n = this.side * this.side;
     const idx = new Float32Array(n * 4);          // two vertices per particle
@@ -1410,9 +1455,23 @@ class WeatherLayer {
           if (pat.color) gl.uniform3f(f.loc.u_patColor, pat.color[0] / 255, pat.color[1] / 255, pat.color[2] / 255);
         }
       }
+      gl.uniform1f(f.loc.u_cap, 0);
       for (const shift of shifts) {
         gl.uniform1f(f.loc.u_worldShift, shift);
         gl.drawArrays(gl.TRIANGLES, 0, globe ? this.meshCount : 6);
+      }
+      if (globe && !isContour) {            // fill the poles, which the flat-map mesh does not reach
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.capMesh);
+        gl.vertexAttribPointer(f.loc.a_pos, 2, gl.FLOAT, false, 0, 0);
+        gl.uniform1f(f.loc.u_worldShift, 0);
+        const culled = gl.isEnabled(gl.CULL_FACE);     // the north cap is wound the other way round
+        if (culled) gl.disable(gl.CULL_FACE);
+        for (const side of [1, -1]) {
+          gl.uniform1f(f.loc.u_cap, side);
+          gl.drawArrays(gl.TRIANGLES, 0, this.capCount);
+        }
+        if (culled) gl.enable(gl.CULL_FACE);
+        gl.uniform1f(f.loc.u_cap, 0);
       }
     }
 
@@ -3264,6 +3323,7 @@ class App {
       this.useUTC = utc; tzStore.set(utc ? "utc" : "local");
       paintTz(); this.buildTicks(); this.onTimeChange(); this.paintLegend();
     });
+    setInterval(() => this.placeNow(), 60000);
     const timeBox = document.getElementById("time");
     new ResizeObserver(() =>
       document.documentElement.style.setProperty("--time-h", `${timeBox.offsetHeight}px`)).observe(timeBox);
@@ -3790,6 +3850,22 @@ class App {
       }
     }
     this.layoutTickLabels();
+    this.placeNow();
+  }
+
+  // A marker at the current clock time, if the slider's range reaches it.
+  placeNow() {
+    const box = document.getElementById("ticks");
+    let m = box.querySelector("i.now");
+    const n = this.axis.length, now = Date.now();
+    let x = null;
+    for (let i = 0; i < n - 1 && x === null; i++) {
+      const a = this.axis[i].t.getTime(), b = this.axis[i + 1].t.getTime();
+      if (now >= a && now <= b) x = (i + (b > a ? (now - a) / (b - a) : 0)) / (n - 1);
+    }
+    if (x === null) { if (m) m.remove(); return; }
+    if (!m) { m = document.createElement("i"); m.className = "now"; m.title = "Now"; box.appendChild(m); }
+    m.style.left = `${x * 100}%`;
   }
 
   layoutTickLabels() {
