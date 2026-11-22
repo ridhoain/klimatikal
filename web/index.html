@@ -214,6 +214,14 @@
   #legend .bar { position: relative; width: 9px; border-radius: 3px; background-color: #0b1020;
     border: 1px solid rgba(255,255,255,.25); }
   #legend .body.cls { height: clamp(120px, 28vh, 200px); }
+  #legend .body.cls.sm { height: clamp(84px, 16vh, 110px); }
+  /* Stargazing: the details of the aurora under the cursor, next to it. */
+  #aurora-pop { position: fixed; z-index: 6; pointer-events: none; max-width: 230px; padding: 8px 10px; border-radius: 10px;
+    font-size: 11px; line-height: 1.4; color: #e9edf7; background: rgba(12,18,34,.88); border: 1px solid rgba(120,255,170,.45);
+    box-shadow: 0 2px 14px rgba(0,0,0,.4); backdrop-filter: blur(8px); }
+  #aurora-pop[hidden] { display: none; }
+  #aurora-pop b { display: block; font-size: 13px; font-weight: 600; color: #8dffb4; margin-bottom: 2px; }
+  #aurora-pop small { display: block; color: #aebbd8; font-size: 10px; margin-top: 3px; }
   #legend .cls-names { display: flex; flex-direction: column; justify-content: space-around; align-items: flex-end; }
   #legend .cls-names .cls-name { flex: 1; display: flex; flex-direction: column; justify-content: center; }
   #legend .cls-name { font-size: 9.5px; color: #cfd8ee; text-align: right; line-height: 1.15; white-space: nowrap; }
@@ -493,12 +501,13 @@ Object.assign(RAMPS, {
   cloudveil: { source: "cloud", display: [0, 100], unitLabel: "%", opacity: 1,
     stops: [[0, [255, 255, 255, 0]], [25, [235, 240, 250, 0]], [60, [240, 245, 255, 70]],
             [100, [255, 255, 255, 150]]] },
-  // Stargazing: cloud is what hides the sky, so cloud is the colour. Clear sky is a faint teal (the
-  // sky is open), partly cloudy has no tint, and overcast is a heavy white haze that also veils the
-  // aurora and the light glow drawn under it. `label` is the legend title (there is no layer of this name).
+  // Stargazing: the question is "where is it clear?", so clear sky is the colour and cloud fades away. Real
+  // total cloud cover averages about 63 % and is above 60 % over more than half the globe, so a haze for
+  // cloud would paint most of the Earth white and bury everything else. Clear (under 15 %) is a strong
+  // sky blue (not green, which is the aurora's colour), partly cloudy fades out by 55 %, and overcast is only a faint cool veil.
   astrocloud: { source: "cloud", label: "Cloud cover", display: [0, 100], unitLabel: "%", opacity: 1, ticks: [0, 25, 50, 75, 100],
-    stops: [[0, [70, 205, 190, 80]], [15, [70, 205, 190, 45]], [32, [70, 205, 190, 0]],
-            [50, [225, 232, 245, 95]], [75, [236, 241, 250, 170]], [100, [244, 247, 253, 225]]] },
+    stops: [[0, [70, 150, 255, 190]], [15, [70, 150, 255, 165]], [35, [70, 150, 255, 80]], [55, [70, 150, 255, 0]],
+            [75, [190, 200, 222, 34]], [100, [190, 200, 222, 70]]] },
 });
 
 // Stargazing overlays that are not forecast layers. Both are small static or near-real-time images
@@ -508,8 +517,10 @@ Object.assign(RAMPS, {
 // are on radiance, and `classes` names the bands for the hover text and the key. Dark is left clear
 // on purpose: the places to go are the ones with no glow on them.
 const ASTRO = {
-  aurora: { stops: [[3, 90, 255, 150, 0], [8, 90, 255, 150, 70], [20, 80, 255, 120, 150],
-                    [45, 190, 255, 90, 205], [75, 255, 150, 220, 235], [100, 255, 110, 160, 245]] },
+  aurora: { stops: [[3, 60, 255, 140, 0], [6, 60, 255, 140, 120], [12, 50, 255, 120, 200], [25, 90, 255, 110, 240],
+                    [50, 190, 255, 90, 252], [75, 255, 120, 230, 255], [100, 255, 70, 170, 255]],
+            // bands for the key and the hover text: [lower edge %, name]
+            classes: [[75, "Very likely"], [50, "Likely"], [25, "Possible"], [12, "Faint"], [6, "Slight"]] },
   lights: { stops: [[0.25, 255, 214, 90, 0], [0.5, 255, 214, 90, 55], [1, 255, 190, 60, 110],
                     [3, 255, 140, 40, 160], [10, 255, 90, 50, 200], [30, 255, 120, 150, 225], [100, 255, 245, 245, 245]],
             classes: [[0, "Dark"], [0.25, "Faint glow"], [1, "Moderate glow"], [3, "Bright glow"], [10, "Very bright"], [30, "City centre"]] },
@@ -647,16 +658,17 @@ PRESETS.astro = {
     { kind: "fill", ramp: "astrocloud" },
   ],
   keys: [{ title: "Overlays", rows: [
-    { swatch: [80, 255, 120], text: "Aurora: chance of visible aurora, 20 % or more", toggle: "aurora" },
-    { swatch: [255, 150, 220], text: "Aurora: 75 % or more", toggle: "aurora" },
+    { swatch: [90, 255, 110], text: "Aurora: chance of visible aurora, 25 % or more", toggle: "aurora" },
+    { swatch: [255, 120, 230], text: "Aurora: 75 % or more", toggle: "aurora" },
     { swatch: [255, 190, 60], text: "Light glow, moderate (a village or small town)", toggle: "lights" },
     { swatch: [255, 90, 50], text: "Light glow, very bright (a large city)", toggle: "lights" },
   ] }],
   explain: [
-    "Cloud cover is the colour: a faint teal where the sky is open, white haze where it is overcast. Look for teal, and for no haze, over the place you want to be.",
+    "Cloud cover is the colour, turned around so that clear sky stands out: strong blue where the sky is open, fading out as cloud builds, and only a faint grey veil where it is overcast. Cloud covers more than half the globe at any time, so most of the map is not blue; look for blue over the place you want to be.",
     "Light glow (Dark sky button): yellow to white where artificial light spreads into the sky, from a yearly satellite night-lights composite (harmonized DMSP and VIIRS, a relative index, not radiance) spread out by about 25 km. Places with no colour are dark. It is a proxy, not a Bortle class or sky brightness in mag/arcsec²: the glow of a big city far away is understated, and it does not extend north of 75° or south of 65°.",
-    "Aurora (Aurora button): NOAA's OVATION nowcast, the chance of visible aurora for the next hour. It is a nowcast, so it is shown only within {auroraH} hours of its time. It needs a dark sky and a clear view of the poleward horizon. {kp}",
+    "Aurora (Aurora button): NOAA's OVATION nowcast, the chance of visible aurora for the next hour; hover the glow for the details. It is a nowcast, so it is shown only within {auroraH} hours of its time. It needs a dark sky and a clear view of the poleward horizon. {kp}",
     "Lines: the solid line is sunset or sunrise, the dashed ones civil (6°) and nautical (12°) twilight, and the outermost, in violet, is 18°: past it, on the dark side, it is astronomical night. The Moon line is where it rises and sets, with ticks on the side where the Moon is down. Dark sky for deep-sky work is beyond the violet line and on the ticked side of the Moon line, or when the Moon is a thin crescent.",
+    "Dimmed: the part of the map still in daylight (darker) or twilight (lighter), where nothing can be seen yet. Switch it off with the Day mask button.",
     "The Moon icon is where the Moon is overhead, drawn with its phase. Hover for the sun and Moon height at a point.",
     "Cloud is a forecast at 0.25°: a clear 3-hour average can hide a gap or a passing band, and low fog and valleys are not resolved.",
   ],
@@ -1603,6 +1615,7 @@ class App {
     this.uvOn = true;         // heat preset: UV index lines on; ?uv=0 turns them off
     this.auroraOn = true;     // stargazing preset: aurora overlay; #aurora=0 turns it off
     this.lightsOn = true;     // stargazing preset: light-glow overlay; #lights=0 turns it off
+    this.dayMaskOn = true;    // stargazing preset: dim the part of the map still in daylight or twilight; #mask=0 turns it off
     this.shadeOn = false;     // heat preset: UTCI in shade instead of direct sun; ?shade=1
     this.frontsOn = true;     // fronts on Synoptic overview; ?fronts=0 hides them
     this.lowsOn = false;      // tracks of the model's low-pressure centres; ?lows=1 shows them
@@ -2362,6 +2375,21 @@ class App {
     return { runs, ticks };
   }
 
+  // The region where the sun is higher than `elev`, as one polygon ring with unwrapped longitudes (drawn
+  // three times, like the lines). Per latitude that is the band of longitudes within H of the sun's, where
+  // cos(H) = (sin h - sin lat sin dec) / (cos lat cos dec): H is 180 where the sun is always above h (polar
+  // day) and 0 where it never is, so the ring stays one simple shape.
+  sunPolygon(sun, elev, step) {
+    const rad = Math.PI / 180, sinH = Math.sin(elev * rad), sd = Math.sin(sun.dec), cd = Math.cos(sun.dec);
+    const west = [], east = [];
+    for (let lat = -85; lat <= 85.001; lat += step) {
+      const c = (sinH - Math.sin(lat * rad) * sd) / (Math.cos(lat * rad) * cd);
+      const H = Math.acos(Math.max(-1, Math.min(1, c))) / rad;
+      west.push([sun.lng - H, lat]); east.push([sun.lng + H, lat]);
+    }
+    return [...west, ...east.reverse(), west[0]];
+  }
+
   dayNightText(lat, lng) {
     const astro = this.astroActive();
     if (!this.nightOn && !astro) return "";
@@ -2428,10 +2456,12 @@ class App {
       if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", show);
     for (const id of ["night-moon-casing", "night-moon-line", "night-moon"])
       if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", astro ? "visible" : "none");
+    for (const id of ["night-mask-twi", "night-mask-day"])
+      if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", astro && this.dayMaskOn ? "visible" : "none");
     if (!this.nightShown()) { this.nightKey = null; return; }
     const t = this.axis[Math.round(this.pos)].t;
     const pxPerDeg = 512 * Math.pow(2, map.getZoom()) / 360;
-    const key = `${Math.floor(t.getTime() / 60000)}|${Math.round(map.getZoom() * 2)}|${astro ? "a" : ""}`;   // once a minute of map time, per half zoom level
+    const key = `${Math.floor(t.getTime() / 60000)}|${Math.round(map.getZoom() * 2)}|${astro ? "a" : ""}${this.dayMaskOn ? "m" : ""}`;   // once a minute of map time, per half zoom level
     if (key === this.nightKey) return;
     this.nightKey = key;
     const sun = this.sunAt(t);
@@ -2448,6 +2478,10 @@ class App {
       ...horizon.ticks.flatMap((seg) => shifts.map((d) => ({ type: "Feature", properties: { k: "tick" },
         geometry: { type: "LineString", coordinates: seg.map(([x, y]) => [x + d, y]) } }))),
     ];
+    const maskSrc = map.getSource("night-mask");
+    if (maskSrc) maskSrc.setData({ type: "FeatureCollection", features: astro && this.dayMaskOn ? [-18, 0].flatMap((elev) =>
+      shifts.map((d) => ({ type: "Feature", properties: { k: elev === 0 ? "day" : "twi" },
+        geometry: { type: "Polygon", coordinates: [this.sunPolygon(sun, elev, 1).map(([x, y]) => [x + d, y])] } }))) : [] });
     const moon = this.moonAt(t), moonSrc = map.getSource("night-moon-lines"), moonPt = map.getSource("night-moon");
     if (moonSrc) {       // the Moon's rise and set line (geocentric 0.1 degrees is about the topocentric rim on the horizon), ticks on the side where it is down
       const ml = this.sunLine(moon, 0.1, Math.max(0.5, 22 / pxPerDeg), 7 / pxPerDeg);
@@ -2484,6 +2518,14 @@ class App {
     const vis = { visibility: this.nightShown() ? "visible" : "none" };
     const on = (k) => ["==", ["get", "k"], k];
     this.moonImages().forEach((img, i) => map.addImage(`moon${i}`, img, { pixelRatio: 2 }));
+    // Stargazing's daylight mask: twilight (sun above -18 degrees) lightly, daylight (above 0) on top of it, so
+    // day is the darkest. Added first so the night lines and the coast draw over it, above the weather and overlays.
+    map.addSource("night-mask", { type: "geojson", data: empty });
+    const maskVis = { visibility: this.astroActive() && this.dayMaskOn ? "visible" : "none" };
+    map.addLayer({ id: "night-mask-twi", type: "fill", source: "night-mask", filter: ["==", ["get", "k"], "twi"], layout: maskVis,
+      paint: { "fill-color": "#060a16", "fill-opacity": 0.34, "fill-antialias": false } }, before);
+    map.addLayer({ id: "night-mask-day", type: "fill", source: "night-mask", filter: ["==", ["get", "k"], "day"], layout: maskVis,
+      paint: { "fill-color": "#060a16", "fill-opacity": 0.5, "fill-antialias": false } }, before);
     map.addSource("night-moon-lines", { type: "geojson", data: empty });
     map.addSource("night-moon", { type: "geojson", data: empty });
     // Dark casing under the light lines so they read on pale and dark fields alike.
@@ -2662,6 +2704,26 @@ class App {
       bits.push(`light glow: ${cls.toLowerCase()}${!dn && code ? ` (${rad < 10 ? rad.toFixed(1) : Math.round(rad)} nW)` : ""}`);
     }
     return bits.length ? " · " + bits.join(" · ") : "";
+  }
+
+  // A pop-up beside the cursor while it is over visible aurora: the chance, what it means, Kp, where to look.
+  auroraPop(e) {
+    let el = document.getElementById("aurora-pop");
+    const A = this.astro && this.astro.aurora;
+    const p = e && A && this.astroActive() && this.auroraOn && this.auroraValid() ? this.astroSample(A, e.lngLat.lat, e.lngLat.lng, false) : 0;
+    if (p < ASTRO.aurora.classes[ASTRO.aurora.classes.length - 1][0]) { if (el) el.hidden = true; return; }
+    if (!el) { el = document.createElement("div"); el.id = "aurora-pop"; document.body.appendChild(el); }
+    const cls = ASTRO.aurora.classes.find(([th]) => p >= th)[1];
+    const m = A.meta, lat = e.lngLat.lat;
+    const when = tzParts(new Date(m.forecast_time), this.useUTC);
+    const kp = this.kpText();
+    el.innerHTML = `<b>Aurora · ${p} %</b>${cls} chance of visible aurora here` +
+      `<small>Look toward the ${lat >= 0 ? "north" : "south"} horizon, from a dark place under clear sky.</small>` +
+      `<small>NOAA OVATION nowcast for ${when.hm} ${when.label}${kp ? " · " + escapeHTML(kp) : ""}</small>`;
+    el.hidden = false;
+    const oe = e.originalEvent, w = el.offsetWidth, h = el.offsetHeight;
+    el.style.left = `${Math.max(8, Math.min(innerWidth - w - 8, oe.clientX + 16))}px`;
+    el.style.top = `${Math.max(8, Math.min(innerHeight - h - 8, oe.clientY + 16))}px`;
   }
 
   kpText() {
@@ -3021,24 +3083,26 @@ class App {
     // Stargazing: Aurora and Dark sky overlays, right after the Stargazing button. Each button appears
     // only when its data file has loaded, and Aurora says when it is out of its time window.
     const astroBtns = {};
-    for (const [key, label, flag] of [["aurora", "Aurora", "auroraOn"], ["lights", "Dark sky", "lightsOn"]]) {
+    for (const [key, label, flag] of [["aurora", "Aurora", "auroraOn"], ["lights", "Dark sky", "lightsOn"], ["mask", "Day mask", "dayMaskOn"]]) {
       const b = document.createElement("button");
       b.className = "toggle"; b.textContent = label; b.hidden = true;
-      b.onclick = () => { this[flag] = !this[flag]; this.updateAstro(); this.writeURL(); this.paintLegend(); this.paintCredit(); this.map && this.map.triggerRepaint(); };
+      b.onclick = () => { this[flag] = !this[flag]; this.nightKey = null; this.updateNight(); this.writeURL(); this.paintLegend(); this.paintCredit(); this.map && this.map.triggerRepaint(); };
       astroBtns[key] = b;
     }
     const astroGrp = this.presetGroups && this.presetGroups.astro;
-    if (astroGrp) astroGrp.append(astroBtns.lights, astroBtns.aurora); else box.append(astroBtns.lights, astroBtns.aurora);
+    if (astroGrp) astroGrp.append(astroBtns.lights, astroBtns.aurora, astroBtns.mask); else box.append(astroBtns.lights, astroBtns.aurora, astroBtns.mask);
     this.paintAstroButtons = () => {
-      const have = (k) => !!(this.astro && this.astro[k]);
+      const have = (k) => k === "mask" || !!(this.astro && this.astro[k]);
       const show = this.astroActive();
-      for (const [k, flag] of [["aurora", "auroraOn"], ["lights", "lightsOn"]]) {
+      for (const [k, flag] of [["aurora", "auroraOn"], ["lights", "lightsOn"], ["mask", "dayMaskOn"]]) {
         const b = astroBtns[k];
         b.hidden = !(show && have(k));
         b.setAttribute("aria-pressed", String(this[flag]));
         const stale = k === "aurora" && have(k) && !this.auroraValid();
         b.style.opacity = stale ? "0.55" : "";
-        b.title = k === "lights"
+        b.title = k === "mask"
+          ? (this[flag] ? "Daylight is dimmed. Press to show the whole map." : "Daylight is not dimmed. Press to dim the part still in daylight or twilight.")
+          : k === "lights"
           ? (this[flag] ? "Light glow is shown. Press to hide it." : "Light glow is hidden. Press to show it.")
           : stale ? `Aurora is a nowcast: set the time near now (within ${ASTRO.auroraWindowH} h) to see it.`
           : (this[flag] ? "Aurora chance is shown. Press to hide it." : "Aurora chance is hidden. Press to show it.");
@@ -3166,6 +3230,7 @@ class App {
     let html = r.discrete
       ? this.legendClasses(spec ? spec.label : keyLayer, r.unitLabel, r)
       : this.legendColumn(r.label || (spec ? spec.label : keyLayer), r.unitLabel, gradient, named || ticks, "", !!named);
+    html += this.astroLegendHTML();
     if (this.radarOn) html += this.radarLegendHTML();
     if (this.satOn && this.satManifest) html += this.satLegendHTML();
     // "i" shows the plain-language reading of the map; hidden until asked for.
@@ -3180,6 +3245,47 @@ class App {
     if (!preset || !preset.explain) this.hideExplain();
     else if (this.legendInfo) this.showExplain();
     else if (this.explainShown) this.showExplain();      // refresh the text in place while it is up
+  }
+
+  // Keys for the Stargazing overlays, one band per class like the heat classes: only the ones that are
+  // loaded and switched on. The colours are what the layer shows over the dark map.
+  astroLegendHTML() {
+    if (!this.astroActive() || !this.astro) return "";
+    const over = (c) => { const a = c[3] / 255, bg = [11, 16, 32];
+      return `rgb(${[0, 1, 2].map((i) => Math.round(c[i] * a + bg[i] * (1 - a))).join(",")})`; };
+    // The colour a layer shows at value v, interpolated between its stops like the map does.
+    const at = (stops, v) => {
+      if (v <= stops[0][0]) return stops[0].slice(1);
+      for (let k = 0; k < stops.length - 1; k++) if (v <= stops[k + 1][0]) {
+        const f = (v - stops[k][0]) / (stops[k + 1][0] - stops[k][0]);
+        return [1, 2, 3, 4].map((c) => stops[k][c] + (stops[k + 1][c] - stops[k][c]) * f);
+      }
+      return stops[stops.length - 1].slice(1);
+    };
+    let html = "";
+    if (this.lightsOn && this.astro.lights) {
+      const dn = this.astro.lights.meta.units === "dn", L = dn ? ASTRO.lightsDN : ASTRO.lights;
+      // Each band is drawn in the colour at the middle of its range (the top one at 1.6 times its lower edge).
+      const rows = L.classes.map(([th, name], i, all) => ({ name,
+        colour: th === 0 ? "rgb(11,16,32)" : over(at(L.stops, i + 1 < all.length ? Math.sqrt(th * all[i + 1][0]) : th * 1.6)) })).reverse();
+      html += this.legendBands("Light glow", "", rows, "Where it is dark, there is no glow");
+    }
+    if (this.auroraOn && this.astro.aurora && this.auroraValid()) {
+      const rows = ASTRO.aurora.classes.map(([th, name]) => ({ name, range: `${th}%+`, colour: over(at(ASTRO.aurora.stops, th * 1.4)) }));
+      html += this.legendBands("Aurora", "chance", rows);
+    }
+    return html;
+  }
+
+  // A key of flat bands, top to bottom, each with its name (and range) beside it.
+  legendBands(title, unit, rows, note = "") {
+    const n = rows.length, band = 100 / n;
+    const bar = [...rows].reverse().map((x, i) => `${x.colour} ${(i * band).toFixed(2)}% ${((i + 1) * band).toFixed(2)}%`).join(", ");
+    return `<div class="col"><div class="title"><span>${escapeHTML(title)}</span><span>${escapeHTML(unit)}</span></div>` +
+      `<div class="body cls sm"><div class="cls-names">` + rows.map((x) =>
+        `<div class="cls-name">${escapeHTML(x.name)}${x.range ? `<small>${escapeHTML(x.range)}</small>` : ""}</div>`).join("") + `</div>` +
+      `<div class="bar" style="background-image:linear-gradient(to top, ${bar})"></div></div>` +
+      (note ? `<div class="note">${escapeHTML(note)}</div>` : "") + `</div>`;
   }
 
   explainHTML() {
@@ -3533,6 +3639,7 @@ class App {
     if (h.get("uv") === "0") this.uvOn = false;
     if (h.get("aurora") === "0") this.auroraOn = false;
     if (h.get("lights") === "0") this.lightsOn = false;
+    if (h.get("mask") === "0") this.dayMaskOn = false;
     if (h.get("terrain") === "1") this.terrainOn = true;
   }
 
@@ -3588,6 +3695,7 @@ class App {
       ...(this.uvOn ? {} : { uv: "0" }),
       ...(this.auroraOn ? {} : { aurora: "0" }),
       ...(this.lightsOn ? {} : { lights: "0" }),
+      ...(this.dayMaskOn ? {} : { mask: "0" }),
       ...(this.terrainOn ? { terrain: "1" } : {}),
     });
     history.replaceState(null, "", `#${h}`);
@@ -3654,8 +3762,8 @@ class App {
     });
     // The isobar spacing follows zoom, and the key quotes it.
     this.map.on("zoomend", () => { if (this.preset) this.paintLegend(); });
-    this.map.on("mousemove", (e) => this.probe(e.lngLat));
-    this.map.on("mouseout", () => { document.getElementById("readout").hidden = true; });
+    this.map.on("mousemove", (e) => { this.probe(e.lngLat); this.auroraPop(e); });
+    this.map.on("mouseout", () => { document.getElementById("readout").hidden = true; this.auroraPop(null); });
   }
 
   // Coastline and administrative boundaries, drawn above the weather field so
