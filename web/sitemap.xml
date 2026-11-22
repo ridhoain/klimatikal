@@ -7,6 +7,18 @@
     <loc>https://klimatikal.com/about-us/</loc>
   </url>
   <url>
+    <loc>https://klimatikal.com/analysis/zom-central-java-aifs/</loc>
+    <xhtml:link rel="alternate" hreflang="id" href="https://klimatikal.com/analysis/zom-central-java-aifs/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://klimatikal.com/en/analysis/zom-central-java-aifs/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://klimatikal.com/analysis/zom-central-java-aifs/"/>
+  </url>
+  <url>
+    <loc>https://klimatikal.com/en/analysis/zom-central-java-aifs/</loc>
+    <xhtml:link rel="alternate" hreflang="id" href="https://klimatikal.com/analysis/zom-central-java-aifs/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://klimatikal.com/en/analysis/zom-central-java-aifs/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://klimatikal.com/analysis/zom-central-java-aifs/"/>
+  </url>
+  <url>
     <loc>https://klimatikal.com/atlas-cuaca/angin-bahorok/</loc>
     <xhtml:link rel="alternate" hreflang="id" href="https://klimatikal.com/atlas-cuaca/angin-bahorok/"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://klimatikal.com/en/atlas-cuaca/angin-bahorok/"/>

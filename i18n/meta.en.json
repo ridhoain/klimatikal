@@ -1,4 +1,8 @@
 {
+  "analysis/zom-central-java-aifs/": {
+    "title": "How well does an AI weather model forecast ten-day rainfall in Central Java seasonal zones? · Klimatikal",
+    "description": "A working paper testing ECMWF's AIFS AI model against CHIRPS and climatology for ten-day rainfall in the seasonal zones (ZOM) of Central Java, with an interactive zone map."
+  },
   "atlas-cuaca/": {
     "title": "Indonesian Weather Atlas · Klimatikal",
     "description": "A catalogue of weather and climate phenomena across Indonesia, from well documented to rarely recorded, local and regional. Each phenomenon has its own page: the name, the scientific explanation, local knowledge and where it occurs."

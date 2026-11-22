@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seberapa baik model cuaca AI memprakirakan hujan dasarian di zona musim Jawa Tengah? · Klimatikal</title>
+<meta name="description" content="Laporan awal: validasi prakiraan hujan dasarian model AI ECMWF AIFS terhadap CHIRPS dan klimatologi di zona musim (ZOM) Jawa Tengah, dengan peta interaktif per zona.">
+<link rel="canonical" href="https://klimatikal.com/analysis/zom-central-java-aifs/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#0D0630">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Seberapa baik model cuaca AI memprakirakan hujan dasarian di zona musim Jawa Tengah? · Klimatikal">
+<meta property="og:description" content="Laporan awal: validasi prakiraan hujan dasarian model AI ECMWF AIFS terhadap CHIRPS dan klimatologi di zona musim (ZOM) Jawa Tengah, dengan peta interaktif per zona.">
+<meta property="og:url" content="https://klimatikal.com/analysis/zom-central-java-aifs/">
+<meta property="og:image" content="https://klimatikal.com/brand/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/about-us/about.css?v=2228941ce9">
+<link rel="stylesheet" href="/nav-product.css?v=a9d8eaceab">
+<link rel="stylesheet" href="/atlas-cuaca/atlas.css?v=d78505929b">
+<link rel="stylesheet" href="/analysis/zom-central-java-aifs/analysis.css?v=9486ac4c39">
+<script>
+/* Language is chosen before first paint so the page never flashes the wrong one. */
+(function () {
+  var l = null;
+  try { l = localStorage.getItem("kl-lang"); } catch (e) {}
+  if (l !== "id" && l !== "en") l = (navigator.language || "id").toLowerCase().indexOf("id") === 0 ? "id" : "en";
+  var d = document.documentElement; d.setAttribute("data-lang", l); d.lang = l;
+})();
+</script>
+<script src="/analysis/zom-central-java-aifs/analysis.js?v=fea8739b3f" defer></script>
+</head>
+<body class="atlas-page eval-page">
+<header class="site-header">
+  <a class="logo" href="/" aria-label="Klimatikal home">
+    <picture>
+      <source media="(max-width: 600px)" srcset="/brand/klimatikal-mark-on-dark.svg">
+      <img src="/brand/klimatikal-lockup-on-dark.svg?v=2" alt="Klimatikal" class="logo-img">
+    </picture>
+  </a>
+  <nav aria-label="Main">
+    <a href="/"><span lang="id">Peta cuaca</span><span lang="en">Weather map</span></a>
+    <a href="/atlas-cuaca/">Atlas Cuaca</a>
+    <div class="navdd"><button type="button" aria-haspopup="true"><span lang="id">Produk</span><span lang="en">Product</span></button><div class="menu"><a href="/product/forecast-services/"><span lang="id">Layanan prakiraan cuaca dan iklim</span><span lang="en">Forecast services</span></a></div></div>
+    <a href="/about-us/"><span lang="id">Tentang kami</span><span lang="en">About us</span></a>
+    <a href="/contact-us/"><span lang="id">Kontak</span><span lang="en">Contact us</span></a>
+    <span class="lang" role="group" aria-label="Language">
+      <button type="button" data-set-lang="id" aria-pressed="true">ID</button><button type="button" data-set-lang="en" aria-pressed="false">EN</button>
+    </span>
+  </nav>
+</header>
+<main class="eval paper">
+  <p class="eyebrow"><span lang="id">Laporan awal · hasil sementara</span><span lang="en">Working paper · preliminary results</span></p>
+  <h1><span lang="id">Seberapa baik model cuaca AI memprakirakan hujan dasarian di zona musim Jawa Tengah?</span><span lang="en">How well does an AI weather model forecast ten-day rainfall in the seasonal zones of Central Java?</span></h1>
+  <p class="byline">Ainur Ridho · Klimatikal · <span lang="id">Data sampai dasarian 21 Oktober 2026</span><span lang="en">Data through the ten-day period starting 21 October 2026</span></p>
+
+  <section class="abstract" aria-labelledby="h-abs">
+    <h2 id="h-abs"><span lang="id">Abstrak</span><span lang="en">Abstract</span></h2>
+    <p><span lang="id">Model cuaca berbasis kecerdasan buatan kini tersedia terbuka, tetapi belum jelas seberapa andal model itu untuk hujan pada skala zona musim di Indonesia. Kami menguji ECMWF AIFS Single, satu model AI publik, pada total curah hujan per dasarian (10 hari) di 54 zona musim (ZOM) BMKG yang beririsan dengan Jawa Tengah. Prakiraan dibandingkan dengan pengamatan CHIRPS v3.0 dan dengan klimatologi CHIRPS 1991–2020, untuk 60 dasarian (Maret 2025–Oktober 2026) yang seluruhnya berada di luar data pelatihan model. Pada rata-rata 10 ZOM yang cukup luas, kesalahan absolut rata-rata model lebih kecil <b data-v="l0">–</b> daripada klimatologi pada lead 0 hari (selang 95%: <span data-v="l0ci"></span>) dan <b data-v="l5">–</b> pada lead 5 hari (<span data-v="l5ci"></span>). Keunggulan ini tidak merata sepanjang tahun: <b data-v="dry">–</b> pada musim kemarau (Jun–Sep), tetapi hanya <b data-v="wet">–</b> pada musim hujan (Des–Mar) dengan selang yang mencakup nol (<span data-v="wetci"></span>). Sampelnya pendek, dan versi model berganti di tengah periode, sehingga hasil ini bersifat sementara.</span><span lang="en">AI-based weather models are now openly available, but it is not clear how reliable they are for rainfall at the scale of seasonal zones in Indonesia. We tested ECMWF AIFS Single, one public AI model, on ten-day (dasarian) rainfall totals in the 54 BMKG seasonal zones (ZOM) that overlap Central Java. Forecasts were compared with CHIRPS v3.0 observations and with the 1991–2020 CHIRPS climatology, over 60 ten-day periods (March 2025–October 2026) that all lie outside the model's training data. Averaged over the 10 zones that are large enough for the model grid, the model's mean absolute error was <b data-v="l0">–</b> lower than climatology at a 0-day lead (95% interval: <span data-v="l0ci"></span>) and <b data-v="l5">–</b> lower at a 5-day lead (<span data-v="l5ci"></span>). The advantage is not even through the year: <b data-v="dry">–</b> in the dry season (Jun–Sep) but only <b data-v="wet">–</b> in the wet season (Dec–Mar), with an interval that includes zero (<span data-v="wetci"></span>). The sample is short and the model version changed during the period, so the results are preliminary.</span></p>
+  </section>
+
+  <h2 id="s1"><span lang="id">1. Pendahuluan</span><span lang="en">1. Introduction</span></h2>
+  <p><span lang="id">Di Indonesia, keputusan pertanian dan pengelolaan air sangat bergantung pada hujan, dan BMKG membagi wilayah menjadi zona musim (ZOM) yang masing-masing punya pola musim hujan dan kemarau sendiri <a href="#ref-8">[8]</a>. Model cuaca berbasis pembelajaran mesin, yang dilatih dengan data analisis ulang puluhan tahun, kini menghasilkan prakiraan global dalam hitungan menit dan sebagian dirilis terbuka, termasuk AIFS dari ECMWF <a href="#ref-3">[3]</a>. Model semacam ini umumnya dinilai dengan ukuran global seperti geopotensial atau suhu. Hujan lebih sulit: ia jarang, sangat lokal, dan model beresolusi sekitar 25 km tidak menangkap detail zona yang kecil.</span><span lang="en">In Indonesia, farming and water management depend heavily on rainfall, and BMKG divides the country into seasonal zones (ZOM), each with its own wet and dry season pattern <a href="#ref-8">[8]</a>. Machine-learning weather models, trained on decades of reanalysis data, now produce global forecasts in minutes, and some are released openly, including ECMWF's AIFS <a href="#ref-3">[3]</a>. Such models are usually judged with global measures such as geopotential height or temperature. Rainfall is harder: it is intermittent, very local, and a model with about 25 km resolution cannot resolve small zones.</span></p>
+  <p><span lang="id">Tulisan ini menjawab satu pertanyaan sempit: dibandingkan dengan pengamatan satelit-stasiun CHIRPS, apakah total hujan 10 hari dari AIFS lebih dekat ke kenyataan daripada sekadar rata-rata iklim (klimatologi), pada zona musim Jawa Tengah, dan seberapa cepat keunggulannya hilang bila prakiraan dibuat lebih awal? Cakupan kami sengaja terbatas pada prakiraan sampai 15 hari. Prakiraan musim dan awal musim hujan tidak diuji karena melampaui jangkauan model, dan tulisan ini tidak membandingkan atau menilai prakiraan operasional lembaga mana pun, termasuk BMKG.</span><span lang="en">This paper asks one narrow question: measured against the CHIRPS satellite-gauge product, are AIFS ten-day rainfall totals closer to what happened than the climate average (climatology) in the seasonal zones of Central Java, and how quickly does that advantage fade when the forecast is issued earlier? The scope is deliberately limited to forecasts up to 15 days. Seasonal forecasts and rainy-season onset are not tested because they lie beyond the model's range, and this paper neither compares nor scores the operational forecasts of any agency, including BMKG.</span></p>
+
+  <h2 id="s2"><span lang="id">2. Data dan metode</span><span lang="en">2. Data and methods</span></h2>
+  <h3><span lang="id">2.1 Wilayah studi</span><span lang="en">2.1 Study area</span></h3>
+  <p><span lang="id">Batas dan nomor ZOM berasal dari layanan peta publik BMKG <a href="#ref-8">[8]</a>. Kami memakai 54 ZOM yang beririsan dengan Jawa Tengah dan menghitung luasnya sendiri (proyeksi UTM 49S). Rata-rata utama memakai 10 ZOM yang memiliki sedikitnya 28 piksel CHIRPS darat (sekitar 850 km², lebih dari satu sel model) dan sedikitnya 80% luasnya di dalam provinsi. ZOM lain tetap ditampilkan dengan peringatan, tetapi tidak dipakai untuk kesimpulan.</span><span lang="en">ZOM boundaries and numbers come from BMKG's public map service <a href="#ref-8">[8]</a>. We use the 54 zones that overlap Central Java and compute their areas ourselves (UTM zone 49S). The main average uses the 10 zones with at least 28 land CHIRPS pixels (about 850 km², more than one model cell) and at least 80% of their area inside the province. The other zones are still shown, with a warning, but are not used for conclusions.</span></p>
+  <h3><span lang="id">2.2 Pengamatan</span><span lang="en">2.2 Observations</span></h3>
+  <p><span lang="id">Sebagai pembanding kami memakai CHIRPS v3.0 versi final <a href="#ref-1">[1]</a><a href="#ref-2">[2]</a>, produk curah hujan yang memadukan citra satelit dan data stasiun pada resolusi 0,05° (sekitar 5 km). Total dasarian dihitung untuk tanggal 1–10, 11–20 dan 21–akhir bulan, lalu dirata-ratakan per ZOM dengan bobot luas piksel darat (sub-sampel 5×5 per piksel). CHIRPS adalah perkiraan, bukan pengukuran langsung; dalam pemeriksaan kami atas 1991–2020 di Jawa, CHIRPS v3.0 rata-rata sekitar 11% lebih basah daripada v2.0.</span><span lang="en">As the reference we use CHIRPS v3.0 (final) <a href="#ref-1">[1]</a><a href="#ref-2">[2]</a>, a rainfall product that blends satellite imagery with gauge data at 0.05° (about 5 km). Ten-day totals are computed for days 1–10, 11–20 and 21–month end, then averaged per zone with land-pixel area weights (5×5 sub-sampling per pixel). CHIRPS is an estimate, not a direct measurement; in our check of 1991–2020 over Java, CHIRPS v3.0 was on average about 11% wetter than v2.0.</span></p>
+  <h3><span lang="id">2.3 Prakiraan</span><span lang="en">2.3 Forecasts</span></h3>
+  <p><span lang="id">AIFS Single adalah model cuaca global berbasis jaringan saraf dari ECMWF, beresolusi 0,25°, dengan prakiraan sampai 15 hari <a href="#ref-3">[3]</a><a href="#ref-4">[4]</a>. Kami mengambil prakiraan 00 UTC dari data terbuka ECMWF <a href="#ref-6">[6]</a>. Total dasarian adalah selisih curah hujan akumulasi (<i>tp</i>) pada akhir dan awal dasarian. <i>Lead</i> adalah jumlah hari antara waktu prakiraan dibuat dan awal dasarian; karena seluruh dasarian harus muat dalam 15 hari, lead dibatasi 0–5 hari. Medan model diinterpolasi bilinear ke piksel CHIRPS lalu dirata-ratakan dengan bobot yang sama seperti pengamatan.</span><span lang="en">AIFS Single is a global neural-network weather model from ECMWF with 0.25° resolution and forecasts to 15 days <a href="#ref-3">[3]</a><a href="#ref-4">[4]</a>. We took the 00 UTC forecasts from ECMWF open data <a href="#ref-6">[6]</a>. A ten-day total is the difference in accumulated precipitation (<i>tp</i>) between the end and the start of the period. <i>Lead</i> is the number of days between when the forecast was issued and the start of the period; because the whole period must fit within 15 days, lead is limited to 0–5 days. The model field is interpolated bilinearly to CHIRPS pixels and averaged with the same weights as the observations.</span></p>
+  <p><span lang="id">Periode yang dinilai adalah 1 Maret 2025 sampai 31 Oktober 2026 (60 dasarian). AIFS dilatih dengan ERA5 1979–2022 <a href="#ref-5">[5]</a> dan disetel-halus dengan analisis operasional 2016–2022 <a href="#ref-7">[7]</a><a href="#ref-4">[4]</a>, sehingga seluruh periode ini berada di luar data pelatihan. Versi 1.1.0 dirilis 27 Agustus 2025 untuk memperbaiki masalah prakiraan hujan pada versi awal <a href="#ref-4">[4]</a>; karena itu hasil juga dipisah menurut tanggal prakiraan dibuat.</span><span lang="en">The scored period is 1 March 2025 to 31 October 2026 (60 ten-day periods). AIFS was trained on ERA5 1979–2022 <a href="#ref-5">[5]</a> and fine-tuned on operational analyses 2016–2022 <a href="#ref-7">[7]</a><a href="#ref-4">[4]</a>, so the whole period lies outside the training data. Version 1.1.0 was released on 27 August 2025 to correct a precipitation issue in the first version <a href="#ref-4">[4]</a>; results are therefore also split by the date the forecast was issued.</span></p>
+  <h3><span lang="id">2.4 Klimatologi, anomali, dan ukuran verifikasi</span><span lang="en">2.4 Climatology, anomaly and verification measures</span></h3>
+  <p><span lang="id">Klimatologi adalah rata-rata CHIRPS 1991–2020 untuk dasarian yang sama dalam tahun (36 dasarian per tahun), dan anomali adalah nilai dikurangi klimatologi. Kami memakai tiga ukuran. <b>Skill MAE</b> = 1 − (galat absolut rata-rata prakiraan ÷ galat absolut rata-rata klimatologi): nol berarti sama dengan klimatologi, satu berarti sempurna, negatif berarti lebih buruk <a href="#ref-10">[10]</a><a href="#ref-11">[11]</a>. <b>Korelasi anomali</b> mengukur apakah prakiraan menaikkan dan menurunkan hujan dari normal pada saat yang sama dengan kenyataan. <b>Bias</b> adalah rata-rata prakiraan − pengamatan (mm per dasarian). Selang kepercayaan 95% dihitung dengan bootstrap blok melingkar (blok 3 dasarian, 1.000 ulangan) agar korelasi antar-dasarian yang berurutan ikut diperhitungkan <a href="#ref-9">[9]</a>.</span><span lang="en">Climatology is the 1991–2020 CHIRPS mean for the same dasarian of the year (36 per year), and the anomaly is the value minus climatology. We use three measures. <b>MAE skill</b> = 1 − (forecast mean absolute error ÷ climatology mean absolute error): zero means the same as climatology, one is perfect, negative is worse <a href="#ref-10">[10]</a><a href="#ref-11">[11]</a>. <b>Anomaly correlation</b> measures whether the forecast raises and lowers rainfall from normal at the same times as reality. <b>Bias</b> is the mean forecast − observation (mm per ten days). 95% confidence intervals come from a circular block bootstrap (blocks of 3 periods, 1,000 resamples) so that correlation between consecutive periods is respected <a href="#ref-9">[9]</a>.</span></p>
+  <h3><span lang="id">2.5 Penyajian peta</span><span lang="en">2.5 Map presentation</span></h3>
+  <p><span lang="id">Peta memakai grid CHIRPS 0,05° dan menampilkan CHIRPS, klimatologi, anomali, prakiraan AIFS dan galatnya (AIFS − CHIRPS). Medan AIFS ditampilkan setelah interpolasi ke grid yang sama, sehingga detail piksel berasal dari interpolasi, bukan dari model, yang selnya 0,25°. Laut ditutup dengan garis pantai dasar peta Klimatikal; piksel pantai CHIRPS diperluas sampai tiga piksel agar mencapai garis pantai. Data peta dikodekan 8-bit dalam skala akar kuadrat (galat kuantisasi sampai sekitar 4 mm), dan batas ZOM disederhanakan serta dipotong pada garis pantai.</span><span lang="en">The map uses the 0.05° CHIRPS grid and shows CHIRPS, climatology, anomaly, the AIFS forecast and its error (AIFS − CHIRPS). The AIFS field is shown after interpolation to the same grid, so pixel detail comes from interpolation, not from the model, whose cells are 0.25°. The sea is masked with the Klimatikal base-map coastline; CHIRPS coastal pixels are extended by up to three pixels to reach the coastline. Map data are 8-bit coded on a square-root scale (quantisation error up to about 4 mm), and ZOM boundaries are simplified and clipped at the coastline.</span></p>
+
+  <h2 id="s3"><span lang="id">3. Hasil</span><span lang="en">3. Results</span></h2>
+  <h3><span lang="id">3.1 Peta interaktif dan validasi per zona</span><span lang="en">3.1 Interactive map and zone-level validation</span></h3>
+  <p><span lang="id">Gambar 1 memuat semua data. Pilih lapisan, geser waktu, lalu klik sebuah zona (atau pilih dari daftar) untuk membuka perbandingan prakiraan dan pengamatan di zona itu. Lapisan AIFS dan galatnya memakai lead yang dipilih; lapisan skill menampilkan ukuran per zona.</span><span lang="en">Figure 1 holds all the data. Choose a layer, move through time, then click a zone (or pick it from the list) to open the comparison of forecast and observation for that zone. The AIFS and error layers use the selected lead; the skill layer shows the measure for each zone.</span></p>
+  <figure class="figmap" aria-labelledby="cap-map">
+  <div class="ctl" role="group" id="layer-ctl" aria-label="Layer"></div>
+  <div class="timebar" id="timebar">
+    <button type="button" id="t-prev" aria-label="Previous">◀</button>
+    <button type="button" id="t-play" aria-label="Play">▶</button>
+    <button type="button" id="t-next" aria-label="Next">▶|</button>
+    <input type="range" id="t-range" min="0" max="62" value="62">
+    <output id="t-out" for="t-range" aria-live="off"></output>
+  </div>
+  <div class="ctl" id="skill-ctl" hidden>
+    <label for="sk-lead"><span lang="id">Lead</span><span lang="en">Lead</span></label> <select id="sk-lead"></select>
+    <span class="ctl" role="group" id="sk-metric" style="margin:0"></span>
+  </div>
+  <div class="mapwrap">
+    <div class="mapcol">
+      <div class="mapbox" id="mapbox"></div>
+      <p class="maphover" id="map-hover" aria-live="polite"></p>
+      <div class="legend-bar" id="legend"></div>
+    </div>
+    <section class="zonepanel" aria-labelledby="zp-title">
+      <div class="ctl" style="margin-top:0"><label for="zone-sel"><span lang="id">Zona</span><span lang="en">Zone</span></label> <select id="zone-sel"></select></div>
+      <h3 id="zp-title">ZOM</h3>
+      <p class="zfacts" id="zp-facts"></p>
+      <p id="zp-warn" class="zfacts"></p>
+      <h4><span lang="id">Skor menurut lead (selang 95%)</span><span lang="en">Scores by lead (95% interval)</span></h4>
+      <div class="sc-wrap" id="zp-scores"></div>
+      <h4><span lang="id">Dasarian demi dasarian</span><span lang="en">Ten-day period by period</span></h4>
+      <div class="ctl"><label for="ts-lead"><span lang="id">Lead prakiraan</span><span lang="en">Forecast lead</span></label> <select id="ts-lead"><option value="0">0</option><option value="3">3</option></select></div>
+      <div class="tsbox"><div id="fig-ts" tabindex="0" role="img"></div></div>
+      <p class="readout" id="ts-readout" aria-live="polite"></p>
+      <details class="tbl"><summary><span lang="id">Tabel angka</span><span lang="en">Table of values</span></summary><div id="ts-table"></div></details>
+    </section>
+  </div>
+  <figcaption id="cap-map"><span lang="id"><b>Gambar 1.</b> Peta zona musim Jawa Tengah dengan curah hujan per dasarian (CHIRPS v3.0, grid 0,05°), klimatologi 1991–2020 untuk dasarian yang sama, anomali, prakiraan AIFS dan galatnya, serta skill per zona. Garis putus-putus pada batas zona menandai zona di luar rata-rata 10 ZOM; angka di peta adalah nomor ZOM bagi zona yang cukup luas. Panel kanan: skor zona terpilih dan total per dasarian (mm) untuk CHIRPS, AIFS dan klimatologi; garis vertikal tebal menunjukkan dasarian yang tampil di peta. Klik grafik atau pakai panah kiri/kanan untuk menggeser peta.</span><span lang="en"><b>Figure 1.</b> Map of the Central Java seasonal zones with ten-day rainfall (CHIRPS v3.0, 0.05° grid), the 1991–2020 climatology for the same period, the anomaly, the AIFS forecast and its error, and skill by zone. Dashed zone outlines mark zones outside the 10-zone average; numbers on the map are ZOM numbers for the larger zones. Right panel: scores for the selected zone and ten-day totals (mm) for CHIRPS, AIFS and climatology; the solid vertical line marks the period shown on the map. Click the chart or use the left/right arrow keys to move the map.</span></figcaption>
+  </figure>
+  <noscript><p class="note"><span lang="id">Peta dan grafik membutuhkan JavaScript.</span><span lang="en">The map and charts need JavaScript.</span></p></noscript>
+
+  <h3><span lang="id">3.2 Skill rata-rata dan pengaruh lead</span><span lang="en">3.2 Average skill and the effect of lead time</span></h3>
+  <div class="stats">
+    <div class="stat"><b data-v="l0">–</b><span><span lang="id">lebih kecil galat rata-rata daripada klimatologi pada lead 0 hari</span><span lang="en">lower average error than climatology at a 0-day lead</span></span><small><span data-v="l0ci"></span></small></div>
+    <div class="stat"><b data-v="l5">–</b><span><span lang="id">pada lead 5 hari: keunggulan menyusut tetapi tetap di atas nol</span><span lang="en">at a 5-day lead: the advantage shrinks but stays above zero</span></span><small><span data-v="l5ci"></span></small></div>
+    <div class="stat"><b data-v="dry">–</b><span><span lang="id">pada musim kemarau (Jun–Sep, lead 2 hari)</span><span lang="en">in the dry season (Jun–Sep, 2-day lead)</span></span><small><span data-v="dryci"></span></small></div>
+  </div>
+  <p><span lang="id">Gambar 2 menunjukkan skill rata-rata 10 ZOM menurut lead. Model lebih baik daripada klimatologi pada semua lead 0–5 hari, dengan selang kepercayaan yang berada di atas nol, dan keunggulannya menurun perlahan seiring lead. Selang yang lebar mencerminkan sampel yang hanya 60 dasarian. Karena lead 0–5 memakai dasarian yang sama berulang kali, hasil antar-lead tidak independen.</span><span lang="en">Figure 2 shows the 10-zone average skill by lead. The model beats climatology at every lead from 0 to 5 days, with confidence intervals above zero, and its advantage declines slowly with lead. The wide intervals reflect a sample of only 60 periods. Because leads 0–5 reuse the same ten-day periods, results across leads are not independent.</span></p>
+  <div class="ctl" role="group" id="metric-ctl"></div>
+  <figure class="chart"><div id="fig-lead" role="img"></div>
+    <figcaption><span lang="id"><b>Gambar 2.</b> Skill rata-rata 10 ZOM menurut lead. Titik: nilai rata-rata; garis vertikal: selang kepercayaan 95%. Garis putus-putus di nol berarti sama dengan klimatologi (skill) atau tanpa hubungan (korelasi).</span><span lang="en"><b>Figure 2.</b> Average skill of the 10 zones by lead. Dots: mean value; vertical bars: 95% confidence interval. The dashed line at zero means no better than climatology (skill) or no relationship (correlation).</span></figcaption></figure>
+
+  <h3><span lang="id">3.3 Musim hujan lebih sulit</span><span lang="en">3.3 The wet season is harder</span></h3>
+  <p id="season-text"></p>
+
+  <h3><span lang="id">3.4 Dua versi model dalam satu periode</span><span lang="en">3.4 Two model versions in one period</span></h3>
+  <p id="version-text"></p>
+
+  <h3><span lang="id">3.5 Perbedaan antarzona</span><span lang="en">3.5 Differences between zones</span></h3>
+  <p><span lang="id">Skill per zona (lapisan "Skill per zona" pada Gambar 1) bervariasi, dan zona kecil atau zona yang sebagian di luar provinsi menunjukkan nilai yang kurang stabil. ZOM 147 hanya sekitar 62% di dalam Jawa Tengah dan dinilai terpisah; ZOM 107 (sekitar 176 km², 6 piksel CHIRPS) lebih kecil daripada satu sel model (0,25° ≈ 700 km²) sehingga hasilnya tidak dipakai. Karena tiap zona memakai sampel 60 dasarian yang sama dengan rata-rata, selang per zona lebih lebar daripada selang rata-rata, dan perbedaan antarzona sebaiknya tidak ditafsirkan sebagai perbedaan nyata tanpa melihat selangnya.</span><span lang="en">Skill by zone (the "Skill by zone" layer in Figure 1) varies, and small zones or zones partly outside the province show less stable values. ZOM 147 lies only about 62% inside Central Java and is scored separately; ZOM 107 (about 176 km², 6 CHIRPS pixels) is smaller than one model cell (0.25° ≈ 700 km²) so its result is not used. Because each zone uses the same 60-period sample as the average, per-zone intervals are wider than the interval for the average, and differences between zones should not be read as real without looking at the intervals.</span></p>
+
+  <h2 id="s4"><span lang="id">4. Kesimpulan</span><span lang="en">4. Conclusions</span></h2>
+  <p><span lang="id">Pada 60 dasarian di luar data pelatihan, total hujan 10 hari dari AIFS Single lebih dekat ke CHIRPS daripada klimatologi di zona-zona musim Jawa Tengah yang cukup luas, pada semua lead 0–5 hari. Keunggulannya terutama datang dari musim kemarau; pada musim hujan, ketika hujan paling menentukan, keunggulan belum terbukti dengan data yang ada. Temuan ini adalah petunjuk awal, bukan pengujian yang tuntas, karena beberapa keterbatasan berikut:</span><span lang="en">Over 60 ten-day periods outside the training data, AIFS Single ten-day rainfall totals were closer to CHIRPS than climatology in the larger seasonal zones of Central Java, at every lead from 0 to 5 days. The advantage comes mainly from the dry season; in the wet season, when rainfall matters most, the advantage is not demonstrated by the available data. These findings are early indications, not a complete test, because of the following limitations:</span></p>
+  <ul class="method">
+    <li><span lang="id">Periode hanya dua puluh bulan, sekitar satu setengah musim hujan, dan versi model berganti di tengahnya (18 dan 42 dasarian pada lead 0 sebelum dan sesudah 27 Agustus 2025).</span><span lang="en">The period is only twenty months, about one and a half wet seasons, and the model version changed in the middle (18 and 42 periods at lead 0 before and after 27 August 2025).</span></li>
+    <li><span lang="id">Pembandingnya hanya klimatologi. Kami belum menguji pembanding yang lebih kuat, misalnya anomali dasarian sebelumnya.</span><span lang="en">The benchmark is climatology only. We have not tested a stronger benchmark such as the previous period's anomaly.</span></li>
+    <li><span lang="id">Acuannya CHIRPS, sebuah perkiraan, dan model beresolusi 0,25° tidak menangkap detail zona kecil.</span><span lang="en">The reference is CHIRPS, an estimate, and a 0.25° model cannot resolve the detail of small zones.</span></li>
+    <li><span lang="id">Hanya satu model dan satu wilayah yang diuji, sehingga hasil ini tidak boleh digeneralisasi ke model AI lain atau wilayah lain.</span><span lang="en">Only one model and one region were tested, so the results should not be generalised to other AI models or regions.</span></li>
+    <li><span lang="id">Awal musim hujan dan prakiraan musiman tidak diuji karena melampaui jangkauan 15 hari model.</span><span lang="en">Rainy-season onset and seasonal forecasts are not tested because they lie beyond the model's 15-day range.</span></li>
+  </ul>
+
+  <h2 id="s5"><span lang="id">Data dan ucapan terima kasih</span><span lang="en">Data and acknowledgements</span></h2>
+  <p><span lang="id">CHIRPS v3.0 disediakan oleh Climate Hazards Center, UC Santa Barbara. Prakiraan AIFS berasal dari data terbuka ECMWF (lisensi CC BY 4.0); halaman ini berisi data ECMWF yang telah diolah. Penomoran dan batas ZOM berasal dari layanan peta publik BMKG; batas pada peta ini disederhanakan dan bukan produk resmi BMKG. Garis pantai dan batas provinsi berasal dari data dasar peta cuaca Klimatikal.</span><span lang="en">CHIRPS v3.0 is provided by the Climate Hazards Center, UC Santa Barbara. AIFS forecasts come from ECMWF open data (CC BY 4.0); this page contains modified ECMWF data. ZOM numbering and boundaries come from BMKG's public map service; the boundaries on this map are simplified and are not an official BMKG product. Coastlines and province borders come from the Klimatikal weather map base data.</span></p>
+
+  <h2 id="s6"><span lang="id">Referensi</span><span lang="en">References</span></h2>
+  <ol class="refs">
+    <li id="ref-1">Funk, C., Peterson, P., Landsfeld, M., et al. (2015). The climate hazards infrared precipitation with stations: a new environmental record for monitoring extremes. <i>Scientific Data</i>, 2, 150066. <a href="https://doi.org/10.1038/sdata.2015.66">doi:10.1038/sdata.2015.66</a></li>
+    <li id="ref-2">Climate Hazards Center, UC Santa Barbara. CHIRPS v3.0 (final, daily, dekadal and pentadal). <a href="https://data.chc.ucsb.edu/products/CHIRPS/v3.0/">data.chc.ucsb.edu/products/CHIRPS/v3.0</a></li>
+    <li id="ref-3">Lang, S., Alexe, M., Chantry, M., et al. (2024). AIFS – ECMWF's data-driven forecasting system. <i>arXiv</i>:2406.01465. <a href="https://arxiv.org/abs/2406.01465">arxiv.org/abs/2406.01465</a></li>
+    <li id="ref-4">Moldovan, G., Pinnington, E., Nemesio, A. P., Lang, S., et al. (2025). An update to ECMWF's machine-learned weather forecast model AIFS. <i>arXiv</i>:2509.18994. <a href="https://arxiv.org/abs/2509.18994">arxiv.org/abs/2509.18994</a></li>
+    <li id="ref-5">Hersbach, H., Bell, B., Berrisford, P., et al. (2020). The ERA5 global reanalysis. <i>Quarterly Journal of the Royal Meteorological Society</i>, 146, 1999–2049. <a href="https://doi.org/10.1002/qj.3803">doi:10.1002/qj.3803</a></li>
+    <li id="ref-6">ECMWF. ECMWF open data (real-time forecasts, CC BY 4.0). <a href="https://www.ecmwf.int/en/forecasts/datasets/open-data">ecmwf.int/en/forecasts/datasets/open-data</a></li>
+    <li id="ref-7">ECMWF. AIFS Single 1.0 model card, Hugging Face. <a href="https://huggingface.co/ecmwf/aifs-single-1.0">huggingface.co/ecmwf/aifs-single-1.0</a></li>
+    <li id="ref-8">Badan Meteorologi, Klimatologi, dan Geofisika (BMKG). Peta Zona Musim (ZOM), layanan peta publik. <a href="https://gis.bmkg.go.id/arcgis/rest/services/Hosted/Peta_Zona_Musim_ZOM/FeatureServer/0">gis.bmkg.go.id</a></li>
+    <li id="ref-9">Politis, D. N., &amp; Romano, J. P. (1992). A nonparametric resampling procedure for multivariate confidence regions in time series analysis. In C. Page &amp; R. LePage (Eds.), <i>Computing Science and Statistics</i> (pp. 98–103). Springer. <a href="https://doi.org/10.1007/978-1-4612-2856-1_12">doi:10.1007/978-1-4612-2856-1_12</a></li>
+    <li id="ref-10">Murphy, A. H. (1988). Skill scores based on the mean square error and their relationships to the correlation coefficient. <i>Monthly Weather Review</i>, 116, 2417–2424. <a href="https://doi.org/10.1175/1520-0493(1988)116%3C2417:SSBOTM%3E2.0.CO;2">doi:10.1175/1520-0493(1988)116&lt;2417:SSBOTM&gt;2.0.CO;2</a></li>
+    <li id="ref-11">Wilks, D. S. (2019). <i>Statistical Methods in the Atmospheric Sciences</i> (4th ed.). Elsevier.</li>
+  </ol>
+</main>
+
+
+<footer class="site-footer">
+  <a href="/"><span lang="id">← Kembali ke peta cuaca</span><span lang="en">← Back to the weather map</span></a>
+  <span>© 2026 Klimatikal · Weather and Climate Intelligence · <a href="/privacy/">Privacy</a></span>
+</footer>
+</body>
+</html>

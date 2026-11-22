@@ -1,0 +1,129 @@
+/* /analysis/zom-central-java-aifs/ . Builds on about.css + atlas.css (header, footer, language switch).
+   Palette: amethyst page, deep blue panels, teal lines, lime accent. Map = canvas (CHIRPS) under SVG (zones); charts = inline SVG drawn by analysis.js. */
+html[data-lang="en"] body [lang="id"], html[data-lang="id"] body [lang="en"] { display: none; }
+.eval-page { --obs: #E6F9AF; --fc: #F2A65A; --clim: #8BBEB2; --grid: rgba(139, 190, 178, .22); --sea: #0e1b2e; }
+main.eval { max-width: 1120px; margin: 0 auto; padding: 36px 16px 72px; }
+main.eval h1 { max-width: 26ch; }
+.eval .lede { max-width: 66ch; font-size: 17px; margin: 14px 0 0; }
+.eval p, .eval li { max-width: 72ch; }
+.eval .note { font-size: 14px; color: var(--kl-teal); }
+.eval .prose { max-width: 820px; }
+
+/* controls */
+.ctl { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; margin: 10px 0; font-size: 14px; }
+.ctl label { color: var(--kl-teal); }
+.ctl button, .ctl select {
+  font: inherit; color: var(--text); background: var(--kl-deep); border: 1px solid rgba(139, 190, 178, .4);
+  border-radius: 8px; padding: 6px 12px; cursor: pointer;
+}
+.ctl button[aria-pressed="true"] { background: var(--kl-lime); color: var(--kl-amethyst); border-color: var(--kl-lime); font-weight: 600; }
+.ctl button:focus-visible, .ctl select:focus-visible, .ctl input:focus-visible { outline: 2px solid var(--kl-lime); outline-offset: 2px; }
+.ctl .sp { flex: 1 1 12px; }
+.ctl[hidden] { display: none; }
+.timebar { display: flex; align-items: center; gap: 8px; margin: 6px 0 12px; font-size: 14px; flex-wrap: wrap; }
+.timebar button { font: inherit; color: var(--text); background: var(--kl-deep); border: 1px solid rgba(139, 190, 178, .4); border-radius: 8px; width: 38px; height: 34px; cursor: pointer; line-height: 1; }
+.timebar button:focus-visible { outline: 2px solid var(--kl-lime); outline-offset: 2px; }
+.timebar input[type=range] { flex: 1 1 200px; min-width: 140px; accent-color: #E6F9AF; }
+.timebar output { min-width: 15.5em; font-variant-numeric: tabular-nums; color: var(--kl-lime); font-weight: 600; }
+.timebar[hidden] { display: none; }
+
+/* map + zone panel */
+.mapwrap { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr); gap: 18px; align-items: start; margin: 8px 0 28px; }
+@media (max-width: 880px) { .mapwrap { grid-template-columns: minmax(0, 1fr); } }
+.mapcol { min-width: 0; }
+.mapbox { position: relative; width: 100%; aspect-ratio: 3771 / 3000; background: #fff; border: 1px solid rgba(139, 190, 178, .25); border-radius: 14px; overflow: hidden; touch-action: manipulation; }
+.mapbox canvas, .mapbox svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.mapbox canvas { image-rendering: pixelated; }
+.mapbox .sea { fill: #fff; stroke: none; }
+.mapbox .coast { fill: none; stroke: rgba(20, 30, 50, .8); stroke-width: 1.1; vector-effect: non-scaling-stroke; pointer-events: none; }
+.mapbox .border { fill: none; stroke: rgba(20, 30, 50, .4); stroke-width: 1; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke; pointer-events: none; }
+.mapbox .zone { fill: rgba(255, 255, 255, 0); stroke: rgba(20, 30, 50, .5); stroke-width: 1; vector-effect: non-scaling-stroke; cursor: pointer; transition: fill .1s; }
+.mapbox .zone.sk { stroke: rgba(20, 30, 50, .7); }
+.mapbox .zone.small { stroke-dasharray: 3 3; }
+.mapbox .zone:hover { fill: rgba(0, 0, 0, .1); stroke: #000; }
+.mapbox .zone:focus { outline: none; }
+.mapbox .zone:focus-visible { stroke: #e8590c; stroke-width: 3; }
+.mapbox .zone.sel { stroke: #e8590c; stroke-width: 3; }
+.mapbox .zlab { fill: #14213a; font: 600 11px ui-sans-serif, system-ui, sans-serif; text-anchor: middle; pointer-events: none; paint-order: stroke; stroke: rgba(255, 255, 255, .9); stroke-width: 3px; stroke-linejoin: round; }
+.maphover { margin: 8px 2px 0; font-size: 14px; min-height: 2.9em; font-variant-numeric: tabular-nums; }
+.maphover b { color: var(--kl-lime); font-weight: 600; }
+.legend-bar { margin: 12px 4px 4px; }
+.legend-bar .lg-title { font-size: 13px; color: var(--kl-teal); margin: 0 0 6px; }
+.legend-bar .lg-grad { height: 12px; border-radius: 6px; border: 1px solid rgba(139, 190, 178, .3); }
+.legend-bar .lg-ticks { position: relative; height: 18px; font-size: 12px; color: var(--kl-teal); font-variant-numeric: tabular-nums; }
+.legend-bar .lg-ticks span { position: absolute; top: 2px; transform: translateX(-50%); white-space: nowrap; }
+.legend-bar .lg-ticks span:first-child { transform: none; }
+.legend-bar .lg-ticks span:last-child { transform: translateX(-100%); }
+.legend-bar .lg-sea { font-size: 12px; color: var(--kl-teal); margin-top: 4px; }
+
+.zonepanel { background: rgba(24, 49, 79, .45); border: 1px solid rgba(139, 190, 178, .2); border-radius: 14px; padding: 16px 16px 12px; min-width: 0; }
+.zonepanel h3 { margin: 0 0 4px; font-size: 22px; }
+.zonepanel .zfacts { margin: 0 0 8px; font-size: 14px; color: var(--kl-teal); max-width: none; }
+.zonepanel .zwarn { margin: 8px 0; padding: 8px 12px; border-left: 3px solid var(--fc); background: rgba(242, 166, 90, .1); font-size: 14px; max-width: none; }
+.zonepanel h4 { margin: 14px 0 6px; font-size: 15px; font-weight: 600; }
+.sc { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+.sc th, .sc td { padding: 4px 8px 4px 0; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+.sc th:first-child, .sc td:first-child { text-align: left; }
+.sc td small { color: var(--kl-teal); font-size: 12px; }
+.sc tr.cur td { color: var(--kl-lime); }
+.sc-wrap { overflow-x: auto; }
+
+figure.chart { margin: 8px 0 18px; padding: 14px 10px 10px; background: rgba(24, 49, 79, .45); border: 1px solid rgba(139, 190, 178, .2); border-radius: 14px; }
+figure.chart figcaption { margin: 8px 6px 0; font-size: 13px; line-height: 1.5; color: var(--kl-teal); max-width: 76ch; }
+figure.chart svg, .tsbox svg { display: block; width: 100%; height: auto; overflow: visible; }
+.tsbox { margin: 4px 0 0; }
+#fig-ts { outline: none; touch-action: pan-y; }
+#fig-ts:focus-visible { outline: 2px solid var(--kl-lime); outline-offset: 3px; border-radius: 6px; }
+.chart text, .tsbox text { fill: var(--kl-teal); font: 12px ui-sans-serif, system-ui, sans-serif; }
+.chart .ttl, .tsbox .ttl { fill: var(--text); }
+.chart .grid, .tsbox .grid { stroke: var(--grid); stroke-width: 1; }
+.chart .zero { stroke: var(--kl-teal); stroke-width: 1.2; stroke-dasharray: 5 4; }
+.chart .ci { stroke: var(--kl-lime); stroke-width: 2; }
+.chart .dot { fill: var(--kl-lime); stroke: var(--kl-amethyst); stroke-width: 1.5; }
+.tsbox .l-obs { fill: none; stroke: var(--obs); stroke-width: 2.6; }
+.tsbox .l-fc { fill: none; stroke: var(--fc); stroke-width: 2; }
+.tsbox .l-clim { fill: none; stroke: var(--clim); stroke-width: 2; stroke-dasharray: 6 4; }
+.tsbox .cursor { stroke: var(--text); stroke-width: 1.4; opacity: .85; }
+.tsbox .hov { stroke: var(--text); stroke-width: 1; opacity: .4; }
+.tsbox .legend text { fill: var(--text); }
+.readout { margin: 8px 2px 0; font-size: 14px; min-height: 3em; font-variant-numeric: tabular-nums; }
+.readout b { color: var(--kl-lime); font-weight: 600; }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 6px 0 14px; }
+.stat { background: var(--kl-deep); border: 1px solid rgba(139, 190, 178, .25); border-radius: 14px; padding: 16px 18px; }
+.stat b { display: block; font-size: 34px; line-height: 1.1; color: var(--kl-lime); font-weight: 600; font-variant-numeric: tabular-nums; }
+.stat span { display: block; margin-top: 6px; font-size: 14px; line-height: 1.4; }
+.stat small { display: block; margin-top: 8px; color: var(--kl-teal); font-size: 13px; font-variant-numeric: tabular-nums; }
+
+.tbl { margin: 0 0 8px; }
+.tbl summary { cursor: pointer; color: var(--kl-teal); font-size: 14px; }
+.tbl table { border-collapse: collapse; margin-top: 8px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.tbl th, .tbl td { padding: 3px 12px 3px 0; text-align: right; border-bottom: 1px solid var(--grid); }
+.tbl th:first-child, .tbl td:first-child { text-align: left; }
+.tbl-wrap { max-height: 320px; overflow: auto; }
+
+ul.method, ul.sources { padding-left: 20px; margin: 0 0 8px; }
+ul.method li, ul.sources li { margin: 0 0 10px; }
+ul.method li::marker, ul.sources li::marker { color: var(--kl-teal); }
+@media (max-width: 480px) { .stat b { font-size: 30px; } .timebar output { min-width: 0; flex: 1 1 100%; order: -1; } }
+@media (prefers-reduced-motion: reduce) { .mapbox .zone { transition: none; } }
+
+/* paper layout */
+main.paper { max-width: 1120px; }
+main.paper h1 { max-width: 28ch; }
+main.paper > p, main.paper > ul, main.paper > ol, main.paper > .stats, main.paper > .ctl { max-width: 780px; }
+main.paper h2 { margin-top: 44px; }
+main.paper h3 { margin: 28px 0 8px; font-size: 19px; }
+main.paper .byline { color: var(--kl-teal); font-size: 14px; margin: 10px 0 20px; }
+.abstract { max-width: 780px; background: rgba(24, 49, 79, .45); border: 1px solid rgba(139, 190, 178, .25); border-radius: 14px; padding: 6px 22px 12px; margin: 8px 0 8px; }
+.abstract h2 { margin-top: 14px; font-size: 18px; }
+.abstract p { max-width: none; }
+.abstract b { color: var(--kl-lime); font-weight: 600; }
+figure.figmap { margin: 14px 0 22px; padding: 14px 14px 12px; background: rgba(24, 49, 79, .3); border: 1px solid rgba(139, 190, 178, .2); border-radius: 14px; }
+figure.figmap figcaption { margin: 12px 4px 0; font-size: 13px; line-height: 1.5; color: var(--kl-teal); max-width: 90ch; }
+figure.chart { max-width: 780px; }
+ol.refs { padding-left: 24px; font-size: 14px; max-width: 780px; }
+ol.refs li { margin: 0 0 8px; }
+ol.refs li:target { background: rgba(230, 249, 175, .12); }
+main.paper a[href^="#ref-"] { text-decoration: none; }
+.stats { max-width: 780px; }
