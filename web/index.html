@@ -45,6 +45,13 @@
     .logo-img { height: 32px; }
     #brand { padding: 8px 10px; gap: 14px; }
     .site-nav { gap: 12px; font-size: 12.5px; }
+    /* Phones: only the logo shows; tapping it brings the menu back (see the
+       script after #chrome). Tapping it again hides the menu. */
+    #brand:not([data-open="true"]) .site-nav { display: none; }
+    /* Open: the menu drops onto its own row under the logo, so it never runs
+       under the map controls on the right. */
+    #brand[data-open="true"] { flex-wrap: wrap; row-gap: 8px; }
+    #brand[data-open="true"] .site-nav { flex: 1 0 100%; }
   }
   /* Variable bar: centred just above the time panel (--time-h is kept in step
      from JS). The wrapper stays as wide as its content so it never blocks the
@@ -122,16 +129,20 @@
     text-shadow: 0 0 3px rgba(8,12,24,.9), 0 1px 2px rgba(8,12,24,.9); }
   /* Grid and label toggles: icon buttons under the zoom control, top right. */
   /* Same look as MapLibre's zoom buttons: white, 29px, grouped with dividers. */
-  #maptools { top: 78px; right: 10px; padding: 0; gap: 0; display: flex; flex-direction: column;
+  /* The 3D globe toggle has a box of its own above the zoom control, so the
+     zoom control starts one box lower and the overlay toggles one box lower still. */
+  #maptools, #globebox { top: 117px; right: 10px; padding: 0; gap: 0; display: flex; flex-direction: column;
     background: #fff; border: 0; border-radius: 4px; box-shadow: 0 0 0 2px rgba(0,0,0,.1);
     backdrop-filter: none; overflow: hidden; }
-  #maptools button { all: unset; cursor: pointer; box-sizing: border-box; width: 29px; height: 29px;
+  #globebox { top: 10px; }
+  .maplibregl-ctrl-top-right { top: 39px; }
+  #maptools button, #globebox button { all: unset; cursor: pointer; box-sizing: border-box; width: 29px; height: 29px;
     display: grid; place-items: center; color: #333; }
   #maptools button + button { border-top: 1px solid #ddd; }
-  #maptools button:hover { background: #f2f2f2; }
-  #maptools button[aria-pressed="true"] { background: #dbe7ff; color: #1f55d6; }
-  #maptools button:focus-visible { outline: 2px solid #2d6cf6; outline-offset: -2px; }
-  #maptools svg { width: 15px; height: 15px; }
+  #maptools button:hover, #globebox button:hover { background: #f2f2f2; }
+  #maptools button[aria-pressed="true"], #globebox button[aria-pressed="true"] { background: #dbe7ff; color: #1f55d6; }
+  #maptools button:focus-visible, #globebox button:focus-visible { outline: 2px solid #2d6cf6; outline-offset: -2px; }
+  #maptools svg, #globebox svg { width: 15px; height: 15px; }
   #maptools button.busy { opacity: .5; }
   #maptools button.err { color: #c62828; }
   #maptools .aa { font: 700 12px/1 ui-sans-serif, system-ui, sans-serif; }
@@ -207,6 +218,10 @@
   #credit { flex: 1 0 100%; order: 5; font-size: 8.5px; line-height: 1.3; color: #cfd8ee;
     margin-top: 2px; }
   #credit a { color: #bcc9e8; }
+  /* The credits sit behind the copyright line: click it to read them. */
+  #credit-btn { all: unset; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 2px; }
+  #credit-btn:hover { color: #fff; }
+  #credit-btn:focus-visible { outline: 2px solid #8ab4ff; outline-offset: 2px; border-radius: 2px; }
   #boot { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center;
     background: #0b1020; text-align: center; padding: 24px; }
   .err { color: #ff9b9b; max-width: 60ch; }
@@ -245,12 +260,45 @@
   </div>
   </div>
 
+<script>
+  // Phone width: the logo toggles the site menu instead of going home.
+  (function () {
+    const brand = document.getElementById("brand");
+    const logo = brand.querySelector(".logo");
+    const nav = brand.querySelector(".site-nav");
+    const phone = window.matchMedia("(max-width: 600px)");
+    nav.id = "site-nav";
+    const sync = () => {
+      if (phone.matches) {
+        logo.setAttribute("aria-expanded", brand.dataset.open === "true" ? "true" : "false");
+        logo.setAttribute("aria-controls", "site-nav");
+        logo.setAttribute("aria-label", "Klimatikal menu");
+      } else {
+        logo.removeAttribute("aria-expanded"); logo.removeAttribute("aria-controls");
+        logo.setAttribute("aria-label", "Klimatikal home");
+      }
+    };
+    logo.addEventListener("click", (e) => {
+      if (!phone.matches) return;           // on wider screens it is the home link
+      e.preventDefault();
+      brand.dataset.open = brand.dataset.open === "true" ? "false" : "true";
+      sync();
+    });
+    phone.addEventListener("change", sync);
+    sync();
+  })();
+</script>
+
 <div id="vars" data-collapsed="false">
   <button id="vars-toggle" type="button" aria-expanded="true" aria-controls="layers">
     <span>Layers</span>
     <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 3.5 5 7l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </button>
   <div id="layers" class="panel glass" role="group" aria-label="Weather layer"></div>
+</div>
+
+<div id="globebox" class="panel" role="group" aria-label="Map view">
+  <button type="button" id="globe" aria-pressed="false" aria-label="3D globe" title="3D globe: switch between the flat map and a globe (experimental)"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="8" cy="8" r="6.3"/><ellipse cx="8" cy="8" rx="2.7" ry="6.3"/><path d="M1.9 6h12.2M1.9 10h12.2"/></svg></button>
 </div>
 
 <div id="maptools" class="panel" role="group" aria-label="Map overlays"></div>
@@ -674,14 +722,43 @@ function rampTexture(gl, stops, display) {
 // Layer 1: the colour field. One quad over the whole world; every fragment
 // converts its mercator position to a latitude and samples the data there.
 // ---------------------------------------------------------------------------
+// Vertex projection shared by the colour field and the particles. On the flat
+// map this is just u_matrix. On the globe it is MapLibre 5's own globe maths
+// (see the vertexShaderPrelude it hands a custom layer): mercator 0..1 ->
+// point on the unit sphere -> u_gmatrix, with the clipping-plane trick that
+// sends the far side of the planet outside the depth range, and the blend
+// with the flat map while MapLibre animates between the two projections.
+// Kept in ESSL 1.00 so the fragment shaders need no change.
+const GLSL_PROJECT = `
+  uniform float u_globe, u_gtrans;
+  uniform mat4 u_gmatrix, u_gfallback;
+  uniform vec4 u_gclip;
+  vec4 projectWorld(vec2 m) {
+    if (u_globe < 0.5) return u_matrix * vec4(m, 0.0, 1.0);
+    const float GPI = 3.1415926535897932;
+    float lon = m.x * GPI * 2.0 + GPI;
+    float lat = 2.0 * atan(exp(GPI - m.y * GPI * 2.0)) - GPI * 0.5;
+    float c = cos(lat);
+    vec3 p = vec3(sin(lon) * c, sin(lat), cos(lon) * c);
+    vec4 g = u_gmatrix * vec4(p, 1.0);
+    g.z = (1.0 - (dot(p, u_gclip.xyz) + u_gclip.w)) * g.w;
+    if (u_gtrans > 0.999) return g;
+    vec4 f = u_gfallback * vec4(m, 0.0, 1.0);
+    vec4 r = g;
+    r.z = mix(0.0, g.z, clamp((u_gtrans - 0.2) / 0.8, 0.0, 1.0));
+    r.xyw = mix(f.xyw, g.xyw, u_gtrans);
+    return r;
+  }`;
+
 const FIELD_VS = `
   attribute vec2 a_pos;
   uniform mat4 u_matrix;
   uniform float u_worldShift;
   varying vec2 v_merc;
+  ${GLSL_PROJECT}
   void main() {
     v_merc = a_pos;   // dataUV() takes fract(), so the shift need not travel
-    gl_Position = u_matrix * vec4(a_pos.x + u_worldShift, a_pos.y, 0.0, 1.0);
+    gl_Position = projectWorld(vec2(a_pos.x + u_worldShift, a_pos.y));
   }`;
 
 // Cubic B-spline interpolation of the raw texel bytes, done with four
@@ -912,6 +989,7 @@ const DRAW_VS = `
   uniform vec2 u_shift;       // extra pixels of offset, in clip units; draws a line twice as wide
   varying float v_end;
   varying vec3 v_tint;
+  ${GLSL_PROJECT}
   const float PI = 3.1415926535897932;
   float mercToLat(float y) { return degrees(2.0 * atan(exp((1.0 - 2.0 * y) * PI)) - PI * 0.5); }
 
@@ -937,7 +1015,7 @@ const DRAW_VS = `
     vec2 tail = teleported ? newP : newP - delta * u_trail;
     vec2 pos = a_end > 0.5 ? newP : tail;
     v_end = teleported ? 0.0 : a_end;
-    gl_Position = u_matrix * vec4(pos.x + u_worldShift, pos.y, 0.0, 1.0);
+    gl_Position = projectWorld(vec2(pos.x + u_worldShift, pos.y));
     gl_Position.xy += u_shift * gl_Position.w;
     gl_PointSize = 1.5;
     v_tint = vec3(0.0);
@@ -988,6 +1066,18 @@ class WeatherLayer {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.quad);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0,0, 1,0, 0,1, 0,1, 1,0, 1,1]), gl.STATIC_DRAW);
 
+    // The globe needs the world as many small triangles: one big quad would
+    // stay flat. 96 x 96 cells is about 3.75 degrees of longitude per cell.
+    const G = 96, mesh = [];
+    for (let j = 0; j < G; j++) for (let i = 0; i < G; i++) {
+      const x0 = i / G, x1 = (i + 1) / G, y0 = j / G, y1 = (j + 1) / G;
+      mesh.push(x0,y0, x1,y0, x0,y1, x0,y1, x1,y0, x1,y1);
+    }
+    this.mesh = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.mesh);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(mesh), gl.STATIC_DRAW);
+    this.meshCount = G * G * 6;
+
     const n = this.side * this.side;
     const idx = new Float32Array(n * 4);          // two vertices per particle
     for (let i = 0; i < n; i++) {
@@ -1037,6 +1127,20 @@ class WeatherLayer {
         || null;
   }
 
+  // Hand the vertex shader the projection: on the globe, the globe matrix,
+  // clipping plane and the flat/globe blend factor (the flat matrix is set by
+  // the caller).
+  setProjection(loc, arg, globe) {
+    const gl = this.gl;
+    gl.uniform1f(loc.u_globe, globe ? 1 : 0);
+    if (!globe) return;
+    const pd = arg.defaultProjectionData;
+    gl.uniformMatrix4fv(loc.u_gmatrix, false, pd.mainMatrix);
+    gl.uniformMatrix4fv(loc.u_gfallback, false, pd.fallbackMatrix);
+    gl.uniform4fv(loc.u_gclip, pd.clippingPlane);
+    gl.uniform1f(loc.u_gtrans, pd.projectionTransition);
+  }
+
   render(gl, arg) {
     const matrix = WeatherLayer.matrixOf(arg);
     if (!matrix) {
@@ -1049,6 +1153,8 @@ class WeatherLayer {
     // exception: they are decoration and never hold the picture up.
     const stack = app.renderStack();
     const frames = new Map();
+    // MapLibre tells a custom layer which projection it is drawing for.
+    const globe = !!(arg.shaderData && arg.shaderData.variantName === "globe" && arg.defaultProjectionData);
     for (const item of stack) {
       if (item.kind === "particles") continue;
       const src = app.fieldSource(dataOf(item));
@@ -1071,7 +1177,7 @@ class WeatherLayer {
     if (app.satOn && !app.satLoaded && !app.satLoading) {
       setTimeout(() => app.loadSatellite(), 0);
     }
-    const shifts = app.worldShifts();
+    const shifts = globe ? [0] : app.worldShifts();   // the sphere has one world
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     for (const item of stack) {
@@ -1080,10 +1186,11 @@ class WeatherLayer {
       const isContour = item.kind === "contour";
       const f = isContour ? this.contour : this.field;
       gl.useProgram(f.p);
-      gl.bindBuffer(gl.ARRAY_BUFFER, this.quad);
+      gl.bindBuffer(gl.ARRAY_BUFFER, globe ? this.mesh : this.quad);
       gl.enableVertexAttribArray(f.loc.a_pos);
       gl.vertexAttribPointer(f.loc.a_pos, 2, gl.FLOAT, false, 0, 0);
       gl.uniformMatrix4fv(f.loc.u_matrix, false, matrix);
+      this.setProjection(f.loc, arg, globe);
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, now);
       gl.uniform1i(f.loc.u_now, 0);
       gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, next);
@@ -1126,7 +1233,7 @@ class WeatherLayer {
       }
       for (const shift of shifts) {
         gl.uniform1f(f.loc.u_worldShift, shift);
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
+        gl.drawArrays(gl.TRIANGLES, 0, globe ? this.meshCount : 6);
       }
     }
 
@@ -1197,6 +1304,7 @@ class WeatherLayer {
     gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.posB);
     gl.uniform1i(d.loc.u_new, 1);
     gl.uniformMatrix4fv(d.loc.u_matrix, false, matrix);
+    this.setProjection(d.loc, arg, globe);
     gl.uniform1f(d.loc.u_side, this.side);
     gl.uniform1f(d.loc.u_opacity, pItem.opacity != null ? pItem.opacity : 1.0);
     gl.uniform3fv(d.loc.u_color, this.app.lightBase() ? [0.04, 0.05, 0.09] : [1, 1, 1]);   // dark streaks on a white map
@@ -1348,6 +1456,7 @@ class App {
     this.labelsOn = true;
     this.windOn = true;       // wind particles (the streaks), on or off
     this.nightOn = false;     // day/night lines (terminator, twilight, sun)
+    this.globeOn = false;     // 3D globe view (experimental)
     this.labelLayerIds = [];
     // Radar overlay: BMKG radar frames built by pipeline/bmkg_radar.py and
     // served from ${DATA}/radar/. The browser never calls BMKG directly.
@@ -2142,6 +2251,12 @@ class App {
       this.nightKey = null; this.updateNight(); this.writeURL();
     };
 
+    // 3D globe: MapLibre's own globe projection. The weather layer's shaders
+    // are flat-map only, so it is skipped while the globe is on (see render()).
+    const globe = document.getElementById("globe");
+    globe.setAttribute("aria-pressed", String(this.globeOn));
+    globe.onclick = () => this.setGlobe(!this.globeOn);
+
     const radarSep = document.createElement("span");
     radarSep.className = "sep";
     box.appendChild(radarSep);
@@ -2259,7 +2374,9 @@ class App {
     const tip = document.createElement("div");
     tip.id = "tip"; tip.hidden = true;
     document.body.appendChild(tip);
-    for (const [btn, name] of [[terrain, "Terrain"], [wind, "Wind streaks"], [storm, "Tropical cyclones"], [front, "Fronts and troughs"]]) {
+    // The globe icon is the top-right control, with no room above it: its tag goes below.
+    const globeBtn = document.getElementById("globe");
+    for (const [btn, name, below] of [[terrain, "Terrain"], [wind, "Wind streaks"], [storm, "Tropical cyclones"], [front, "Fronts and troughs"], [globeBtn, "3D globe", true]]) {
       btn.dataset.tip = name;
       btn.removeAttribute("title");              // the native tooltip would double it
       const showTip = () => {
@@ -2268,9 +2385,12 @@ class App {
         tip.hidden = false;
         const half = tip.offsetWidth / 2 + 6;                     // stay inside the window
         tip.style.left = `${Math.max(half, Math.min(innerWidth - half, r.left + r.width / 2))}px`;
-        tip.style.top = `${r.top - 6}px`;
+        tip.style.top = `${below ? r.bottom + 6 : r.top - 6}px`;
+        tip.style.transform = below ? "translate(-50%, 0)" : "";
       };
       btn.addEventListener("mouseenter", showTip);
+      // A tap leaves the button focused, which would keep the tag up: drop it on click.
+      if (below) btn.addEventListener("click", () => { tip.hidden = true; });
       btn.addEventListener("focus", showTip);
       for (const ev of ["mouseleave", "blur"]) btn.addEventListener(ev, () => { tip.hidden = true; });
     }
@@ -2321,8 +2441,20 @@ class App {
     const osm = this.osmReady ? " · Coast and lakes: © OpenStreetMap contributors via OpenFreeMap" : "";
     const terr = this.terrainOn ? " · Terrain: AWS Open Data Terrain Tiles (NASA SRTM, USGS, ETOPO1 and others)" : "";
     const storms = this.tropicalOn && this.tropical && this.tropical.attribution ? ` · ${escapeHTML(this.tropical.attribution)}` : "";
-    document.getElementById("credit").innerHTML =
-      `© 2026 Klimatikal · ${escapeHTML(this.manifest.attribution)} · run ${escapeHTML(this.manifest.run)}${sat}${radar}${storms}${terr}${osm} · <a href="/privacy/">Privacy</a>`;
+    const el = document.getElementById("credit");
+    // The data credits are one click away rather than always on screen.
+    if (!el.dataset.wired) {
+      el.dataset.wired = "1";
+      el.addEventListener("click", (e) => {
+        if (!e.target.closest("#credit-btn")) return;
+        this.creditOpen = !this.creditOpen;
+        this.paintCredit();
+      });
+    }
+    const open = !!this.creditOpen;
+    el.innerHTML =
+      `<button type="button" id="credit-btn" aria-expanded="${open}" aria-controls="credit-more" title="${open ? "Hide" : "Show"} data credits">© 2026 Klimatikal</button>` +
+      `<span id="credit-more"${open ? "" : " hidden"}> · ${escapeHTML(this.manifest.attribution)} · run ${escapeHTML(this.manifest.run)}${sat}${radar}${storms}${terr}${osm} · <a href="/privacy/">Privacy</a></span>`;
   }
 
   // Colour key for the active layer, built from the same RAMPS table the
@@ -2431,7 +2563,7 @@ class App {
     const ctx = cv.getContext("2d");
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
-    if (!this.gridOn) return;
+    if (!this.gridOn || this.globeOn) return;   // the flat graticule does not follow the sphere
 
     const pxPerDeg = 512 * Math.pow(2, map.getZoom()) / 360;
     const STEPS = [0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 45, 90];
@@ -2660,11 +2792,45 @@ class App {
     if (h.get("sat") === "1") this.satOn = true;
     if (h.get("labels") !== null) this.labelsOn = h.get("labels") !== "0";
     if (h.get("night") === "1") this.nightOn = true;
+    if (h.get("globe") === "1") this.globeOn = true;
     if (h.get("wind") === "0") this.windOn = false;
     if (h.get("storms") === "0") this.tropicalOn = false;
     if (h.get("fronts") === "0") this.frontsOn = false;
     if (h.get("shade") === "1") this.shadeOn = true;
     if (h.get("terrain") === "1") this.terrainOn = true;
+  }
+
+  // The zoom at which the whole globe just fills the viewport. The globe's
+  // on-screen diameter is about 112 px * 2^zoom (measured in MapLibre 5.8, which
+  // includes its perspective), and the top bar and bottom panels cover part of
+  // the height, so only 60% of it counts.
+  globeFitZoom() {
+    const el = this.map.getContainer();
+    const room = Math.min(el.clientWidth, el.clientHeight * 0.6);
+    return Math.max(1, Math.log2(0.86 * room / 112));
+  }
+
+  setGlobe(on) {
+    this.globeOn = on;
+    const g = document.getElementById("globe");
+    if (g) g.setAttribute("aria-pressed", String(on));
+    const m = this.map;
+    if (!m) return;
+    m.setProjection({ type: on ? "globe" : "mercator" });
+    // Zooming out past the whole globe only shrinks it into the dark; keep it
+    // filling the screen. (setMinZoom also lifts the current zoom to the floor.)
+    m.setMinZoom(on ? Math.min(this.globeFitZoom(), m.getMaxZoom()) : 1);
+    m.fire("zoom");   // the +/- buttons only re-check their enabled state on a zoom event
+    // Flat map is north-up (the weather layer is not rotatable); the globe
+    // is turned by dragging, so allow rotation there.
+    if (on) { m.dragRotate.enable(); m.touchZoomRotate.enableRotation(); }
+    else {
+      m.dragRotate.disable(); m.touchZoomRotate.disableRotation();
+      m.easeTo({ bearing: 0, pitch: 0, duration: 300 });
+    }
+    m.triggerRepaint();
+    this.drawGrid();
+    this.writeURL();
   }
 
   writeURL() {
@@ -2677,6 +2843,7 @@ class App {
       sat: this.satOn ? "1" : "0",
       labels: this.labelsOn ? "1" : "0",
       ...(this.nightOn ? { night: "1" } : {}),
+      ...(this.globeOn ? { globe: "1" } : {}),
       ...(this.windOn ? {} : { wind: "0" }),
       ...(this.tropicalOn ? {} : { storms: "0" }),
       ...(this.frontsOn ? {} : { fronts: "0" }),
@@ -2721,6 +2888,8 @@ class App {
     // The weather layer and the grid are north-up. Rotating would skew both.
     this.map.dragRotate.disable();
     this.map.touchZoomRotate.disableRotation();
+    this.map.on("resize", () => { if (this.globeOn) { this.map.setMinZoom(this.globeFitZoom()); this.map.fire("zoom"); } });
+    this.map.on("style.load", () => { if (this.globeOn) this.setGlobe(true); });
     this.map.on("load", () => {
       this.map.addLayer(new WeatherLayer(this));   // sets this.gl via onAdd
       this.paintLegend();   // first painted before the map existed, so the zoom-dependent key was wrong
