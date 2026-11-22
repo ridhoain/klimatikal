@@ -499,7 +499,7 @@ const PRESETS = {
       // the line every `labelEvery` hPa, and H / L mark the centres: the biggest or
       // smallest value within 4 degrees and 1.5 hPa clear of the ring around it.
       { kind: "contour", layer: "msl", ramp: "mslline", heavy: 10,
-        intervalByZoom: [[0, 5], [2.5, 2], [3.5, 1]], alpha: 0.95, majorAlpha: 1, width: 0.28, majorWidth: 0.5, shadow: 0.35,
+        intervalByZoom: [[0, 5], [3.5, 2], [5, 1]], alpha: 0.95, majorAlpha: 1, width: 0.2, majorWidth: 0.4, shadow: 0.3,
         labelEvery: 4, extrema: { radius: 16, depth: 1.5 } },
       { kind: "particles", layer: "wind850", opacity: 1.0, tint: { layer: "msl", ramp: "mslline" } },
     ],
@@ -872,8 +872,13 @@ const UPDATE_FS = `
     // metres per degree; the cos(lat) term is what stops particles sprinting
     // near the poles, and clamping it stops a divide by zero at the pole.
     float mPerDegLon = 111320.0 * max(cos(radians(lat)), 0.01);
-    lon += w.x * u_dt / mPerDegLon;
-    lat += w.y * u_dt / 110540.0;
+    // The map is Mercator, which stretches everything by 1/cos(lat) on screen,
+    // so the same wind drew a streak three times longer at 70 N than at the
+    // equator. Scale the step down with latitude (not all the way: the polar
+    // flow should still look a little livelier than the tropics).
+    float k = max(cos(radians(lat)), 0.3);
+    lon += w.x * u_dt * k / mPerDegLon;
+    lat += w.y * u_dt * k / 110540.0;
 
     vec2 next = vec2(fract((lon + 180.0) / 360.0), latToMerc(lat));
 
@@ -1090,8 +1095,10 @@ class WeatherLayer {
         const interval = app.contourInterval(item);
         gl.uniform1f(f.loc.u_interval, interval);
         gl.uniform1f(f.loc.u_major, item.heavy / interval);
-        gl.uniform1f(f.loc.u_width, item.width);
-        gl.uniform1f(f.loc.u_majorWidth, item.majorWidth);
+        // Thinner isobars (and a lighter shadow) when the whole world is in view.
+        const zs = Math.min(1, Math.max(0.55, 0.55 + 0.45 * (this.map.getZoom() - 1.5) / 2));
+        gl.uniform1f(f.loc.u_width, item.width * zs);
+        gl.uniform1f(f.loc.u_majorWidth, item.majorWidth * zs);
         gl.uniform1f(f.loc.u_base, Math.round(spec.min / item.heavy) * item.heavy);
         gl.uniform1f(f.loc.u_px, 1 / (512 * Math.pow(2, this.map.getZoom())));
         const ramp = RAMPS[item.ramp];
@@ -1101,7 +1108,7 @@ class WeatherLayer {
         gl.uniform1f(f.loc.u_dhi, ramp.display[1]);
         gl.uniform1f(f.loc.u_alpha, item.alpha);
         gl.uniform1f(f.loc.u_majorAlpha, item.majorAlpha);
-        gl.uniform1f(f.loc.u_shadow, item.shadow || 0);
+        gl.uniform1f(f.loc.u_shadow, (item.shadow || 0) * zs);
       } else {
         const ramp = RAMPS[item.ramp];
         gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, this.ramp(item.ramp));
@@ -1500,6 +1507,18 @@ class App {
   }
 
   scheduleContourLabels() {
+    // While the slider plays this is called every frame, and a debounce would
+    // never fire: the numbers, H / L and fronts would stay on the first frame
+    // until you pause. Run at most every 300 ms instead, and always the fronts.
+    if (this.playing) {
+      this.updateFronts();
+      const now = performance.now();
+      if (!this.clLast || now - this.clLast > 300) {
+        this.clLast = now;
+        this.updateContourLabels(); this.updateHazard();
+      }
+      return;
+    }
     clearTimeout(this.clTimer);
     this.clTimer = setTimeout(() => { this.updateContourLabels(); this.updateHazard(); this.updateFronts(); }, 150);
   }
@@ -1627,8 +1646,8 @@ class App {
       id: "contour-extrema", type: "symbol", source: "contour-extrema",
       layout: {
         "text-field": ["format", ["get", "k"], { "font-scale": 1 }, "\n", {}, ["get", "v"], { "font-scale": 0.5 }],
-        "text-font": ["Open Sans Semibold"], "text-size": ["interpolate", ["linear"], ["zoom"], 2, 15, 6, 22],
-        "text-line-height": 1, "text-padding": 6, "symbol-sort-key": ["-", 0, ["get", "d"]],
+        "text-font": ["Open Sans Semibold"], "text-size": ["interpolate", ["linear"], ["zoom"], 2, 10.5, 6, 15],
+        "text-line-height": 1, "text-padding": 5, "symbol-sort-key": ["-", 0, ["get", "d"]],
       },
       paint: { "text-color": ["case", ["==", ["get", "k"], "H"], end(ramp.stops.length - 1), end(0)],
                "text-halo-color": "rgba(8,12,24,0.92)", "text-halo-width": 1.6, "text-halo-blur": 0.3 },
@@ -1729,12 +1748,17 @@ class App {
     const empty = { type: "FeatureCollection", features: [] };
     if (key === null) { src.setData(empty); return; }
     this.frontCache = this.frontCache || new Map();
-    if (!this.frontCache.has(key)) {
-      this.frontCache.set(key, fetch(`${this.runPrefix}/fronts/f${String(key).padStart(3, "0")}.json`)
-        .then((r) => (r.ok ? r.json() : empty)).catch(() => empty));
-      if (this.frontCache.size > 12) this.frontCache.delete(this.frontCache.keys().next().value);
-    }
-    const data = await this.frontCache.get(key);
+    const load = (k) => {
+      if (!this.frontCache.has(k)) {
+        this.frontCache.set(k, fetch(`${this.runPrefix}/fronts/f${String(k).padStart(3, "0")}.json`)
+          .then((r) => (r.ok ? r.json() : empty)).catch(() => empty));
+        if (this.frontCache.size > 16) this.frontCache.delete(this.frontCache.keys().next().value);
+      }
+      return this.frontCache.get(k);
+    };
+    // Fetch the next few steps ahead so playing does not wait on the network.
+    for (let a = 1; a <= 3 && i + a < this.steps.length; a++) load(this.steps[i + a]);
+    const data = await load(key);
     if (this.frontKey === key) src.setData(data);
   }
 
