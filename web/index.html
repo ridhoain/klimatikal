@@ -220,6 +220,11 @@
     font-size: 11px; line-height: 1.4; color: #e9edf7; background: rgba(12,18,34,.88); border: 1px solid rgba(120,255,170,.45);
     box-shadow: 0 2px 14px rgba(0,0,0,.4); backdrop-filter: blur(8px); }
   #aurora-pop[hidden] { display: none; }
+  #line-pop { position: fixed; z-index: 6; pointer-events: none; max-width: 220px; padding: 7px 10px; border-radius: 10px;
+    font-size: 11px; line-height: 1.4; color: #e9edf7; background: rgba(12,18,34,.9); border: 1px solid rgba(255,255,255,.3);
+    box-shadow: 0 2px 14px rgba(0,0,0,.4); backdrop-filter: blur(8px); }
+  #line-pop[hidden] { display: none; }
+  #line-pop b { display: block; font-size: 12px; font-weight: 600; margin-bottom: 1px; }
   #aurora-pop b { display: block; font-size: 13px; font-weight: 600; color: #8dffb4; margin-bottom: 2px; }
   #aurora-pop small { display: block; color: #aebbd8; font-size: 10px; margin-top: 3px; }
   #legend .cls-names { display: flex; flex-direction: column; justify-content: space-around; align-items: flex-end; }
@@ -501,13 +506,12 @@ Object.assign(RAMPS, {
   cloudveil: { source: "cloud", display: [0, 100], unitLabel: "%", opacity: 1,
     stops: [[0, [255, 255, 255, 0]], [25, [235, 240, 250, 0]], [60, [240, 245, 255, 70]],
             [100, [255, 255, 255, 150]]] },
-  // Stargazing: the question is "where is it clear?", so clear sky is the colour and cloud fades away. Real
-  // total cloud cover averages about 63 % and is above 60 % over more than half the globe, so a haze for
-  // cloud would paint most of the Earth white and bury everything else. Clear (under 15 %) is a strong
-  // sky blue (not green, which is the aurora's colour), partly cloudy fades out by 55 %, and overcast is only a faint cool veil.
+  // Stargazing: cloud is the colour. Same two colours as before, inverted: overcast is the strong sky blue (not
+  // green, which is the aurora's colour), partly cloudy fades out around 45 %, and clear sky is only a faint
+  // cool veil. Note real total cloud cover averages about 63 %, so blue covers much of the Earth.
   astrocloud: { source: "cloud", label: "Cloud cover", display: [0, 100], unitLabel: "%", opacity: 1, ticks: [0, 25, 50, 75, 100],
-    stops: [[0, [70, 150, 255, 190]], [15, [70, 150, 255, 165]], [35, [70, 150, 255, 80]], [55, [70, 150, 255, 0]],
-            [75, [190, 200, 222, 34]], [100, [190, 200, 222, 70]]] },
+    stops: [[0, [190, 200, 222, 70]], [25, [190, 200, 222, 34]], [45, [70, 150, 255, 0]],
+            [65, [70, 150, 255, 80]], [85, [70, 150, 255, 165]], [100, [70, 150, 255, 190]]] },
 });
 
 // Stargazing overlays that are not forecast layers. Both are small static or near-real-time images
@@ -2452,7 +2456,7 @@ class App {
     if (!src || !this.axis) return;
     const astro = this.astroActive();
     const show = this.nightShown() ? "visible" : "none";
-    for (const id of ["night-casing", "night-line", "night-twilight", "night-ticks", "night-sun"])
+    for (const id of ["night-casing", "night-line", "night-twilight-casing", "night-twilight", "night-ticks", "night-sun"])
       if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", show);
     for (const id of ["night-moon-casing", "night-moon-line", "night-moon"])
       if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", astro ? "visible" : "none");
@@ -2518,19 +2522,23 @@ class App {
     const vis = { visibility: this.nightShown() ? "visible" : "none" };
     const on = (k) => ["==", ["get", "k"], k];
     this.moonImages().forEach((img, i) => map.addImage(`moon${i}`, img, { pixelRatio: 2 }));
-    // Stargazing's daylight mask: twilight (sun above -18 degrees) lightly, daylight (above 0) on top of it, so
-    // day is the darkest. Added first so the night lines and the coast draw over it, above the weather and overlays.
+    // Stargazing's daylight mask: twilight (sun above -18 degrees) a light white veil, daylight (above 0) on top of
+    // it as bright white, so the dark map that is left is the sky you can actually use. Added first so the night
+    // lines and the coast draw over it, above the weather and overlays.
     map.addSource("night-mask", { type: "geojson", data: empty });
     const maskVis = { visibility: this.astroActive() && this.dayMaskOn ? "visible" : "none" };
     map.addLayer({ id: "night-mask-twi", type: "fill", source: "night-mask", filter: ["==", ["get", "k"], "twi"], layout: maskVis,
-      paint: { "fill-color": "#060a16", "fill-opacity": 0.34, "fill-antialias": false } }, before);
+      paint: { "fill-color": "#ffffff", "fill-opacity": 0.3, "fill-antialias": false } }, before);
     map.addLayer({ id: "night-mask-day", type: "fill", source: "night-mask", filter: ["==", ["get", "k"], "day"], layout: maskVis,
-      paint: { "fill-color": "#060a16", "fill-opacity": 0.5, "fill-antialias": false } }, before);
+      paint: { "fill-color": "#ffffff", "fill-opacity": 0.72, "fill-antialias": false } }, before);
     map.addSource("night-moon-lines", { type: "geojson", data: empty });
     map.addSource("night-moon", { type: "geojson", data: empty });
     // Dark casing under the light lines so they read on pale and dark fields alike.
     map.addLayer({ id: "night-casing", type: "line", source: "night-lines", filter: ["any", on("horizon"), on("tick")],
       layout: { ...vis, "line-cap": "round" }, paint: { "line-color": "rgba(8,12,24,0.5)", "line-width": 3.4 } }, before);
+    // The twilight lines get their own dark casing too: the white daylight mask would swallow a bare white line.
+    map.addLayer({ id: "night-twilight-casing", type: "line", source: "night-lines", filter: ["any", on("civil"), on("nautical"), on("astro")],
+      layout: vis, paint: { "line-color": "rgba(8,12,24,0.45)", "line-width": 2.6 } }, before);
     map.addLayer({ id: "night-twilight", type: "line", source: "night-lines", filter: ["any", on("civil"), on("nautical"), on("astro")],
       layout: vis, paint: { "line-color": ["case", on("astro"), "rgba(176,150,255,0.95)", "rgba(255,255,255,0.75)"],
         "line-width": ["case", on("astro"), 1.4, 1], "line-dasharray": [2, 3],
@@ -2724,6 +2732,33 @@ class App {
     const oe = e.originalEvent, w = el.offsetWidth, h = el.offsetHeight;
     el.style.left = `${Math.max(8, Math.min(innerWidth - w - 8, oe.clientX + 16))}px`;
     el.style.top = `${Math.max(8, Math.min(innerHeight - h - 8, oe.clientY + 16))}px`;
+  }
+
+  // A short explanation while the cursor is on a day/night, twilight or Moon line. Returns true when it shows one.
+  linePop(e) {
+    let el = document.getElementById("line-pop");
+    const hide = () => { if (el) el.hidden = true; return false; };
+    if (!e || !this.nightShown()) return hide();
+    const layers = ["night-line", "night-twilight", "night-moon-line"].filter((id) => this.map.getLayer(id));
+    const r = 5, { x, y } = e.point;
+    const f = this.map.queryRenderedFeatures([[x - r, y - r], [x + r, y + r]], { layers })[0];
+    const k = f && f.properties.k;
+    const T = {
+      horizon: ["Sunrise and sunset line", "The Sun is on the horizon. Day is on one side; the ticks point into the dark."],
+      tick: ["Sunrise and sunset line", "The Sun is on the horizon. Day is on one side; the ticks point into the dark."],
+      civil: ["Civil twilight · Sun 6° below", "The sky is still bright; only the brightest planets and stars show."],
+      nautical: ["Nautical twilight · Sun 12° below", "The horizon is fading; most stars are out."],
+      astro: ["Astronomical night starts · Sun 18° below", "The sky is fully dark. Beyond this line is the best time to observe."],
+      moon: ["Moonrise and moonset line", "The Moon is on the horizon. The ticks are on the side where it is down."],
+    }[k];
+    if (!T) return hide();
+    if (!el) { el = document.createElement("div"); el.id = "line-pop"; document.body.appendChild(el); }
+    el.innerHTML = `<b>${T[0]}</b>${T[1]}`;
+    el.hidden = false;
+    const oe = e.originalEvent, w = el.offsetWidth, h = el.offsetHeight;
+    el.style.left = `${Math.max(8, Math.min(innerWidth - w - 8, oe.clientX + 16))}px`;
+    el.style.top = `${Math.max(8, Math.min(innerHeight - h - 8, oe.clientY + 16))}px`;
+    return true;
   }
 
   kpText() {
@@ -3762,8 +3797,8 @@ class App {
     });
     // The isobar spacing follows zoom, and the key quotes it.
     this.map.on("zoomend", () => { if (this.preset) this.paintLegend(); });
-    this.map.on("mousemove", (e) => { this.probe(e.lngLat); this.auroraPop(e); });
-    this.map.on("mouseout", () => { document.getElementById("readout").hidden = true; this.auroraPop(null); });
+    this.map.on("mousemove", (e) => { this.probe(e.lngLat); this.auroraPop(this.linePop(e) ? null : e); });
+    this.map.on("mouseout", () => { document.getElementById("readout").hidden = true; this.auroraPop(null); this.linePop(null); });
   }
 
   // Coastline and administrative boundaries, drawn above the weather field so
