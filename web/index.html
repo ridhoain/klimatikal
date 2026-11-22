@@ -72,7 +72,10 @@
   /* Always one row: if the screen is too narrow it scrolls sideways instead of wrapping. */
   #presets { display: flex; flex-direction: column; gap: 5px; align-items: stretch; width: max-content; max-width: 100%;
     padding: 6px; overflow-y: auto; scrollbar-width: thin; }
-  #presets .grp { flex-wrap: wrap; }
+  /* A preset's own switches open under its thumbnail and name, not beside them. */
+  #presets .grp { display: flex; flex-wrap: wrap; gap: 3px; }
+  #presets .grp button.preset { flex: 1 0 100%; }
+  #presets .grp button.toggle { flex: 1 1 auto; text-align: center; }
   #presets button.preset { display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px 4px 4px;
     font-size: 12.5px; color: #cfd8ee; border-radius: 9px; cursor: pointer; white-space: nowrap; }
   #presets .pthumb { width: 46px; height: 30px; border-radius: 6px; object-fit: cover; flex: none;
@@ -104,9 +107,10 @@
   #ticks button { all: unset; cursor: pointer; position: absolute; top: 6px; transform: translateX(-50%);
     font-size: 9.5px; line-height: 1; color: #9fb0d4; white-space: nowrap; padding: 2px 3px;
     border-radius: 4px; font-variant-numeric: tabular-nums; }
-  /* The current time: a thin blinking line through the slider. */
-  #ticks i.now { top: -15px; width: 2px; height: 31px; margin-left: -1px; border-radius: 1px; pointer-events: none;
-    background: #ffd166; box-shadow: 0 0 4px rgba(255,209,102,.8); animation: nowblink 1.6s ease-in-out infinite; }
+  /* The current time: a blinking ring on the slider track, the size of the slider's thumb. */
+  #ticks i.now { top: -16px; width: 12px; height: 12px; margin-left: -8px; box-sizing: content-box;
+    border: 2px solid #ffd166; border-radius: 50%; background: none; pointer-events: none;
+    box-shadow: 0 0 5px rgba(255,209,102,.8); animation: nowblink 1.6s ease-in-out infinite; }
   @keyframes nowblink { 0%, 100% { opacity: 1; } 50% { opacity: .15; } }
   @media (prefers-reduced-motion: reduce) { #ticks i.now { animation: none; } }
   #ticks button[hidden] { display: none; }  /* `all: unset` above would otherwise show it */
