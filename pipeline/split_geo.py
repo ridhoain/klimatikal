@@ -18,7 +18,67 @@ from pathlib import Path
 
 GEO = Path(__file__).resolve().parent.parent / "web" / "geo"
 CELL = 30
-LAYERS = ["coast", "admin0", "admin1"]
+LAYERS = ["coast", "coastlow", "admin0", "admin1"]
+
+# coastlow is the coast thinned for the zoomed-out map (below zoom LOW_COAST_ZOOM in
+# web/index.html). The 10m coast has every fjord and skerry, which at world scale
+# piles up into a black smear along Norway, Chile, Alaska. Douglas-Peucker with
+# this tolerance (degrees; 0.15 is about 17 km, a few pixels at zoom 4), runs
+# shorter than MIN_RUN degrees dropped, and one Chaikin pass to round the corners.
+COAST_TOLERANCE = 0.15
+MIN_RUN = 0.8
+
+
+def douglas_peucker(pts, eps):
+    """Iterative Douglas-Peucker on a polyline of [x, y]."""
+    n = len(pts)
+    if n < 3:
+        return pts
+    keep = [False] * n
+    keep[0] = keep[-1] = True
+    stack = [(0, n - 1)]
+    e2 = eps * eps
+    while stack:
+        i, j = stack.pop()
+        ax, ay = pts[i]; bx, by = pts[j]
+        dx, dy = bx - ax, by - ay
+        L2 = dx * dx + dy * dy
+        far, fd = -1, e2
+        for k in range(i + 1, j):
+            px, py = pts[k]
+            if L2 == 0:
+                d = (px - ax) ** 2 + (py - ay) ** 2
+            else:
+                t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / L2))
+                d = (px - ax - t * dx) ** 2 + (py - ay - t * dy) ** 2
+            if d > fd:
+                far, fd = k, d
+        if far >= 0:
+            keep[far] = True
+            stack.append((i, far)); stack.append((far, j))
+    return [p for p, k in zip(pts, keep) if k]
+
+
+def chaikin(pts):
+    """One corner-cutting pass; the ends stay put (so cell clipping still meets)."""
+    if len(pts) < 3:
+        return pts
+    out = [pts[0]]
+    for a, b in zip(pts, pts[1:]):
+        out.append([0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1]])
+        out.append([0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1]])
+    out.append(pts[-1])
+    return out
+
+
+def thin_coast(lines):
+    out = []
+    for line in lines:
+        xs = [p[0] for p in line]; ys = [p[1] for p in line]
+        if max(max(xs) - min(xs), max(ys) - min(ys)) < MIN_RUN:
+            continue                     # a skerry: gone at this scale
+        out.append(chaikin(douglas_peucker(line, COAST_TOLERANCE)))
+    return out
 
 
 def clip_segment(a, b, x0, y0, x1, y1):
@@ -64,8 +124,11 @@ def clip_line(line, box):
 def main():
     index = {}
     for name in LAYERS:
-        feature = json.loads((GEO / f"{name}.json").read_text())
+        source = "coast" if name == "coastlow" else name
+        feature = json.loads((GEO / f"{source}.json").read_text())
         lines = feature["geometry"]["coordinates"]
+        if name == "coastlow":
+            lines = thin_coast(lines)
         cells = {}
         for line in lines:
             xs = [p[0] for p in line]; ys = [p[1] for p in line]
@@ -89,7 +152,7 @@ def main():
             total += len(body)
         index[name] = [f"{cx}-{cy}" for cx, cy in sorted(cells)]
         print(f"{name}: {len(lines)} lines -> {len(cells)} cells, {total/1e6:.2f} MB "
-              f"(original {(GEO / f'{name}.json').stat().st_size/1e6:.2f} MB)")
+              f"(original {(GEO / f'{source}.json').stat().st_size/1e6:.2f} MB)")
     (GEO / "tiles" / "index.json").write_text(json.dumps({"cell": CELL, "layers": index}, separators=(",", ":")))
 
 

@@ -534,6 +534,9 @@ const WIND_SPEED = Number(new URLSearchParams(location.search).get("windspeed"))
 // for a 30 m/s one), twice the length it had when it moved twice as fast.
 const WIND_TRAIL_STEPS = 24;
 
+// Below this zoom the coast is drawn from the thinned file (fjords and skerries smooth out).
+const LOW_COAST_ZOOM = 4.5;
+
 // Fields pale enough that white coastlines disappear on them.
 const LIGHT_FIELDS = new Set(["cloud", "msl", "precip", "heatindex", "utci_sun", "utci_shade", "wetbulb", "uvi"]);
 // A satellite manifest comes in two shapes: sat/global.json (frames split into
@@ -2835,6 +2838,10 @@ class App {
 
   geoSync() {
     if (!this.geoIndex || !this.geoCells || !this.map) return;
+    // Zoomed out the coast source is fed from the thinned coast (coastlow, see
+    // pipeline/split_geo.py); from LOW_COAST_ZOOM in, from the full 10m one.
+    const low = this.map.getZoom() < LOW_COAST_ZOOM && !!(this.geoIndex.layers.coastlow || []).length;
+    if (low !== this.coastLow) { this.coastLow = low; this.geoDirty.add("coast"); this.geoFlushSoon(); }
     const cell = this.geoIndex.cell, cols = 360 / cell, rows = 180 / cell;
     const b = this.map.getBounds(), z = this.map.getZoom(), pad = 0.25;
     const spanLon = b.getEast() - b.getWest(), spanLat = b.getNorth() - b.getSouth();
@@ -2848,6 +2855,8 @@ class App {
     const y1 = Math.min(rows - 1, Math.floor((b.getNorth() + spanLat * pad + 90) / cell));
     for (const layer of Object.keys(this.geoCells)) {
       if (layer === "admin1" && z < 2) continue;            // province lines only draw from zoom 2
+      if (layer === "coast" && this.coastLow) continue;     // the thinned coast is loaded instead
+      if (layer === "coastlow" && !this.coastLow) continue;
       const have = new Set(this.geoIndex.layers[layer] || []);
       for (const cx of cxs) for (let cy = y0; cy <= y1; cy++) {
         const key = `${cx}-${cy}`;
@@ -2855,7 +2864,7 @@ class App {
         this.geoCells[layer].set(key, null);                  // requested
         fetch(new URL(`geo/tiles/${layer}/${key}.json`, location.href))
           .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
-          .then((f) => { this.geoCells[layer].set(key, f.geometry.coordinates); this.geoDirty.add(layer); this.geoFlushSoon(); })
+          .then((f) => { this.geoCells[layer].set(key, f.geometry.coordinates); this.geoDirty.add(layer === "coastlow" ? "coast" : layer); this.geoFlushSoon(); })
           .catch(() => this.geoCells[layer].delete(key));     // tried again on the next move
       }
     }
@@ -2869,7 +2878,8 @@ class App {
         const src = this.map.getSource(layer);
         if (!src) continue;
         const lines = [];
-        for (const c of this.geoCells[layer].values()) if (c) for (const l of c) lines.push(l);
+        const cells = this.geoCells[layer === "coast" && this.coastLow ? "coastlow" : layer];
+        for (const c of cells.values()) if (c) for (const l of c) lines.push(l);
         src.setData({ type: "Feature", properties: {}, geometry: { type: "MultiLineString", coordinates: lines } });
       }
       this.geoDirty.clear();
@@ -3112,7 +3122,7 @@ class App {
     this.ensureTerrain();      // ?terrain=1 in the link
     if (this.map.getZoom() >= 5) this.ensureOsmCoast();
     if (this.geoIndex) {
-      this.geoCells = { coast: new Map(), admin0: new Map(), admin1: new Map() };
+      this.geoCells = { coast: new Map(), coastlow: new Map(), admin0: new Map(), admin1: new Map() };
       this.geoDirty = new Set();
       this.geoSync();
     }
