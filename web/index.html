@@ -3415,8 +3415,15 @@ class App {
   // coastlines; a click opens the details.
   async loadTropical() {
     try {
-      const res = await fetch(`${DATA}/tropical/tropical.json`, { cache: "no-cache" });
-      this.tropical = res.ok ? await res.json() : null;
+      // JTWC (Pacific, Indian Ocean) and NHC (Atlantic, eastern Pacific) publish
+      // separate files; either may be missing and the other still shows.
+      const get = (name) => fetch(`${DATA}/tropical/${name}`, { cache: "no-cache" })
+        .then((r) => (r.ok ? r.json() : null)).catch(() => null);
+      const [jt, nh] = await Promise.all([get("tropical.json"), get("nhc.json")]);
+      this.tropical = jt || nh ? {
+        updated: (jt || nh).updated,
+        attribution: [jt, nh].filter((d) => d && d.attribution).map((d) => d.attribution).join("; "),
+        systems: [...((jt && jt.systems) || []), ...((nh && nh.systems) || [])] } : null;
     } catch (err) {
       console.warn("tropical systems unavailable", err);
       this.tropical = null;
@@ -3579,7 +3586,8 @@ class App {
       `<div style="font-weight:600;font-size:13px;padding-right:18px">${escapeHTML(s.name)}</div>` +
       `<div style="color:#a9b5d0;margin-bottom:4px">${escapeHTML(s.class)}${s.basin ? " · " + escapeHTML(s.basin) : ""}</div>` +
       rows.join("") +
-      `<div style="margin-top:5px;color:#a9b5d0">As of ${when(s.t)} · <a href="${s.url ? escapeHTML(s.url) : "https://www.metoc.navy.mil/jtwc/jtwc.html"}" target="_blank" rel="noopener">JTWC</a></div>`;
+      `<div style="margin-top:5px;color:#a9b5d0">As of ${when(s.t)} · <a href="${s.url ? escapeHTML(s.url) : s.src === "NHC" ? "https://www.nhc.noaa.gov/" : "https://www.metoc.navy.mil/jtwc/jtwc.html"}" target="_blank" rel="noopener">${s.src === "NHC" ? "NHC" : "JTWC"}</a></div>` +
+      (s.pt ? `<div style="margin-top:3px;color:#a9b5d0">Post-tropical: it has become a low with fronts, still followed by NHC. The Lows layer shows the model's track for it.</div>` : "");
     box.hidden = false;
     box.querySelector(".x").onclick = () => this.clearTropicalSel();
     // Forecast lines are not shown together: each forecast point shows its own

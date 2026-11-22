@@ -1,0 +1,5 @@
+{"activeStorms":[{"id":"al132023","binNumber":"AT3","name":"Lee","classification":"PTC","intensity":50,"pressure":979,
+"latitude":"45.3N","longitude":"65.5W","latitude_numeric":45.3,"longitude_numeric":-65.5,"movementDir":20,"movementSpeed":14,
+"lastUpdate":"2023-09-17T03:00:00.000Z",
+"publicAdvisory":{"advNum":"047","issuance":"2023-09-17T03:00:00.000Z","url":"https://www.nhc.noaa.gov/archive/2023/al13/al132023.public.047.shtml"},
+"forecastAdvisory":{"advNum":"047","issuance":"2023-09-17T03:00:00.000Z","url":"https://www.nhc.noaa.gov/archive/2023/al13/al132023.fstadv.047.shtml"}}]}
