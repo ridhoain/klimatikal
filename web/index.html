@@ -78,6 +78,7 @@
     font-size: 12.5px; color: #cfd8ee; border: 1px solid transparent; white-space: nowrap; }
   #layers button[aria-pressed="true"] { background: #2d6cf6; color: #fff; }
   #layers button:focus-visible { border-color: #8ab4ff; }
+  #layers button[hidden] { display: none; }   /* `all: unset` above would otherwise show it */
   #time { bottom: 12px; left: 12px; right: 12px; display: flex; align-items: center; gap: 12px; }
   #time { padding-bottom: 6px; flex-wrap: wrap; row-gap: 4px; }
   #track { flex: 1; min-width: 80px; position: relative; }
@@ -104,6 +105,12 @@
   #layers input.op { width: 70px; accent-color: #2d6cf6; align-self: center; }
   #layers input.op[hidden] { display: none; }
   #layers .sep { width: 1px; background: rgba(255,255,255,.18); margin: 2px 4px; }
+  /* Heat stress with its own switches: one group, outlined while Heat stress is selected. */
+  #layers .grp { display: inline-flex; gap: 2px; align-items: center; flex: none; border-radius: 9px; padding: 0;
+    border: 1px solid transparent; }
+  #layers .grp.open { padding: 1px; border-color: rgba(20,144,126,.7); background: rgba(20,144,126,.14); }
+  #layers .grp.open button.preset { border-color: transparent; }
+  #layers .grp button.toggle { padding: 5px 8px; }
   #layers button.preset[aria-pressed="true"] { background: #14907e; color: #fff; }
   #layers button.preset { border-color: rgba(20,144,126,.55); }
   #layers button.toggle[aria-pressed="true"] { background: #243156; color: #fff;
@@ -165,12 +172,27 @@
   #legend .info:hover { color: #fff; border-color: #fff; }
   #legend .info[aria-pressed="true"] { background: #243156; color: #fff; }
   #legend .info:focus-visible { outline: 2px solid #8ab4ff; outline-offset: 2px; }
+  #explain-pop { position: fixed; z-index: 7; width: min(300px, calc(100vw - 80px)); box-sizing: border-box;
+    padding: 10px 12px; font-size: 10.5px; line-height: 1.45; color: #dbe3f5; text-align: left;
+    background: rgba(12,18,34,.95); border: 1px solid rgba(255,255,255,.18); border-radius: 10px;
+    backdrop-filter: blur(12px); pointer-events: none; }
+  #explain-pop[hidden] { display: none; }
+  #explain-pop p { margin: 0 0 6px; }
+  #explain-pop .ekey { margin-top: 8px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,.15); }
+  #explain-pop .etitle { color: #a9b5d0; margin-bottom: 3px; }
+  #explain-pop .row { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+  #explain-pop .sw { width: 11px; height: 11px; border-radius: 2px; border: 1px solid rgba(255,255,255,.35); flex: none; }
+  #explain-pop .sw.hatch { background: repeating-linear-gradient(135deg, #12163c 0 1px, transparent 1px 3px), #f6a234; }
   #legend .explain { max-width: 190px; font-size: 9.5px; line-height: 1.4; color: #cfd8ee; text-align: left; }
   #legend .explain p { margin: 0 0 4px; }
   #legend2 .title { text-align: left; font-size: 10.5px; color: #cfd8ee; }
   #legend2 .rows { display: flex; flex-direction: column; gap: 3px; margin-top: 3px; }
   #legend2 .row { font-size: 10px; color: #cfd8ee; display: flex; align-items: center; gap: 5px; }
   #legend2 .sw.hatch { background: repeating-linear-gradient(135deg, #12163c 0 1px, transparent 1px 3px), #f6a234; }
+  #legend2 .sw.line { background: linear-gradient(135deg, transparent 45%, #fff 45% 58%, transparent 58%), #96189a; }
+  #legend2 .sw.dot { background: radial-gradient(circle, var(--dot) 0 2px, #fff 2.4px 3.4px, transparent 3.6px) center/11px 11px no-repeat, rgba(120,130,160,.45); }
+  #legend2 .sw.line1 { background: linear-gradient(135deg, transparent 47%, rgba(255,255,255,.75) 47% 53%, transparent 53%), #6a2a7a; }
+  #legend2 .sw.line2 { background: linear-gradient(135deg, transparent 40%, #fff 40% 60%, transparent 60%), #6a2a7a; }
   #legend2 .sw.dots { background: radial-gradient(circle, #fff 0 0.8px, transparent 1.1px) 0 0/4px 4px, #96189a; }
   #legend2 .sw { width: 11px; height: 11px; border-radius: 2px; border: 1px solid rgba(255,255,255,.35); }
   #legend .title { text-align: right; font-size: 10.5px; color: #cfd8ee; margin-bottom: 4px;
@@ -191,6 +213,11 @@
     transform: translateY(50%); }
   #legend .bar { position: relative; width: 9px; border-radius: 3px; background-color: #0b1020;
     border: 1px solid rgba(255,255,255,.25); }
+  #legend .cls { display: flex; flex-direction: column; gap: 2px; align-items: flex-end; }
+  #legend .cls-row { display: flex; align-items: center; gap: 6px; }
+  #legend .cls-row i { width: 22px; height: 15px; border-radius: 3px; border: 1px solid rgba(255,255,255,.3); flex: none; }
+  #legend .cls-name { font-size: 9.5px; color: #cfd8ee; text-align: right; line-height: 1.15; white-space: nowrap; }
+  #legend .cls-name small { display: block; font-size: 8.5px; color: #a9b5d0; font-variant-numeric: tabular-nums; }
   #legend .note { margin-top: 4px; max-width: 76px; text-align: right; font-size: 9px; color: #b4c0dc; }
   /* Top-right column left of the zoom control: cursor value, then the storm details. */
   #rstack { position: absolute; top: 12px; right: 56px; z-index: 2; display: flex; flex-direction: column;
@@ -418,13 +445,17 @@ Object.assign(RAMPS, {
   // strong, 46 extreme (all degC). Below 26 there is no heat stress and the
   // field fades to white. utci_shade draws the same colours from the shade layer;
   // the sun / shade toggle picks which data layer the page reads (fieldSource).
+  // Drawn as flat bands, one colour per class, and keyed as five blocks (discrete: true).
   utci_sun: { display: [20, 48], unitLabel: "°C", opacity: 0.78, legendMinWhite: true, ticks: [26, 32, 38, 46],
+    discrete: true,
     marks: [[26, "Moderate"], [32, "Strong"], [38, "Very strong"], [46, "Extreme"]],
     marksBelow: "No heat stress",
     stops: [
-      [20, [255, 255, 255, 235]], [26, [250, 232, 96, 190]],
-      [32, [246, 162, 52, 230]], [38, [224, 62, 50, 245]], [46, [150, 26, 150, 255]],
-      [48, [110, 14, 120, 255]]] },
+      [20, [255, 255, 255, 235]], [25.9, [255, 255, 255, 235]],
+      [26, [250, 232, 96, 190]], [31.9, [250, 232, 96, 190]],
+      [32, [246, 162, 52, 230]], [37.9, [246, 162, 52, 230]],
+      [38, [224, 62, 50, 245]], [45.9, [224, 62, 50, 245]],
+      [46, [150, 26, 150, 255]], [48, [150, 26, 150, 255]]] },
   // Wet-bulb temperature. In Indonesia it mostly sits at 24 to 28 degC and the
   // commonly cited serious-risk range starts near 31, so the colours spend their
   // contrast on 22 to 33 instead of spanning dangerous values only (the map would
@@ -439,9 +470,9 @@ Object.assign(RAMPS, {
   uvi: { display: [0, 13], unitLabel: "UVI", opacity: 0.78, legendMinWhite: true, ticks: [3, 6, 8, 11],
     marks: [[3, "Moderate"], [6, "High"], [8, "Very high"], [11, "Extreme"]], marksBelow: "Low",
     stops: [
-      [0, [88, 180, 96, 0]], [0.4, [88, 180, 96, 0]], [0.6, [88, 180, 96, 170]], [2.95, [88, 180, 96, 170]],
-      [3, [250, 222, 66, 200]], [5.95, [250, 222, 66, 200]], [6, [246, 150, 50, 225]], [7.95, [246, 150, 50, 225]],
-      [8, [224, 62, 50, 240]], [10.95, [224, 62, 50, 240]], [11, [150, 60, 160, 255]], [13, [110, 14, 120, 255]]] },
+      [0, [88, 180, 96, 0]], [2.9, [88, 180, 96, 0]],
+      [3, [250, 214, 40, 255]], [5.9, [250, 214, 40, 255]], [6, [246, 140, 40, 255]], [7.9, [246, 140, 40, 255]],
+      [8, [226, 50, 46, 255]], [10.9, [226, 50, 46, 255]], [11, [160, 60, 190, 255]], [13, [160, 60, 190, 255]]] },
   // Cloud by level, all black on the white map: each level is a black veil whose
   // strength follows its cover, and the veils stack, so where low, middle and
   // high cloud overlap the map is darkest. Thin cloud already starts at a mid
@@ -489,20 +520,30 @@ const PRESETS = {
     hazard: { layer: "utci_sun", level: "Very strong", blockPx: 44 },
     stack: [
       { kind: "fill", ramp: "utci_sun" },
-      // Hatch: wet-bulb at or above 31 degC. Dots: estimated UV index in the extreme class (11+).
+      // Hatch: wet-bulb at or above 31 degC. Tint: UV index by class (3 and above).
+      // UV index (the UV button): a see-through colour layer over UTCI, one flat colour per WHO
+      // class (moderate 3, high 6, very high 8, extreme 11; nothing below 3), with a fine white
+      // line on every class boundary. UV is an 8-bit layer, hence allow8bit; `toggle` ties the
+      // items to the button.
+      { kind: "fill", toggle: "uv", ramp: "uvi", opacity: 0.3 },
+      { kind: "contour", toggle: "uv", layer: "uvi", ramp: "uvi", levels: [3, 6, 8, 11], intervalByZoom: [[0, 1]], heavy: 1,
+        allow8bit: true, minValue: 2.5, color: [255, 255, 255], alpha: 0.9, majorAlpha: 0.9, width: 0.3, majorWidth: 0.3, shadow: 0.12 },
       { kind: "fill", ramp: "wetbulb", opacity: 0.8, pattern: { type: "hatch", threshold: 31, color: [18, 22, 60] } },
-      { kind: "fill", ramp: "uvi", opacity: 0.95, pattern: { type: "dots", threshold: 11, color: [255, 255, 255] } },
       { kind: "fill", ramp: "cloudveil", opacity: 0.55 },
       { kind: "particles", layer: "wind", opacity: 0.45 },
     ],
+    toggles: [{ id: "uv", label: "UV" }],
     keys: [{ title: "Overlays", rows: [
       { pattern: "hatch", text: "Wet-bulb 31 °C or more" },
-      { pattern: "dots", text: "UV index 11 or more (extreme)" },
+      { swatch: [250, 214, 40], text: "UV 3 to 5 (moderate)", toggle: "uv" },
+      { swatch: [246, 140, 40], text: "UV 6 to 7 (high)", toggle: "uv" },
+      { swatch: [226, 50, 46], text: "UV 8 to 10 (very high)", toggle: "uv" },
+      { swatch: [160, 60, 190], text: "UV 11 or more (extreme)", toggle: "uv" },
     ] }],
     explain: [
       "UTCI: the temperature it feels like for a person standing outdoors, from air temperature, humidity, wind and radiation. The Sun / Shade button switches between direct sun and shade.",
       "Hatched: wet-bulb temperature at or above 31 °C, where sweat can barely cool the body. It does not depend on sun or wind.",
-      "Dotted: estimated UV index in the extreme class (11 or more), from the sun's height, a fixed ozone column and the forecast cloud. Smoke and aerosols are not modelled.",
+      "UV tint (switch it off with the UV button): the estimated UV index where it is 3 or more, as a see-through colour over UTCI with a white line on each class boundary: yellow moderate, orange high, red very high, violet extreme. From the sun's height, a fixed ozone column and the forecast cloud; smoke and aerosols are not modelled.",
       "Pale haze: cloud cover (less sun).",
       "Streaks: 10 m wind.",
       "Warning triangle: an area at or above Very strong heat stress, with its peak. Nearby areas merge into one as you zoom out.",
@@ -792,7 +833,7 @@ const FIELD_FS = `
   uniform float u_blend, u_dlo, u_dhi, u_opacity;
   // Pattern overlay: 0 = plain colour fill, 1 = diagonal hatch, 2 = dots, drawn
   // only where the value is at or above u_thr. Sized in CSS pixels (u_dpr).
-  uniform float u_pat, u_thr, u_dpr;
+  uniform float u_pat, u_thr, u_dpr, u_patRamp;
   uniform vec3 u_patColor;
   varying vec2 v_merc;
   void main() {
@@ -810,9 +851,17 @@ const FIELD_FS = `
         float d = abs(mod(p.x + p.y, 4.0) - 2.0);
         m = 1.0 - smoothstep(0.35, 0.95, 2.0 - d);
       } else {
-        // small dots on a 5 px grid
-        float r = length(mod(p, 5.0) - 2.5);
-        m = 1.0 - smoothstep(0.8, 1.4, r);
+        // small dots on an 11 px grid; with u_patRamp the core takes the ramp's colour for
+        // the value, inside a thin white edge so it reads on any background colour
+        float r = length(mod(p, 11.0) - 5.5);
+        float core = 1.0 - smoothstep(1.3, 1.7, r);
+        m = 1.0 - smoothstep(1.9, 2.3, r);
+        if (u_patRamp > 0.5) {
+          vec3 rc = texture2D(u_ramp, vec2(clamp((value - u_dlo) / (u_dhi - u_dlo), 0.0, 1.0), 0.5)).rgb;
+          gl_FragColor = vec4(mix(vec3(1.0), rc, core), m * inside * u_opacity);
+          if (gl_FragColor.a < 0.01) discard;
+          return;
+        }
       }
       float al = m * inside;
       if (al < 0.01) discard;
@@ -840,6 +889,9 @@ const CONTOUR_FS = `
   uniform sampler2D u_now, u_next, u_ramp;
   uniform float u_blend, u_interval, u_major, u_width, u_majorWidth, u_px, u_base;
   uniform float u_dlo, u_dhi, u_alpha, u_majorAlpha, u_shadow;
+  uniform float u_vmin, u_useColor, u_useLevels;
+  uniform vec4 u_levels;              // up to four explicit values to draw lines at (0 = unused)   // no line below u_vmin; a fixed line colour instead of the ramp's
+  uniform vec3 u_color;
   varying vec2 v_merc;
   // The value minus u_base (a multiple of the heavy-line spacing, so the lines
   // do not move). float32 near 1010 hPa resolves only ~1e-4 hPa, about what
@@ -876,6 +928,16 @@ const CONTOUR_FS = `
          + valueOne(uv + vec2(d.x, 0.0)) + valueOne(uv - vec2(d.x, 0.0))
          + valueOne(uv + vec2(0.0, d.y)) + valueOne(uv - vec2(0.0, d.y)));
   }
+  // A line at one explicit value (not a multiple of a step), width px wide.
+  float lineLevel(float v, float level, float width, float perPx) {
+    if (level <= 0.0) return 0.0;
+    float d = abs(v + u_base - level) / max(perPx, 1e-5);
+    return 1.0 - smoothstep(max(width * 0.5 - 0.5, 0.0), width * 0.5 + 0.5, d);
+  }
+  float lineLevels(float v, float width, float perPx) {
+    return max(max(lineLevel(v, u_levels.x, width, perPx), lineLevel(v, u_levels.y, width, perPx)),
+               max(lineLevel(v, u_levels.z, width, perPx), lineLevel(v, u_levels.w, width, perPx)));
+  }
   float lineAt(float v, float step, float width, float perPx) {
     float d = abs(fract(v / step + 0.5) - 0.5) * step / max(perPx, 1e-5);  // pixels to the nearest line
     return 1.0 - smoothstep(max(width * 0.5 - 0.5, 0.0), width * 0.5 + 0.5, d);   // width px wide, one pixel of anti-aliasing centred on the edge
@@ -883,6 +945,7 @@ const CONTOUR_FS = `
   void main() {
     vec2 uv = dataUV(v_merc.x, v_merc.y);
     float v  = valueAtUV(uv);
+    if (v + u_base < u_vmin) discard;
     // The change per pixel is the change per grid cell times the pixel's size in
     // cells. Differencing over one pixel instead loses the answer to rounding
     // (hardware filtering of the 16-bit bytes is only good to ~0.003 hPa), and
@@ -892,19 +955,20 @@ const CONTOUR_FS = `
     float gy = valueAtUV(uv + vec2(0.0, cell.y)) - v;
     vec2 pc = (dataUV(v_merc.x + u_px, v_merc.y + u_px) - uv) * u_texSize;
     float perPx = abs(gx) * abs(pc.x) + abs(gy) * abs(pc.y);
-    float minor = lineAt(v, u_interval, u_width, perPx);
-    float major = lineAt(v, u_interval * u_major, u_majorWidth, perPx);
+    float minor = u_useLevels > 0.5 ? lineLevels(v, u_width, perPx) : lineAt(v, u_interval, u_width, perPx);
+    float major = u_useLevels > 0.5 ? 0.0 : lineAt(v, u_interval * u_major, u_majorWidth, perPx);
     // Colour by the line's own value: back to absolute, through the ramp.
     float t = clamp((v + u_base - u_dlo) / (u_dhi - u_dlo), 0.0, 1.0);
     float a = max(minor * u_alpha, major * u_majorAlpha);
     // A soft dark halo just wider than the line, under it, so the line stays
     // readable over any background colour (u_shadow = its strength, 0 = none).
     float halo = u_shadow > 0.0
-      ? max(lineAt(v, u_interval, u_width + 1.8, perPx), lineAt(v, u_interval * u_major, u_majorWidth + 1.8, perPx)) * u_shadow
+      ? (u_useLevels > 0.5 ? lineLevels(v, u_width + 1.8, perPx)
+         : max(lineAt(v, u_interval, u_width + 1.8, perPx), lineAt(v, u_interval * u_major, u_majorWidth + 1.8, perPx))) * u_shadow
       : 0.0;
     float outA = a + halo * (1.0 - a);
     if (outA < 0.01) discard;
-    vec3 col = texture2D(u_ramp, vec2(t, 0.5)).rgb;
+    vec3 col = u_useColor > 0.5 ? u_color : texture2D(u_ramp, vec2(t, 0.5)).rgb;
     gl_FragColor = vec4((col * a + vec3(0.03, 0.05, 0.1) * halo * (1.0 - a)) / outA, outA);
   }`;
 
@@ -1213,6 +1277,11 @@ class WeatherLayer {
         gl.uniform1i(f.loc.u_ramp, 2);
         gl.uniform1f(f.loc.u_dlo, ramp.display[0]);
         gl.uniform1f(f.loc.u_dhi, ramp.display[1]);
+        gl.uniform1f(f.loc.u_vmin, item.minValue != null ? item.minValue : -1e9);
+        gl.uniform1f(f.loc.u_useColor, item.color ? 1 : 0);
+        gl.uniform1f(f.loc.u_useLevels, item.levels ? 1 : 0);
+        if (item.levels) gl.uniform4f(f.loc.u_levels, item.levels[0] || 0, item.levels[1] || 0, item.levels[2] || 0, item.levels[3] || 0);
+        if (item.color) gl.uniform3f(f.loc.u_color, item.color[0] / 255, item.color[1] / 255, item.color[2] / 255);
         gl.uniform1f(f.loc.u_alpha, item.alpha);
         gl.uniform1f(f.loc.u_majorAlpha, item.majorAlpha);
         gl.uniform1f(f.loc.u_shadow, (item.shadow || 0) * zs);
@@ -1227,8 +1296,9 @@ class WeatherLayer {
         gl.uniform1f(f.loc.u_pat, pat ? (pat.type === "dots" ? 2 : 1) : 0);
         if (pat) {
           gl.uniform1f(f.loc.u_thr, pat.threshold);
+          gl.uniform1f(f.loc.u_patRamp, pat.byValue ? 1 : 0);
           gl.uniform1f(f.loc.u_dpr, window.devicePixelRatio || 1);
-          gl.uniform3f(f.loc.u_patColor, pat.color[0] / 255, pat.color[1] / 255, pat.color[2] / 255);
+          if (pat.color) gl.uniform3f(f.loc.u_patColor, pat.color[0] / 255, pat.color[1] / 255, pat.color[2] / 255);
         }
       }
       for (const shift of shifts) {
@@ -1447,6 +1517,7 @@ class App {
     this.satBad = new Set();  // images that failed to load; dropped from the axis
     this.playing = false;
     this.terrainOn = false;   // relief shading (AWS Terrain Tiles); ?terrain=1
+    this.uvOn = true;         // heat preset: UV index lines on; ?uv=0 turns them off
     this.shadeOn = false;     // heat preset: UTCI in shade instead of direct sun; ?shade=1
     this.frontsOn = true;     // fronts on Synoptic overview; ?fronts=0 hides them
     this.tropicalOn = true;   // JTWC invests and warned cyclones; ?storms=0 hides them
@@ -1590,9 +1661,11 @@ class App {
 
   // What to draw: the chosen preset's stack, or (no preset) the selected layer
   // with wind particles over it, which is how the page always behaved.
+  toggleOn(id) { return id === "uv" ? this.uvOn : true; }
+
   renderStack() {
     const preset = this.preset && PRESETS[this.preset];
-    if (preset) return preset.stack;
+    if (preset) return preset.stack.some((i) => i.toggle) ? preset.stack.filter((i) => !i.toggle || this.toggleOn(i.toggle)) : preset.stack;
     return [{ kind: "fill", ramp: this.layer }, { kind: "particles", layer: "wind" }];
   }
 
@@ -2105,7 +2178,7 @@ class App {
   presetAvailable(id) {
     return PRESETS[id].stack.every((i) => {
       const spec = this.manifest.layers[i.kind === "particles" ? i.layer : dataOf(i)];
-      return spec && (i.kind !== "contour" || spec.encoding === "scalar16");
+      return spec && (i.kind !== "contour" || i.allow8bit || spec.encoding === "scalar16");
     });
   }
 
@@ -2114,6 +2187,8 @@ class App {
     if (id) this.layer = PRESETS[id].main;
     this.paintLayerButtons();
     this.paintShadeButton && this.paintShadeButton();
+    this.paintUvButton && this.paintUvButton();
+    this.paintHeatGroup && this.paintHeatGroup();
     this.writeURL(); this.paintReadoutLabel(); this.paintLegend(); this.paintBoundaryStyle();
     this.scheduleContourLabels();
     this.map && this.map.triggerRepaint();
@@ -2158,7 +2233,16 @@ class App {
       b.title = PRESETS[id].goal;
       b.dataset.preset = id;
       b.onclick = () => this.setPreset(this.preset === id ? null : id);
-      box.appendChild(b);
+      if (id === "heat" || id === "synoptic") {
+        // A preset button and its own switches form one group: Heat stress with Sun / Shade and UV,
+        // Synoptic overview with Fronts. The group is outlined while that preset is selected.
+        const grp = document.createElement("span");
+        grp.className = "grp";
+        grp.dataset.preset = id;
+        grp.appendChild(b);
+        box.appendChild(grp);
+        (this.presetGroups = this.presetGroups || {})[id] = grp;
+      } else box.appendChild(b);
     }
     if (available.length) {
       const sep = document.createElement("span");
@@ -2182,10 +2266,18 @@ class App {
     }
 
     this.paintLayerButtons();
-    document.getElementById("legend").addEventListener("click", (e) => {
+    // The reading of the map: a pop-up while the pointer is over the (i) (or it has focus);
+    // a click pins it open, which is how a touch screen gets it.
+    const legendEl = document.getElementById("legend");
+    legendEl.addEventListener("mouseover", (e) => { if (e.target.closest(".info")) this.showExplain(); });
+    legendEl.addEventListener("mouseout", (e) => { if (e.target.closest(".info") && !this.legendInfo) this.hideExplain(); });
+    legendEl.addEventListener("focusin", (e) => { if (e.target.closest(".info")) this.showExplain(); });
+    legendEl.addEventListener("focusout", (e) => { if (e.target.closest(".info") && !this.legendInfo) this.hideExplain(); });
+    legendEl.addEventListener("click", (e) => {
       if (!e.target.closest(".info")) return;
       this.legendInfo = !this.legendInfo;
       this.paintLegend();
+      if (this.legendInfo) this.showExplain(); else this.hideExplain();
     });
 
     // Hide / show the variable bar; starts expanded, remembers the last choice.
@@ -2335,7 +2427,8 @@ class App {
     // Fronts (Synoptic overview): a line with a triangle and a semicircle, next to the cyclone button.
     const front = document.createElement("button");
     front.className = "toggle";
-    front.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="none"><rect x="1" y="9.6" width="14" height="1.5" rx=".7"/><path d="M2.6 9.6 L5.6 9.6 L4.1 5.6Z"/><path d="M8.6 9.6 A2.1 2.1 0 0 1 12.8 9.6Z"/></svg>';
+    front.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="none"><rect x="1" y="9.6" width="14" height="1.5" rx=".7"/><path d="M2.6 9.6 L5.6 9.6 L4.1 5.6Z"/><path d="M8.6 9.6 A2.1 2.1 0 0 1 12.8 9.6Z"/></svg><span>Fronts</span>';
+    front.hidden = true;
     front.setAttribute("aria-label", "Weather fronts");
     front.title = "Fronts and troughs on Synoptic overview: cold (triangles), warm (semicircles), occluded, monsoon and pressure troughs";
     front.setAttribute("aria-pressed", String(this.frontsOn));
@@ -2345,7 +2438,13 @@ class App {
       this.frontKey = -1;               // force the redraw
       this.updateFronts(); this.writeURL();
     };
-    box.appendChild(front);
+    // In the Synoptic overview group, shown only while that preset (the one with fronts) is selected.
+    const synGrp = this.presetGroups && this.presetGroups.synoptic;
+    if (synGrp) synGrp.appendChild(front); else box.appendChild(front);
+    this.paintFrontButton = () => {
+      front.hidden = !(this.preset && PRESETS[this.preset].fronts && this.manifest.fronts);
+    };
+    this.paintFrontButton();
 
     // Sun / shade (Heat stress): UTCI for a person in direct sun or in shade.
     const shade = document.createElement("button");
@@ -2369,6 +2468,34 @@ class App {
     this.shadeBtn = shade;
     this.paintShadeButton = () => { shade.hidden = !(this.preset && PRESETS[this.preset].sunShade && this.manifest.layers.utci_shade); paintShade(); };
     this.paintShadeButton();
+    this.paintHeatGroup = () => {
+      for (const [id, grp] of Object.entries(this.presetGroups || {})) grp.classList.toggle("open", this.preset === id);
+      if (this.paintFrontButton) this.paintFrontButton();
+    };
+
+    // UV index layer (Heat stress): on or off, next to Sun / Shade in the layer bar.
+    const uvBtn = document.createElement("button");
+    uvBtn.className = "toggle";
+    uvBtn.textContent = "UV";
+    uvBtn.hidden = true;
+    uvBtn.onclick = () => {
+      this.uvOn = !this.uvOn;
+      this.paintUvButton();
+      this.writeURL(); this.paintLegend();
+      this.map && this.map.triggerRepaint();
+    };
+    // Both heat switches sit right after the Heat stress button, where they are
+    // easy to find (the end of the bar can be off screen).
+    const heatGrp = this.presetGroups && this.presetGroups.heat;
+    if (heatGrp) heatGrp.append(shade, uvBtn); else box.append(shade, uvBtn);
+    this.paintUvButton = () => {
+      uvBtn.hidden = !(this.preset && PRESETS[this.preset].toggles && this.manifest.layers.uvi);
+      uvBtn.setAttribute("aria-pressed", String(this.uvOn));
+      uvBtn.setAttribute("aria-label", this.uvOn ? "UV index layer shown" : "UV index layer hidden");
+      uvBtn.title = this.uvOn ? "UV index layer is on. Press to hide it." : "UV index layer is off. Press to show it.";
+    };
+    this.paintUvButton();
+    this.paintHeatGroup();
 
     // Icon-only buttons get a name tag on hover or keyboard focus.
     const tip = document.createElement("div");
@@ -2483,26 +2610,74 @@ class App {
     // A ramp with `marks` names its thresholds (heat danger levels): each gets a
     // line across the bar and its name beside it.
     const named = r.marks && r.marks.map(([v, name]) => ({ v, text: `${name} ${v}`, p: (v - lo) / (hi - lo) }));
-    let html = this.legendColumn(spec ? spec.label : keyLayer, r.unitLabel, gradient, named || ticks, "", !!named);
+    let html = r.discrete
+      ? this.legendClasses(spec ? spec.label : keyLayer, r.unitLabel, r)
+      : this.legendColumn(spec ? spec.label : keyLayer, r.unitLabel, gradient, named || ticks, "", !!named);
     if (this.radarOn) html += this.radarLegendHTML();
     if (this.satOn && this.satManifest) html += this.satLegendHTML();
     // "i" shows the plain-language reading of the map; hidden until asked for.
     if (preset && preset.explain) {
       html = `<button type="button" class="info" aria-pressed="${this.legendInfo}" aria-label="What does this map show?" ` +
         `title="What does this map show?">i</button>` + html;
-      if (this.legendInfo) {
-        html += `<div class="explain">` + preset.explain.map((n) =>
-          `<p>${escapeHTML(n.replace("{interval}", this.contourIntervalText()))}</p>`).join("") + `</div>`;
-      }
     }
     document.getElementById("legend").innerHTML = html;
-    // Colour keys for layers that have no bar: their own box.
+    // The reading of the map (and the overlay key) is a pop-up beside the (i), not part of the box.
     const keys = document.getElementById("legend2");
-    keys.hidden = !(preset && preset.keys && this.legendInfo);   // behind the (i) button, like the explanation
-    keys.innerHTML = preset && preset.keys ? preset.keys.map((k) =>
-      `<div class="col"><div class="title">${escapeHTML(k.title)}</div>` +
-      `<div class="rows">` + k.rows.map((r2) => `<div class="row"><i class="sw${r2.pattern ? " " + r2.pattern : ""}"${r2.swatch ? ` style="background:rgb(${r2.swatch.join(",")})"` : ""}></i>${escapeHTML(r2.text)}</div>`).join("") +
-      `</div></div>`).join("") : "";
+    keys.hidden = true; keys.innerHTML = "";
+    if (!preset || !preset.explain) this.hideExplain();
+    else if (this.legendInfo) this.showExplain();
+    else if (this.explainShown) this.showExplain();      // refresh the text in place while it is up
+  }
+
+  explainHTML() {
+    const preset = this.preset && PRESETS[this.preset];
+    if (!preset || !preset.explain) return "";
+    let html = preset.explain.map((n) =>
+      `<p>${escapeHTML(n.replace("{interval}", this.contourIntervalText()))}</p>`).join("");
+    if (preset.keys) html += preset.keys.map((k) =>
+      `<div class="ekey"><div class="etitle">${escapeHTML(k.title)}</div>` +
+      k.rows.filter((r2) => !r2.toggle || this.toggleOn(r2.toggle)).map((r2) =>
+        `<div class="row"><i class="sw${r2.pattern ? " " + r2.pattern : ""}"${r2.swatch ? ` style="background:rgb(${r2.swatch.join(",")})"` : ""}></i>${escapeHTML(r2.text)}</div>`).join("") +
+      `</div>`).join("");
+    return html;
+  }
+
+  showExplain() {
+    const btn = document.querySelector("#legend .info");
+    let pop = document.getElementById("explain-pop");
+    if (!btn) return;
+    if (!pop) { pop = document.createElement("div"); pop.id = "explain-pop"; pop.setAttribute("role", "tooltip"); document.body.appendChild(pop); }
+    pop.innerHTML = this.explainHTML();
+    pop.hidden = false;
+    this.explainShown = true;
+    const r = btn.getBoundingClientRect();
+    pop.style.right = `${Math.max(8, innerWidth - r.left + 8)}px`;
+    pop.style.top = `${Math.max(8, Math.min(r.top, innerHeight - pop.offsetHeight - 8))}px`;
+  }
+
+  hideExplain() {
+    const pop = document.getElementById("explain-pop");
+    if (pop) pop.hidden = true;
+    this.explainShown = false;
+  }
+
+  // A key made of one block per class (UTCI heat-stress classes): the hottest at
+  // the top, the colour the map shows for that class, the class name and its range.
+  legendClasses(title, unit, r) {
+    const over = (c) => {                       // the map colour over a white map
+      const a = c[3] / 255 * r.opacity;
+      return `rgb(${c.slice(0, 3).map((v) => Math.round(255 + (v - 255) * a)).join(",")})`;
+    };
+    const colourAt = (v) => { let c = r.stops[0][1]; for (const [sv, sc] of r.stops) if (v >= sv) c = sc; return c; };
+    const edges = r.marks;            // [[26,"Moderate"],...] lower edges, rising
+    const rows = edges.map(([lo, name], i) => ({
+      name, range: i === edges.length - 1 ? `${lo}+` : `${lo}–${edges[i + 1][0]}`, colour: over(colourAt(lo + 0.5)),
+    })).reverse();
+    rows.push({ name: r.marksBelow, range: `<${edges[0][0]}`, colour: "rgb(255,255,255)" });
+    return `<div class="col"><div class="title"><span>${escapeHTML(title)}</span><span>${escapeHTML(unit)}</span></div>` +
+      `<div class="cls">` + rows.map((x) =>
+        `<div class="cls-row"><span class="cls-name">${escapeHTML(x.name)}<small>${escapeHTML(x.range)}</small></span>` +
+        `<i style="background:${x.colour}"></i></div>`).join("") + `</div></div>`;
   }
 
   // One vertical key: low values at the bottom, high at the top. `ticks` are
@@ -2797,6 +2972,7 @@ class App {
     if (h.get("storms") === "0") this.tropicalOn = false;
     if (h.get("fronts") === "0") this.frontsOn = false;
     if (h.get("shade") === "1") this.shadeOn = true;
+    if (h.get("uv") === "0") this.uvOn = false;
     if (h.get("terrain") === "1") this.terrainOn = true;
   }
 
@@ -2848,6 +3024,7 @@ class App {
       ...(this.tropicalOn ? {} : { storms: "0" }),
       ...(this.frontsOn ? {} : { fronts: "0" }),
       ...(this.shadeOn ? { shade: "1" } : {}),
+      ...(this.uvOn ? {} : { uv: "0" }),
       ...(this.terrainOn ? { terrain: "1" } : {}),
     });
     history.replaceState(null, "", `#${h}`);
