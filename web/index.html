@@ -213,9 +213,9 @@
     transform: translateY(50%); }
   #legend .bar { position: relative; width: 9px; border-radius: 3px; background-color: #0b1020;
     border: 1px solid rgba(255,255,255,.25); }
-  #legend .cls { display: flex; flex-direction: column; gap: 2px; align-items: flex-end; }
-  #legend .cls-row { display: flex; align-items: center; gap: 6px; }
-  #legend .cls-row i { width: 22px; height: 15px; border-radius: 3px; border: 1px solid rgba(255,255,255,.3); flex: none; }
+  #legend .body.cls { height: clamp(120px, 28vh, 200px); }
+  #legend .cls-names { display: flex; flex-direction: column; justify-content: space-around; align-items: flex-end; }
+  #legend .cls-names .cls-name { flex: 1; display: flex; flex-direction: column; justify-content: center; }
   #legend .cls-name { font-size: 9.5px; color: #cfd8ee; text-align: right; line-height: 1.15; white-space: nowrap; }
   #legend .cls-name small { display: block; font-size: 8.5px; color: #a9b5d0; font-variant-numeric: tabular-nums; }
   #legend .note { margin-top: 4px; max-width: 76px; text-align: right; font-size: 9px; color: #b4c0dc; }
@@ -546,7 +546,7 @@ const PRESETS = {
       "UV tint (switch it off with the UV button): the estimated UV index where it is 3 or more, as a see-through colour over UTCI with a white line on each class boundary: yellow moderate, orange high, red very high, violet extreme. From the sun's height, a fixed ozone column and the forecast cloud; smoke and aerosols are not modelled.",
       "Pale haze: cloud cover (less sun).",
       "Streaks: 10 m wind.",
-      "Warning triangle: an area at or above Very strong heat stress, with its peak. Nearby areas merge into one as you zoom out.",
+      "Warning triangle: an area at or above Very strong heat stress, with its peak. Nearby areas merge into one as you zoom out. Hover it (tap on a phone) for the full readings and why they are dangerous.",
       "Grid of 0.25°; street-level conditions in dense cities can differ, especially wind.",
     ],
   },
@@ -2183,6 +2183,74 @@ class App {
     }, 80);
     // The first pass can run before the map has its final size; redo it once settled.
     map.once("idle", () => { this.hzKey = null; this.scheduleContourLabels(); });
+
+    // Hover (or tap) a triangle: the readings at its hottest cell and why they matter.
+    const tip = () => this.hazardTip || (this.hazardTip = new maplibregl.Popup({ closeButton: false, closeOnClick: false,
+      offset: 18, maxWidth: "none", className: "front-tip" }));
+    const show = async (e) => {
+      if (this.preset !== "heat" || !e.features.length) return;
+      map.getCanvas().style.cursor = "pointer";
+      const f = e.features[0], [lon, lat] = f.geometry.coordinates, token = this.hazardToken = (this.hazardToken || 0) + 1;
+      const html = await this.hazardExplain(lon, lat);
+      if (token !== this.hazardToken || !html) return;
+      tip().setLngLat([lon, lat]).setHTML(html).addTo(map);
+    };
+    map.on("mouseenter", "hazard", show);
+    map.on("click", "hazard", show);              // touch screens have no hover
+    map.on("mouseleave", "hazard", () => {
+      map.getCanvas().style.cursor = ""; this.hazardToken = (this.hazardToken || 0) + 1;
+      if (this.hazardTip) this.hazardTip.remove();
+    });
+  }
+
+  // The popup over a heat warning triangle: UTCI (sun and shade), wet-bulb and UV
+  // at the triangle's cell, each with its level, and a plain reason it is dangerous.
+  async hazardExplain(lon, lat) {
+    const g = this.manifest.grid, res = 360 / g.width;
+    const n = Math.floor((90 - lat) / res) * g.width + Math.floor((lon + 180) / res);
+    const i = Math.floor(this.stepIndex), blend = this.stepIndex - i;
+    const at = async (layer) => {
+      if (!this.manifest.layers[layer]) return null;
+      try {
+        const [A, B] = await Promise.all([this.valueGrid(layer, i), this.valueGrid(layer, i + 1)]);
+        return A[n] + (B[n] - A[n]) * blend;
+      } catch (err) { return null; }
+    };
+    const [sun, shade, wb, uv] = await Promise.all([at("utci_sun"), at("utci_shade"), at("wetbulb"), at("uvi")]);
+    if (sun === null && shade === null) return "";
+    const lvl = (v, tiers) => tiers.find(([lo]) => v >= lo) || tiers[tiers.length - 1];
+    const UTCI = [[46, "Extreme heat stress", "#a02aa8", "Heatstroke is a real risk within minutes to an hour of outdoor activity. The body cannot shed heat fast enough."],
+                  [38, "Very strong heat stress", "#e0312b", "Heat exhaustion and heatstroke are likely with any exertion or long exposure. Limit time outdoors to short spells."],
+                  [32, "Strong heat stress", "#f6a234", "Heat exhaustion is possible with exertion. Drink often and rest in the shade."],
+                  [26, "Moderate heat stress", "#c9b400", "Tiring in the open, mainly with activity."],
+                  [-99, "No heat stress", "#8a93a8", ""]];
+    const WB = [[35, "At the limit of human tolerance", "#a02aa8", "Hours at this level can kill even fit people resting in the shade."],
+                [31, "Dangerous", "#be1e50", "Sweat barely cools the body (hatched on the map). Hours outdoors can overheat people even at rest; older people, children and people with heart or lung disease are most at risk."],
+                [28, "Oppressive", "#e0603a", "Sweat evaporates poorly; hard work outdoors becomes risky."],
+                [24, "Humid", "#9a8a2a", "Sweat still cools you, but more slowly."],
+                [-99, "Comfortable air", "#8a93a8", ""]];
+    const UVL = [[11, "Extreme", "#a03cbe", "Unprotected skin burns in minutes; stay out of the midday sun."],
+                 [8, "Very high", "#e2322e", "Unprotected skin burns in a few minutes. Cover up and use sunscreen."],
+                 [6, "High", "#f68c28", "Skin burns in about 15 to 20 minutes unprotected."],
+                 [3, "Moderate", "#c9a800", "Burns are possible in under an hour; protect if outside long."],
+                 [-99, "Low", "#8a93a8", ""]];
+    const row = (name, v, unit, tiers, extra) => {
+      if (v === null) return "";
+      const [, label, col, why] = lvl(v, tiers);
+      return `<div style="margin-top:6px"><div style="color:#a9b5d0">${name}</div>` +
+        `<div><b style="font-size:13px">${v.toFixed(v < 10 ? 1 : 0)}${unit}</b> <span style="color:${col};font-weight:600;filter:brightness(1.35)">${label}</span>${extra || ""}</div>` +
+        (why ? `<div style="color:#cfd6e8">${why}</div>` : "") + `</div>`;
+    };
+    const main = this.shadeOn ? shade : sun;
+    const extraSh = (this.shadeOn ? sun : shade) === null ? "" :
+      `<span style="color:#a9b5d0"> · ${this.shadeOn ? "in sun" : "in shade"} ${(this.shadeOn ? sun : shade).toFixed(0)}°</span>`;
+    const compound = (wb !== null && wb >= 31 && main !== null && main >= 38)
+      ? `<div style="margin-top:7px;padding-top:6px;border-top:1px solid rgba(255,255,255,.18);color:#ffb3a8">Heat and humidity together: the body loses its main way of cooling, so the risk is higher than either number suggests.</div>` : "";
+    return `<div style="font:11px/1.4 ui-sans-serif,system-ui,sans-serif;color:#e9edf7;width:250px;white-space:normal">` +
+      `<b style="font-size:12px">Heat warning · ${Math.abs(lat).toFixed(1)}°${lat < 0 ? "S" : "N"} ${Math.abs(lon).toFixed(1)}°${lon < 0 ? "W" : "E"}</b>` +
+      row(`Feels like (UTCI, ${this.shadeOn ? "shade" : "direct sun"})`, main, "°C", UTCI, extraSh) +
+      row("Wet-bulb temperature", wb, "°C", WB) + row("UV index", uv, "", UVL) + compound +
+      `<div style="margin-top:6px;color:#a9b5d0">Model values for one 0.25° cell at the hottest point; street level can differ.</div></div>`;
   }
 
   // ---- Day and night ---------------------------------------------------------
@@ -2824,10 +2892,14 @@ class App {
       name, range: i === edges.length - 1 ? `${lo}+` : `${lo}–${edges[i + 1][0]}`, colour: over(colourAt(lo + 0.5)),
     })).reverse();
     rows.push({ name: r.marksBelow, range: `<${edges[0][0]}`, colour: "rgb(255,255,255)" });
+    // One thin bar of flat bands (hottest on top), equal heights, each band's name and
+    // range beside it, centred on the band.
+    const n = rows.length, band = 100 / n;
+    const bar = [...rows].reverse().map((x, i) => `${x.colour} ${(i * band).toFixed(2)}% ${((i + 1) * band).toFixed(2)}%`).join(", ");
     return `<div class="col"><div class="title"><span>${escapeHTML(title)}</span><span>${escapeHTML(unit)}</span></div>` +
-      `<div class="cls">` + rows.map((x) =>
-        `<div class="cls-row"><span class="cls-name">${escapeHTML(x.name)}<small>${escapeHTML(x.range)}</small></span>` +
-        `<i style="background:${x.colour}"></i></div>`).join("") + `</div></div>`;
+      `<div class="body cls"><div class="cls-names">` + rows.map((x) =>
+        `<div class="cls-name">${escapeHTML(x.name)}<small>${escapeHTML(x.range)}</small></div>`).join("") + `</div>` +
+      `<div class="bar" style="background-image:linear-gradient(to top, ${bar})"></div></div></div>`;
   }
 
   // One vertical key: low values at the bottom, high at the top. `ticks` are
