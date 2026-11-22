@@ -493,7 +493,34 @@ Object.assign(RAMPS, {
   cloudveil: { source: "cloud", display: [0, 100], unitLabel: "%", opacity: 1,
     stops: [[0, [255, 255, 255, 0]], [25, [235, 240, 250, 0]], [60, [240, 245, 255, 70]],
             [100, [255, 255, 255, 150]]] },
+  // Stargazing: cloud is what hides the sky, so cloud is the colour. Clear sky is a faint teal (the
+  // sky is open), partly cloudy has no tint, and overcast is a heavy white haze that also veils the
+  // aurora and the light glow drawn under it. `label` is the legend title (there is no layer of this name).
+  astrocloud: { source: "cloud", label: "Cloud cover", display: [0, 100], unitLabel: "%", opacity: 1, ticks: [0, 25, 50, 75, 100],
+    stops: [[0, [70, 205, 190, 80]], [15, [70, 205, 190, 45]], [32, [70, 205, 190, 0]],
+            [50, [225, 232, 245, 95]], [75, [236, 241, 250, 170]], [100, [244, 247, 253, 225]]] },
 });
+
+// Stargazing overlays that are not forecast layers. Both are small static or near-real-time images
+// (pipeline/aurora.py, pipeline/darksky.py) that the page colours itself and lays under the cloud.
+// aurora: OVATION probability of visible aurora, 0 to 100 %, [value, r, g, b, alpha] stops.
+// lights: light-pollution proxy, VIIRS radiance in nW/cm2/sr, spread to the glow around towns; the stops
+// are on radiance, and `classes` names the bands for the hover text and the key. Dark is left clear
+// on purpose: the places to go are the ones with no glow on them.
+const ASTRO = {
+  aurora: { stops: [[3, 90, 255, 150, 0], [8, 90, 255, 150, 70], [20, 80, 255, 120, 150],
+                    [45, 190, 255, 90, 205], [75, 255, 150, 220, 235], [100, 255, 110, 160, 245]] },
+  lights: { stops: [[0.25, 255, 214, 90, 0], [0.5, 255, 214, 90, 55], [1, 255, 190, 60, 110],
+                    [3, 255, 140, 40, 160], [10, 255, 90, 50, 200], [30, 255, 120, 150, 225], [100, 255, 245, 245, 245]],
+            classes: [[0, "Dark"], [0.25, "Faint glow"], [1, "Moderate glow"], [3, "Bright glow"], [10, "Very bright"], [30, "City centre"]] },
+  // The harmonized DMSP + VIIRS index (units "dn", 0 to 63, linear, city cores saturate at 63): same colours,
+  // thresholds from its spread values (about 17 % of the globe is above 0.2, a village is around 1 to 2,
+  // Jakarta 40).
+  lightsDN: { stops: [[0.2, 255, 214, 90, 0], [0.5, 255, 214, 90, 55], [1.5, 255, 190, 60, 110],
+                      [4, 255, 140, 40, 160], [12, 255, 90, 50, 200], [30, 255, 120, 150, 225], [63, 255, 245, 245, 245]],
+              classes: [[0, "Dark"], [0.25, "Faint glow"], [1, "Moderate glow"], [4, "Bright glow"], [12, "Very bright"], [30, "City centre"]] },
+  auroraWindowH: 3,        // the OVATION nowcast is only meaningful this many hours either side of its time
+};
 
 // ---------------------------------------------------------------------------
 // Presets: one information goal each, as a stack of layers drawn bottom to top.
@@ -601,6 +628,38 @@ const PRESETS = {
       "Streaks: 850 hPa wind, coloured by the sea-level pressure under them (the same colours as the lines).",
     ],
   },
+};
+// Stargazing, appended here so the table above reads as it did. Cloud decides whether the sky is open,
+// the light glow how dark the ground is, aurora is a bonus at high latitude, and the Day/Night lines
+// (with an 18 degree astronomical-night line and the Moon) say when it is dark. The cloud forecast is the
+// only layer it needs from the run; aurora and light pollution are optional files that are simply absent
+// when not published.
+PRESETS.astro = {
+  order: 2,
+  label: "Stargazing",
+  goal: "Where is the sky good tonight?",
+  main: "cloud",
+  keyRamp: "astrocloud",
+  astro: true,           // night lines with the 18 degree line and the Moon, whatever the Day/Night button says
+  darkBase: true,        // keep the dark map and white coast even though the main layer is a pale field
+  overlays: true,        // Aurora and Dark sky buttons
+  stack: [
+    { kind: "fill", ramp: "astrocloud" },
+  ],
+  keys: [{ title: "Overlays", rows: [
+    { swatch: [80, 255, 120], text: "Aurora: chance of visible aurora, 20 % or more", toggle: "aurora" },
+    { swatch: [255, 150, 220], text: "Aurora: 75 % or more", toggle: "aurora" },
+    { swatch: [255, 190, 60], text: "Light glow, moderate (a village or small town)", toggle: "lights" },
+    { swatch: [255, 90, 50], text: "Light glow, very bright (a large city)", toggle: "lights" },
+  ] }],
+  explain: [
+    "Cloud cover is the colour: a faint teal where the sky is open, white haze where it is overcast. Look for teal, and for no haze, over the place you want to be.",
+    "Light glow (Dark sky button): yellow to white where artificial light spreads into the sky, from a yearly satellite night-lights composite (harmonized DMSP and VIIRS, a relative index, not radiance) spread out by about 25 km. Places with no colour are dark. It is a proxy, not a Bortle class or sky brightness in mag/arcsec²: the glow of a big city far away is understated, and it does not extend north of 75° or south of 65°.",
+    "Aurora (Aurora button): NOAA's OVATION nowcast, the chance of visible aurora for the next hour. It is a nowcast, so it is shown only within {auroraH} hours of its time. It needs a dark sky and a clear view of the poleward horizon. {kp}",
+    "Lines: the solid line is sunset or sunrise, the dashed ones civil (6°) and nautical (12°) twilight, and the outermost, in violet, is 18°: past it, on the dark side, it is astronomical night. The Moon line is where it rises and sets, with ticks on the side where the Moon is down. Dark sky for deep-sky work is beyond the violet line and on the ticked side of the Moon line, or when the Moon is a thin crescent.",
+    "The Moon icon is where the Moon is overhead, drawn with its phase. Hover for the sun and Moon height at a point.",
+    "Cloud is a forecast at 0.25°: a clear 3-hour average can hide a gap or a passing band, and low fog and valleys are not resolved.",
+  ],
 };
 const dataOf = (item) => item.kind === "fill" ? (RAMPS[item.ramp].source || item.ramp) : item.layer;
 
@@ -1542,6 +1601,8 @@ class App {
     this.playing = false;
     this.terrainOn = false;   // relief shading (AWS Terrain Tiles); ?terrain=1
     this.uvOn = true;         // heat preset: UV index lines on; ?uv=0 turns them off
+    this.auroraOn = true;     // stargazing preset: aurora overlay; #aurora=0 turns it off
+    this.lightsOn = true;     // stargazing preset: light-glow overlay; #lights=0 turns it off
     this.shadeOn = false;     // heat preset: UTCI in shade instead of direct sun; ?shade=1
     this.frontsOn = true;     // fronts on Synoptic overview; ?fronts=0 hides them
     this.lowsOn = false;      // tracks of the model's low-pressure centres; ?lows=1 shows them
@@ -1686,7 +1747,7 @@ class App {
 
   // What to draw: the chosen preset's stack, or (no preset) the selected layer
   // with wind particles over it, which is how the page always behaved.
-  toggleOn(id) { return id === "uv" ? this.uvOn : true; }
+  toggleOn(id) { return id === "uv" ? this.uvOn : id === "aurora" ? this.auroraOn : id === "lights" ? this.lightsOn : true; }
 
   renderStack() {
     const preset = this.preset && PRESETS[this.preset];
@@ -2302,21 +2363,75 @@ class App {
   }
 
   dayNightText(lat, lng) {
-    if (!this.nightOn) return "";
-    const el = this.sunElevation(this.sunAt(this.axis[Math.round(this.pos)].t), lat, lng);
-    return (el >= 0 ? "Day" : el >= -18 ? "Twilight" : "Night") + ` · sun ${el.toFixed(0)}°`;
+    const astro = this.astroActive();
+    if (!this.nightOn && !astro) return "";
+    const t = this.axis[Math.round(this.pos)].t;
+    const el = this.sunElevation(this.sunAt(t), lat, lng);
+    if (!astro) return (el >= 0 ? "Day" : el >= -18 ? "Twilight" : "Night") + ` · sun ${el.toFixed(0)}°`;
+    // Stargazing: the four stages, then the Moon, then what the overlays say here.
+    const stage = el >= 0 ? "Day" : el >= -6 ? "Civil twilight" : el >= -12 ? "Nautical twilight" : el >= -18 ? "Astronomical twilight" : "Astronomical night";
+    const mo = this.moonAt(t), mel = this.sunElevation(mo, lat, lng);
+    return `${stage} · sun ${el.toFixed(0)}° · Moon ${mel >= 0 ? mel.toFixed(0) + "° up" : "down"}, ${Math.round(mo.illum * 100)}% lit` + this.astroValuesText(lat, lng);
+  }
+
+  // ---- Stargazing (the "astro" preset) --------------------------------------
+  astroActive() { const p = this.preset && PRESETS[this.preset]; return !!(p && p.astro); }
+  nightShown() { return this.nightOn || this.astroActive(); }
+
+  // The Moon from the date alone (Meeus' abbreviated series, good to about half a degree, plenty for
+  // a rise and set line and a phase): {dec, lng} like sunAt, so sunElevation and sunLine work on it,
+  // plus `elong` (degrees east of the sun, 0 new, 180 full) and `illum` (lit fraction, 0..1).
+  moonAt(date) {
+    const rad = Math.PI / 180;
+    const n = date.getTime() / 86400000 - 10957.5;
+    const L = 218.316 + 13.176396 * n, M = (134.963 + 13.064993 * n) * rad, F = (93.272 + 13.229350 * n) * rad;
+    const lon = (L + 6.289 * Math.sin(M)) * rad, lat = 5.128 * Math.sin(F) * rad;
+    const eps = (23.439 - 0.0000004 * n) * rad;
+    const dec = Math.asin(Math.sin(lat) * Math.cos(eps) + Math.cos(lat) * Math.sin(eps) * Math.sin(lon));
+    const ra = Math.atan2(Math.sin(lon) * Math.cos(eps) - Math.tan(lat) * Math.sin(eps), Math.cos(lon)) / rad;
+    const gmst = (18.697374558 + 24.06570982441908 * n) * 15;
+    let lng = (ra - gmst) % 360;
+    if (lng > 180) lng -= 360; if (lng < -180) lng += 360;
+    const sl = ((280.460 + 0.9856474 * n) + 1.915 * Math.sin((357.528 + 0.9856003 * n) * rad)) % 360;   // sun's ecliptic longitude
+    const elong = (((lon / rad - sl) % 360) + 360) % 360;
+    return { dec, lng, elong, illum: (1 - Math.cos(elong * rad)) / 2 };
+  }
+
+  // 16 Moon phases as small icons (0 new, 4 first quarter, 8 full, 12 last quarter).
+  moonImages() {
+    const out = [], S = 44, r = 14;
+    for (let i = 0; i < 16; i++) {
+      const cv = document.createElement("canvas"); cv.width = cv.height = S;
+      const c = cv.getContext("2d"); c.translate(S / 2, S / 2);
+      const e = (i / 16) * 2 * Math.PI, waning = e > Math.PI, ee = waning ? 2 * Math.PI - e : e;
+      if (waning) c.scale(-1, 1);
+      c.beginPath(); c.arc(0, 0, r, 0, 2 * Math.PI); c.fillStyle = "#46537a"; c.fill();
+      // The lit part: the right half-disc, then back up the terminator ellipse (x radius r cos e).
+      const a = r * Math.cos(ee);
+      c.beginPath();
+      for (let t = 0; t <= Math.PI + 1e-6; t += Math.PI / 24) c.lineTo(r * Math.sin(t), -r * Math.cos(t));
+      for (let t = Math.PI; t >= -1e-6; t -= Math.PI / 24) c.lineTo(a * Math.sin(t), -r * Math.cos(t));
+      c.closePath(); c.fillStyle = "#f4efd8"; c.fill();
+      c.beginPath(); c.arc(0, 0, r, 0, 2 * Math.PI); c.lineWidth = 2; c.strokeStyle = "rgba(225,232,250,0.85)"; c.stroke();
+      out.push(c.getImageData(0, 0, S, S));
+    }
+    return out;
   }
 
   updateNight() {
     const map = this.map, src = map && map.getSource("night-lines");
+    this.updateAstro();
     if (!src || !this.axis) return;
-    const show = this.nightOn ? "visible" : "none";
+    const astro = this.astroActive();
+    const show = this.nightShown() ? "visible" : "none";
     for (const id of ["night-casing", "night-line", "night-twilight", "night-ticks", "night-sun"])
       if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", show);
-    if (!this.nightOn) { this.nightKey = null; return; }
+    for (const id of ["night-moon-casing", "night-moon-line", "night-moon"])
+      if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", astro ? "visible" : "none");
+    if (!this.nightShown()) { this.nightKey = null; return; }
     const t = this.axis[Math.round(this.pos)].t;
     const pxPerDeg = 512 * Math.pow(2, map.getZoom()) / 360;
-    const key = `${Math.floor(t.getTime() / 60000)}|${Math.round(map.getZoom() * 2)}`;   // once a minute of map time, per half zoom level
+    const key = `${Math.floor(t.getTime() / 60000)}|${Math.round(map.getZoom() * 2)}|${astro ? "a" : ""}`;   // once a minute of map time, per half zoom level
     if (key === this.nightKey) return;
     this.nightKey = key;
     const sun = this.sunAt(t);
@@ -2329,9 +2444,21 @@ class App {
       ...line(this.sunLine(sun, 0, latStep).runs, { k: "horizon" }),
       ...line(this.sunLine(sun, -6, latStep).runs, { k: "civil" }),
       ...line(this.sunLine(sun, -12, latStep).runs, { k: "nautical" }),
+      ...(astro ? line(this.sunLine(sun, -18, latStep).runs, { k: "astro" }) : []),
       ...horizon.ticks.flatMap((seg) => shifts.map((d) => ({ type: "Feature", properties: { k: "tick" },
         geometry: { type: "LineString", coordinates: seg.map(([x, y]) => [x + d, y]) } }))),
     ];
+    const moon = this.moonAt(t), moonSrc = map.getSource("night-moon-lines"), moonPt = map.getSource("night-moon");
+    if (moonSrc) {       // the Moon's rise and set line (geocentric 0.1 degrees is about the topocentric rim on the horizon), ticks on the side where it is down
+      const ml = this.sunLine(moon, 0.1, Math.max(0.5, 22 / pxPerDeg), 7 / pxPerDeg);
+      moonSrc.setData({ type: "FeatureCollection", features: astro ? [
+        ...line(this.sunLine(moon, 0.1, latStep).runs, { k: "moon" }),
+        ...ml.ticks.flatMap((seg) => shifts.map((d) => ({ type: "Feature", properties: { k: "mtick" },
+          geometry: { type: "LineString", coordinates: seg.map(([x, y]) => [x + d, y]) } }))),
+      ] : [] });
+    }
+    if (moonPt) moonPt.setData({ type: "FeatureCollection", features: astro ? shifts.map((d) => ({ type: "Feature",
+      properties: { ph: Math.round(moon.elong / 360 * 16) % 16 }, geometry: { type: "Point", coordinates: [moon.lng + d, moon.dec * 180 / Math.PI] } })) : [] });
     src.setData({ type: "FeatureCollection", features });
     const sunPt = map.getSource("night-sun");
     if (sunPt) sunPt.setData({ type: "FeatureCollection", features: shifts.map((d) => ({ type: "Feature", properties: {},
@@ -2354,19 +2481,193 @@ class App {
     const empty = { type: "FeatureCollection", features: [] };
     map.addSource("night-lines", { type: "geojson", data: empty });
     map.addSource("night-sun", { type: "geojson", data: empty });
-    const vis = { visibility: this.nightOn ? "visible" : "none" };
+    const vis = { visibility: this.nightShown() ? "visible" : "none" };
     const on = (k) => ["==", ["get", "k"], k];
+    this.moonImages().forEach((img, i) => map.addImage(`moon${i}`, img, { pixelRatio: 2 }));
+    map.addSource("night-moon-lines", { type: "geojson", data: empty });
+    map.addSource("night-moon", { type: "geojson", data: empty });
     // Dark casing under the light lines so they read on pale and dark fields alike.
     map.addLayer({ id: "night-casing", type: "line", source: "night-lines", filter: ["any", on("horizon"), on("tick")],
       layout: { ...vis, "line-cap": "round" }, paint: { "line-color": "rgba(8,12,24,0.5)", "line-width": 3.4 } }, before);
-    map.addLayer({ id: "night-twilight", type: "line", source: "night-lines", filter: ["any", on("civil"), on("nautical")],
-      layout: vis, paint: { "line-color": "rgba(255,255,255,0.75)", "line-width": 1, "line-dasharray": [2, 3],
+    map.addLayer({ id: "night-twilight", type: "line", source: "night-lines", filter: ["any", on("civil"), on("nautical"), on("astro")],
+      layout: vis, paint: { "line-color": ["case", on("astro"), "rgba(176,150,255,0.95)", "rgba(255,255,255,0.75)"],
+        "line-width": ["case", on("astro"), 1.4, 1], "line-dasharray": [2, 3],
         "line-opacity": ["case", on("nautical"), 0.55, 1] } }, before);
+    // The Moon's rise and set line: pale blue, ticks on the side where the Moon is down. Shown only in Stargazing.
+    const mvis = { visibility: this.astroActive() ? "visible" : "none" };
+    map.addLayer({ id: "night-moon-casing", type: "line", source: "night-moon-lines",
+      layout: { ...mvis, "line-cap": "round" }, paint: { "line-color": "rgba(8,12,24,0.5)", "line-width": 3.4 } }, before);
+    map.addLayer({ id: "night-moon-line", type: "line", source: "night-moon-lines",
+      layout: { ...mvis, "line-cap": "round" }, paint: { "line-color": "rgba(150,205,255,0.95)", "line-width": 1.4 } }, before);
     map.addLayer({ id: "night-line", type: "line", source: "night-lines", filter: ["any", on("horizon"), on("tick")],
       layout: { ...vis, "line-cap": "round" }, paint: { "line-color": "rgba(255,255,255,0.95)", "line-width": 1.5 } }, before);
     map.addLayer({ id: "night-sun", type: "symbol", source: "night-sun",
       layout: { ...vis, "icon-image": "sun", "icon-size": 0.6, "icon-allow-overlap": true } });
+    map.addLayer({ id: "night-moon", type: "symbol", source: "night-moon",
+      layout: { ...mvis, "icon-image": ["concat", "moon", ["to-string", ["get", "ph"]]], "icon-size": 0.85, "icon-allow-overlap": true } });
     this.updateNight();
+  }
+
+  // ---- Stargazing overlays: aurora and light glow ---------------------------
+  // Each is a small grid image published next to the forecast (aurora/, darksky/). The page decodes the
+  // value from the red channel (like the forecast PNGs), colours it, projects it to Web Mercator on a
+  // canvas and hands MapLibre the canvas, under the weather layer so that cloud veils it. Both are
+  // optional: a file that is not published leaves its button hidden.
+  async astroFetch(path) {
+    const meta = await fetch(`${DATA}/${path}`, { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    if (!meta || !meta.image) return null;
+    const img = new Image();
+    img.crossOrigin = "anonymous";            // required: the data is on another origin
+    try {
+      await new Promise((ok, no) => { img.onload = ok; img.onerror = no; img.src = `${DATA}/${meta.image}?v=${encodeURIComponent(meta.updated || meta.year || "")}`; });
+    } catch (err) { console.warn("stargazing overlay image unavailable", path, err); return null; }
+    const cv = document.createElement("canvas");
+    cv.width = img.width; cv.height = img.height;
+    const cx = cv.getContext("2d", { willReadFrequently: true });
+    cx.drawImage(img, 0, 0);
+    const px = cx.getImageData(0, 0, img.width, img.height).data;
+    const v = new Uint8Array(img.width * img.height);
+    for (let i = 0; i < v.length; i++) v[i] = px[i * 4];
+    return { meta, w: img.width, h: img.height, v };
+  }
+
+  // A 256-entry colour table from [value, r, g, b, a] stops (value 0..vmax in table steps of vmax/255).
+  astroLut(stops, vmax) {
+    const lut = new Uint8ClampedArray(256 * 4);
+    for (let i = 0; i < 256; i++) {
+      const x = i / 255 * vmax;
+      let a = stops[0], b = stops[stops.length - 1];
+      for (let k = 0; k < stops.length - 1; k++) if (x >= stops[k][0] && x <= stops[k + 1][0]) { a = stops[k]; b = stops[k + 1]; break; }
+      const f = x <= a[0] ? 0 : x >= b[0] ? 1 : (x - a[0]) / (b[0] - a[0]);
+      for (let c = 0; c < 4; c++) lut[i * 4 + c] = a[c + 1] + (b[c + 1] - a[c + 1]) * f;
+    }
+    return lut;
+  }
+
+  // Colour a grid (equirectangular, north first, 180 W first) into a square Web Mercator canvas.
+  // `cells` is true when a value stands for a cell (the 0.1 degree light image) and false when it stands
+  // for a point (the 1 degree aurora grid, row 0 at exactly 90 N). Bilinear, wrapping in longitude.
+  astroCanvas(g, name) {
+    const S = name === "lights" ? 2048 : 1024, cells = name === "lights";
+    let lut;
+    if (name === "lights") {
+      // The stored code is log radiance, so the table is built over codes: code -> radiance -> stops.
+      const dn = g.meta.units === "dn", lo = g.meta.lo_nw, hi = g.meta.hi_nw, st = (dn ? ASTRO.lightsDN : ASTRO.lights).stops;
+      lut = new Uint8ClampedArray(256 * 4);
+      for (let i = 0; i < 256; i++) {
+        const rad = dn ? i / 255 * g.meta.dn_max : i === 0 ? 0 : lo * Math.pow(hi / lo, i / 255);
+        let a = st[0], b = st[st.length - 1];
+        for (let k = 0; k < st.length - 1; k++) if (rad >= st[k][0] && rad <= st[k + 1][0]) { a = st[k]; b = st[k + 1]; break; }
+        const f = rad <= a[0] ? 0 : rad >= b[0] ? 1 : dn ? (rad - a[0]) / (b[0] - a[0]) : Math.log(rad / a[0]) / Math.log(b[0] / a[0]);
+        for (let c = 0; c < 4; c++) lut[i * 4 + c] = (rad <= st[0][0] ? st[0][c + 1] : a[c + 1] + (b[c + 1] - a[c + 1]) * f);
+      }
+    } else lut = this.astroLut(ASTRO.aurora.stops, 255);     // aurora values are 0..100; the table is over 0..255 so index = value
+    const cv = document.createElement("canvas");
+    cv.width = cv.height = S;
+    const cx = cv.getContext("2d");
+    const out = cx.createImageData(S, S), o = out.data;
+    const fx = new Float32Array(S);
+    for (let x = 0; x < S; x++) fx[x] = (x + 0.5) / S * g.w - (cells ? 0.5 : 0);     // point grids sit on whole degrees, cell grids half a cell in
+    for (let y = 0; y < S; y++) {
+      const lat = Math.atan(Math.sinh(Math.PI * (1 - 2 * (y + 0.5) / S))) * 180 / Math.PI;
+      let fy = cells ? (90 - lat) / 180 * g.h - 0.5 : (90 - lat) / 180 * (g.h - 1);
+      fy = Math.max(0, Math.min(g.h - 1, fy));
+      const y0 = Math.floor(fy), y1 = Math.min(g.h - 1, y0 + 1), ty = fy - y0;
+      for (let x = 0; x < S; x++) {
+        const px = fx[x], x0f = Math.floor(px), tx = px - x0f;
+        const x0 = ((x0f % g.w) + g.w) % g.w, x1 = (x0 + 1) % g.w;
+        const v = (g.v[y0 * g.w + x0] * (1 - tx) + g.v[y0 * g.w + x1] * tx) * (1 - ty)
+                + (g.v[y1 * g.w + x0] * (1 - tx) + g.v[y1 * g.w + x1] * tx) * ty;
+        const i4 = Math.max(0, Math.min(255, Math.round(v))) * 4, k = (y * S + x) * 4;
+        o[k] = lut[i4]; o[k + 1] = lut[i4 + 1]; o[k + 2] = lut[i4 + 2]; o[k + 3] = lut[i4 + 3];
+      }
+    }
+    cx.putImageData(out, 0, 0);
+    return cv;
+  }
+
+  async astroLoad(name) {
+    const g = await this.astroFetch(name === "lights" ? "darksky/darksky.json" : "aurora/aurora.json");
+    const map = this.map;
+    this.astro = this.astro || {};
+    if (!g) { this.astro[name] = this.astro[name] || null; this.paintAstroButtons && this.paintAstroButtons(); return; }
+    const old = this.astro[name];
+    if (old && old.meta.updated === g.meta.updated && old.meta.year === g.meta.year) return;   // nothing new
+    this.astro[name] = g;
+    const id = `astro-${name}`;
+    if (map.getLayer(id)) map.removeLayer(id);
+    if (map.getSource(id)) map.removeSource(id);
+    const top = 85.0511287798, cv = this.astroCanvas(g, name);
+    // An image source from a PNG blob URL, not a canvas source (which lost the transparency). MapLibre
+    // fetches it, so connect-src in _headers must allow blob:. The previous URL (an aurora refresh) is freed.
+    const blob = await new Promise((ok) => cv.toBlob(ok, "image/png"));
+    this.astroUrls = this.astroUrls || {};
+    if (this.astroUrls[name]) URL.revokeObjectURL(this.astroUrls[name]);
+    this.astroUrls[name] = URL.createObjectURL(blob);
+    map.addSource(id, { type: "image", url: this.astroUrls[name], coordinates: [[-180, top], [180, top], [180, -top], [-180, -top]] });
+    // Light glow under the aurora, both under the weather layer.
+    const before = name === "lights" && map.getLayer("astro-aurora") ? "astro-aurora" : "weather";
+    map.addLayer({ id, type: "raster", source: id, layout: { visibility: "none" },
+      paint: { "raster-opacity": 1, "raster-fade-duration": 0, "raster-resampling": "linear" } }, before);
+    this.paintAstroButtons && this.paintAstroButtons();
+    this.updateAstro();
+    this.paintLegend(); this.paintCredit();
+    map.triggerRepaint();
+  }
+
+  // The OVATION nowcast says nothing about the hours the slider can reach beyond its time.
+  auroraValid() {
+    const a = this.astro && this.astro.aurora;
+    if (!a || !this.axis) return false;
+    const t = this.axis[Math.round(this.pos)].t.getTime(), ref = Date.parse(a.meta.forecast_time);
+    return Math.abs(t - ref) <= ASTRO.auroraWindowH * 3600e3;
+  }
+
+  updateAstro() {
+    const map = this.map;
+    if (!map || !map.getLayer("weather")) return;
+    const on = this.astroActive();
+    if (on && !this.astro) {
+      this.astro = {};
+      this.astroLoad("lights"); this.astroLoad("aurora");
+      this.astroTimer = setInterval(() => this.astroActive() && this.astroLoad("aurora"), 10 * 60e3);
+    }
+    if (!this.astro) return;
+    const show = (name, want) => { const id = `astro-${name}`; if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", want ? "visible" : "none"); };
+    show("lights", on && this.lightsOn);
+    show("aurora", on && this.auroraOn && this.auroraValid());
+    this.paintAstroButtons && this.paintAstroButtons();
+  }
+
+  astroSample(g, lat, lng, cells) {
+    const x = cells ? Math.floor((lng + 180) / 360 * g.w) : Math.round((lng + 180) / 360 * g.w);
+    const y = cells ? Math.min(g.h - 1, Math.floor((90 - lat) / 180 * g.h)) : Math.round((90 - lat) / 180 * (g.h - 1));
+    return g.v[Math.max(0, Math.min(g.h - 1, y)) * g.w + (((x % g.w) + g.w) % g.w)];
+  }
+
+  // What the two overlays say at a point, for the hover box (leading " · " included, or "").
+  astroValuesText(lat, lng) {
+    const bits = [];
+    const A = this.astro;
+    if (A && A.aurora && this.auroraOn && this.auroraValid()) {
+      const p = this.astroSample(A.aurora, lat, lng, false);
+      if (p >= 2) bits.push(`aurora ${p} %`);
+    }
+    if (A && A.lights && this.lightsOn) {
+      const m = A.lights.meta, code = this.astroSample(A.lights, lat, lng, true);
+      const dn = m.units === "dn";
+      const rad = dn ? code / 255 * m.dn_max : code === 0 ? 0 : m.lo_nw * Math.pow(m.hi_nw / m.lo_nw, code / 255);
+      const cls = [...(dn ? ASTRO.lightsDN : ASTRO.lights).classes].reverse().find(([th]) => rad >= th)[1];
+      // The index has no physical unit, so only the radiance version quotes a number.
+      bits.push(`light glow: ${cls.toLowerCase()}${!dn && code ? ` (${rad < 10 ? rad.toFixed(1) : Math.round(rad)} nW)` : ""}`);
+    }
+    return bits.length ? " · " + bits.join(" · ") : "";
+  }
+
+  kpText() {
+    const m = this.astro && this.astro.aurora && this.astro.aurora.meta;
+    if (!m || m.kp_now == null) return "";
+    return `Kp now ${m.kp_now.toFixed(1)}` + (m.kp_max_24h != null ? `, up to ${m.kp_max_24h.toFixed(1)} in the next 24 hours.` : ".");
   }
 
   contourIntervalText() {
@@ -2391,6 +2692,7 @@ class App {
     this.paintShadeButton && this.paintShadeButton();
     this.paintUvButton && this.paintUvButton();
     this.paintHeatGroup && this.paintHeatGroup();
+    this.nightKey = null; this.updateNight();           // the Stargazing preset brings its own night lines and overlays
     this.writeURL(); this.paintReadoutLabel(); this.paintLegend(); this.paintBoundaryStyle();
     this.scheduleContourLabels();
     this.map && this.map.triggerRepaint();
@@ -2435,7 +2737,7 @@ class App {
       b.title = PRESETS[id].goal;
       b.dataset.preset = id;
       b.onclick = () => this.setPreset(this.preset === id ? null : id);
-      if (id === "heat" || id === "synoptic") {
+      if (id === "heat" || id === "synoptic" || id === "astro") {
         // A preset button and its own switches form one group: Heat stress with Sun / Shade and UV,
         // Synoptic overview with Fronts. The group is outlined while that preset is selected.
         const grp = document.createElement("span");
@@ -2460,6 +2762,8 @@ class App {
         this.layer = name;
         this.preset = null;
         this.paintLayerButtons();
+        this.paintAstroButtons && this.paintAstroButtons();
+        this.nightKey = null; this.updateNight();      // leaving Stargazing takes its lines and overlays with it
         this.writeURL();
         this.scheduleContourLabels(); this.paintReadoutLabel(); this.paintLegend(); this.paintBoundaryStyle();
         this.map && this.map.triggerRepaint();
@@ -2713,6 +3017,34 @@ class App {
       uvBtn.title = this.uvOn ? "UV index layer is on. Press to hide it." : "UV index layer is off. Press to show it.";
     };
     this.paintUvButton();
+
+    // Stargazing: Aurora and Dark sky overlays, right after the Stargazing button. Each button appears
+    // only when its data file has loaded, and Aurora says when it is out of its time window.
+    const astroBtns = {};
+    for (const [key, label, flag] of [["aurora", "Aurora", "auroraOn"], ["lights", "Dark sky", "lightsOn"]]) {
+      const b = document.createElement("button");
+      b.className = "toggle"; b.textContent = label; b.hidden = true;
+      b.onclick = () => { this[flag] = !this[flag]; this.updateAstro(); this.writeURL(); this.paintLegend(); this.paintCredit(); this.map && this.map.triggerRepaint(); };
+      astroBtns[key] = b;
+    }
+    const astroGrp = this.presetGroups && this.presetGroups.astro;
+    if (astroGrp) astroGrp.append(astroBtns.lights, astroBtns.aurora); else box.append(astroBtns.lights, astroBtns.aurora);
+    this.paintAstroButtons = () => {
+      const have = (k) => !!(this.astro && this.astro[k]);
+      const show = this.astroActive();
+      for (const [k, flag] of [["aurora", "auroraOn"], ["lights", "lightsOn"]]) {
+        const b = astroBtns[k];
+        b.hidden = !(show && have(k));
+        b.setAttribute("aria-pressed", String(this[flag]));
+        const stale = k === "aurora" && have(k) && !this.auroraValid();
+        b.style.opacity = stale ? "0.55" : "";
+        b.title = k === "lights"
+          ? (this[flag] ? "Light glow is shown. Press to hide it." : "Light glow is hidden. Press to show it.")
+          : stale ? `Aurora is a nowcast: set the time near now (within ${ASTRO.auroraWindowH} h) to see it.`
+          : (this[flag] ? "Aurora chance is shown. Press to hide it." : "Aurora chance is hidden. Press to show it.");
+      }
+    };
+    this.paintAstroButtons();
     this.paintHeatGroup();
 
     // Icon-only buttons get a name tag on hover or keyboard focus.
@@ -2786,6 +3118,9 @@ class App {
     const osm = this.osmReady ? " · Coast and lakes: © OpenStreetMap contributors via OpenFreeMap" : "";
     const terr = this.terrainOn ? " · Terrain: AWS Open Data Terrain Tiles (NASA SRTM, USGS, ETOPO1 and others)" : "";
     const storms = this.tropicalOn && this.tropical && this.tropical.attribution ? ` · ${escapeHTML(this.tropical.attribution)}` : "";
+    const ap = this.astroActive() && this.astro;
+    const astro = ap ? [this.lightsOn && ap.lights && ap.lights.meta.attribution, this.auroraOn && ap.aurora && ap.aurora.meta.attribution]
+      .filter(Boolean).map((t) => ` · ${escapeHTML(t)}`).join("") : "";
     const el = document.getElementById("credit");
     // The data credits are one click away rather than always on screen.
     if (!el.dataset.wired) {
@@ -2799,7 +3134,7 @@ class App {
     const open = !!this.creditOpen;
     el.innerHTML =
       `<button type="button" id="credit-btn" aria-expanded="${open}" aria-controls="credit-more" title="${open ? "Hide" : "Show"} data credits">© 2026 Klimatikal</button>` +
-      `<span id="credit-more"${open ? "" : " hidden"}> · ${escapeHTML(this.manifest.attribution)} · run ${escapeHTML(this.manifest.run)}${sat}${radar}${storms}${terr}${osm} · <a href="/privacy/">Privacy</a></span>`;
+      `<span id="credit-more"${open ? "" : " hidden"}> · ${escapeHTML(this.manifest.attribution)} · run ${escapeHTML(this.manifest.run)}${sat}${radar}${storms}${astro}${terr}${osm} · <a href="/privacy/">Privacy</a></span>`;
   }
 
   // Colour key for the active layer, built from the same RAMPS table the
@@ -2830,7 +3165,7 @@ class App {
     const named = r.marks && r.marks.map(([v, name]) => ({ v, text: `${name} ${v}`, p: (v - lo) / (hi - lo) }));
     let html = r.discrete
       ? this.legendClasses(spec ? spec.label : keyLayer, r.unitLabel, r)
-      : this.legendColumn(spec ? spec.label : keyLayer, r.unitLabel, gradient, named || ticks, "", !!named);
+      : this.legendColumn(r.label || (spec ? spec.label : keyLayer), r.unitLabel, gradient, named || ticks, "", !!named);
     if (this.radarOn) html += this.radarLegendHTML();
     if (this.satOn && this.satManifest) html += this.satLegendHTML();
     // "i" shows the plain-language reading of the map; hidden until asked for.
@@ -2851,7 +3186,7 @@ class App {
     const preset = this.preset && PRESETS[this.preset];
     if (!preset || !preset.explain) return "";
     let html = preset.explain.map((n) =>
-      `<p>${escapeHTML(n.replace("{interval}", this.contourIntervalText()))}</p>`).join("");
+      `<p>${escapeHTML(n.replace("{interval}", this.contourIntervalText()).replace("{auroraH}", ASTRO.auroraWindowH).replace("{kp}", this.kpText()))}</p>`).join("");
     if (preset.keys) html += preset.keys.map((k) =>
       `<div class="ekey"><div class="etitle">${escapeHTML(k.title)}</div>` +
       k.rows.filter((r2) => !r2.toggle || this.toggleOn(r2.toggle)).map((r2) =>
@@ -3196,6 +3531,8 @@ class App {
     if (h.get("lows") === "1") this.lowsOn = true;
     if (h.get("shade") === "1") this.shadeOn = true;
     if (h.get("uv") === "0") this.uvOn = false;
+    if (h.get("aurora") === "0") this.auroraOn = false;
+    if (h.get("lights") === "0") this.lightsOn = false;
     if (h.get("terrain") === "1") this.terrainOn = true;
   }
 
@@ -3249,6 +3586,8 @@ class App {
       ...(this.lowsOn ? { lows: "1" } : {}),
       ...(this.shadeOn ? { shade: "1" } : {}),
       ...(this.uvOn ? {} : { uv: "0" }),
+      ...(this.auroraOn ? {} : { aurora: "0" }),
+      ...(this.lightsOn ? {} : { lights: "0" }),
       ...(this.terrainOn ? { terrain: "1" } : {}),
     });
     history.replaceState(null, "", `#${h}`);
@@ -3293,6 +3632,7 @@ class App {
     this.map.on("style.load", () => { if (this.globeOn) this.setGlobe(true); });
     this.map.on("load", () => {
       this.map.addLayer(new WeatherLayer(this));   // sets this.gl via onAdd
+      this.updateAstro();                          // a link opened on Stargazing
       this.paintLegend();   // first painted before the map existed, so the zoom-dependent key was wrong
       const boot = document.getElementById("boot");
       if (boot) boot.remove();
@@ -3748,7 +4088,8 @@ class App {
     const m = this.map;
     if (!m) return;
     const lb = this.lightBase();
-    const light = lb || LIGHT_FIELDS.has(this.layer);
+    const ap = this.preset && PRESETS[this.preset];
+    const light = lb || (LIGHT_FIELDS.has(this.layer) && !(ap && ap.darkBase));
     const dark = "rgba(0,0,0,", pale = "rgba(255,255,255,";
     const set = (id, color) => { if (m.getLayer(id)) m.setPaintProperty(id, "line-color", color); };
     const coastColor = lb ? dark + "0.75)" : light ? dark + "0.95)" : pale + "0.92)";   // a lighter black on the white map, so the isobars lead
