@@ -56,9 +56,9 @@
   /* Variable bar: centred just above the time panel (--time-h is kept in step
      from JS). The wrapper stays as wide as its content so it never blocks the
      map either side; collapsing hides the bar and leaves only the pill. */
-  #vars { position: absolute; z-index: 2; left: 50%; transform: translateX(-50%);
+  #vars { position: absolute; z-index: 2; left: 12px; width: min(50vw, 760px);
     bottom: calc(var(--time-h, 100px) + 12px); max-width: calc(100vw - 24px);
-    display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
   #vars .panel { position: static; }
   #vars-toggle { all: unset; cursor: pointer; display: flex; align-items: center; gap: 6px;
     padding: 3px 12px; border-radius: 999px; font-size: 11.5px; color: #cfd8ee;
@@ -70,7 +70,7 @@
   #vars-toggle[aria-expanded="false"] svg { transform: rotate(180deg); }
   #vars[data-collapsed="true"] #layers { display: none; }
   /* Always one row: if the screen is too narrow it scrolls sideways instead of wrapping. */
-  #layers { display: flex; gap: 4px; flex-wrap: nowrap; justify-content: safe center; max-width: 100%;
+  #layers { display: flex; gap: 4px; flex-wrap: nowrap; justify-content: safe start; max-width: 100%;
     padding: 7px 8px; overflow-x: auto; scrollbar-width: thin; }
   #layers button { flex: none; display: inline-flex; align-items: center; gap: 5px; }
   #layers button svg { width: 14px; height: 14px; flex: none; }
@@ -79,27 +79,38 @@
   #layers button[aria-pressed="true"] { background: #2d6cf6; color: #fff; }
   #layers button:focus-visible { border-color: #8ab4ff; }
   #layers button[hidden] { display: none; }   /* `all: unset` above would otherwise show it */
-  #time { bottom: 12px; left: 12px; right: 12px; display: flex; align-items: center; gap: 12px; }
-  #time { padding-bottom: 6px; flex-wrap: wrap; row-gap: 4px; }
+  #layers button.ico { padding: 6px; }
+  #layers button.ico svg { width: 17px; height: 17px; display: block; }
+  /* Compact time bar: left half of the page, one row. The exact date and hour show in a
+     tag that follows the pointer along the bar. */
+  #time { bottom: 12px; left: 12px; right: auto; width: min(50vw, 760px); box-sizing: border-box;
+    display: flex; align-items: center; gap: 8px; padding: 5px 10px 4px; flex-wrap: wrap; row-gap: 0; }
   #track { flex: 1; min-width: 80px; position: relative; }
   #track input { width: 100%; display: block; margin: 0; accent-color: #2d6cf6; }
   /* Ticks line up with the range thumb's travel: it is inset by half its width. */
-  #ticks { position: relative; height: 24px; margin: 0 8px; }
+  #ticks { position: relative; height: 15px; margin: 0 8px; }
   #ticks i { position: absolute; top: 0; width: 1px; height: 4px; margin-left: -.5px;
     background: rgba(255,255,255,.28); }
-  #ticks i.half { height: 6px; background: rgba(255,255,255,.45); }
-  #ticks i.sat { height: 6px; background: #5ad1ff; }
-  #ticks i.day { height: 9px; background: rgba(255,255,255,.8); }
-  #ticks button { all: unset; cursor: pointer; position: absolute; top: 10px; transform: translateX(-50%);
-    font-size: 10.5px; line-height: 1; color: #9fb0d4; white-space: nowrap; padding: 2px 3px;
+  #ticks i.half { height: 5px; background: rgba(255,255,255,.45); }
+  #ticks i.sat { height: 5px; background: #5ad1ff; }
+  #ticks i.day { height: 6px; background: rgba(255,255,255,.8); }
+  #ticks button { all: unset; cursor: pointer; position: absolute; top: 6px; transform: translateX(-50%);
+    font-size: 9.5px; line-height: 1; color: #9fb0d4; white-space: nowrap; padding: 2px 3px;
     border-radius: 4px; font-variant-numeric: tabular-nums; }
   #ticks button[hidden] { display: none; }  /* `all: unset` above would otherwise show it */
   #ticks button.sat { color: #5ad1ff; }
   #ticks button:hover, #ticks button:focus-visible { color: #fff; background: #243156; }
   #stamp small.obs { color: #5ad1ff; }
   #stamp small { display: block; font-size: 11px; color: #8e9ab8; text-align: right; }
-  #stamp { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 13px; }
-  #play { all: unset; cursor: pointer; padding: 4px 10px; border-radius: 7px; background: #243156; }
+  #stamp { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 12px; }
+  #stamp small { display: inline; margin-left: 6px; font-size: 10px; }
+  #ttip { position: fixed; z-index: 6; pointer-events: none; padding: 4px 8px; border-radius: 6px;
+    font-size: 11px; line-height: 1.35; color: #e9edf7; background: rgba(12,18,34,.94); white-space: nowrap;
+    transform: translate(-50%, -100%); font-variant-numeric: tabular-nums; }
+  #ttip[hidden] { display: none; }
+  #ttip small { display: block; color: #9fb0d4; font-size: 10px; }
+  #ttip small.obs { color: #5ad1ff; }
+  #play { all: unset; cursor: pointer; padding: 2px 8px; border-radius: 7px; background: #243156; font-size: 11px; }
   #play[data-wait] { animation: playwait 0.9s ease-in-out infinite; }  /* playing, but waiting for data */
   @keyframes playwait { 50% { opacity: 0.45; } }
   #layers input.op { width: 70px; accent-color: #2d6cf6; align-self: center; }
@@ -153,9 +164,9 @@
   #maptools button.busy { opacity: .5; }
   #maptools button.err { color: #c62828; }
   #maptools .aa { font: 700 12px/1 ui-sans-serif, system-ui, sans-serif; }
-  #timeopts { display: flex; gap: 6px; align-items: center; }
+  #timeopts { display: flex; flex-direction: column; gap: 3px; align-items: stretch; }
   #tz, #dn { display: flex; border: 1px solid rgba(255,255,255,.18); border-radius: 7px; overflow: hidden; }
-  #tz button, #dn button { all: unset; cursor: pointer; padding: 3px 8px; font-size: 11px; color: #9fb0d4; }
+  #tz button, #dn button { all: unset; cursor: pointer; flex: 1; text-align: center; padding: 1px 6px; font-size: 10.5px; color: #9fb0d4; }
   #tz button[aria-pressed="true"], #dn button[aria-pressed="true"] { background: #243156; color: #fff; }
   #tz button:focus-visible, #dn button:focus-visible { outline: 2px solid #8ab4ff; outline-offset: -2px; }
   /* Two boxes stacked at the bottom right: the cloud-level key on top, when a
@@ -255,13 +266,20 @@
   #readout b { font-weight: 600; font-size: 13px; }
   /* The attribution is a licence condition, so it stays on screen and legible:
      small, but full-contrast text on the panel, on its own line under the slider. */
-  #credit { flex: 1 0 100%; order: 5; font-size: 8.5px; line-height: 1.3; color: #cfd8ee;
-    margin-top: 2px; }
+  #credit { flex: 1 0 100%; order: 5; font-size: 8px; line-height: 1.25; color: #cfd8ee;
+    margin-top: 1px; }
   #credit a { color: #bcc9e8; }
   /* The credits sit behind the copyright line: click it to read them. */
   #credit-btn { all: unset; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 2px; }
   #credit-btn:hover { color: #fff; }
   #credit-btn:focus-visible { outline: 2px solid #8ab4ff; outline-offset: 2px; border-radius: 2px; }
+  /* Basemap credit: plain small white text, no box and no (i) button. */
+  .maplibregl-ctrl.maplibregl-ctrl-attrib, .maplibregl-ctrl-attrib.maplibregl-compact { background: none !important; box-shadow: none !important;
+    min-height: 0; margin: 0 8px 4px 0; padding: 0; font-size: 9.5px; color: #fff;
+    text-shadow: 0 0 3px rgba(8,12,24,.9), 0 1px 2px rgba(8,12,24,.9); }
+  .maplibregl-ctrl-attrib a { color: #fff; }
+  .maplibregl-ctrl-attrib-button { display: none !important; }
+  .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-inner { display: block !important; }
   #boot { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center;
     background: #0b1020; text-align: center; padding: 24px; }
   .err { color: #ff9b9b; max-width: 60ch; }
@@ -275,6 +293,7 @@
     /* Narrow screens: play + time on one row, the full-width bar under them. */
     #stamp { margin-left: auto; }
     #track { order: 3; flex: 1 0 100%; }
+    #time { right: 12px; width: auto; }
   }
 </style>
 <link rel="stylesheet" href="/nav-product.css?v=ad7cdfd152">
@@ -372,6 +391,8 @@
   </div>
   <div id="credit"></div>
 </div>
+
+<div id="ttip" hidden></div>
 
 <div id="boot"><div><img src="brand/klimatikal-mark-on-dark.svg" alt="Klimatikal" width="72" height="72" style="display:block;margin:0 auto 10px">
 <div id="boot-msg" style="color:#8e9ab8">Loading the latest forecast…</div></div></div>
@@ -1539,6 +1560,15 @@ function tzParts(d, utc) {
     label: utc ? "UTC" : localTzName(d),
   };
 }
+
+// Symbols for the basic variable buttons; the full name shows on hover.
+const LAYER_ICON = {
+  wind: `<svg ${'viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"'}><path d="M1.5 5.5h7.2a2 2 0 1 0-2-2M1.5 8.5h10a2 2 0 1 1-2 2M1.5 11.5h4.5"/></svg>`,
+  temp: `<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6.2 9.2V3.3a1.8 1.8 0 0 1 3.6 0v5.9a3.2 3.2 0 1 1-3.6 0z"/><path d="M8 6v5.2"/></svg>`,
+  precip: `<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 9.2a3 3 0 0 1-.3-6 3.8 3.8 0 0 1 7.2 1 2.6 2.6 0 0 1-.1 5"/><path d="M5.5 11.2l-.8 2.3M8.4 11.2l-.8 2.3M11.3 11.2l-.8 2.3"/></svg>`,
+  cloud: `<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5a3.1 3.1 0 0 1-.4-6.2 4 4 0 0 1 7.6 1 2.6 2.6 0 0 1-.2 5.2z"/></svg>`,
+  msl: `<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.2 11.5a6 6 0 1 1 11.6 0"/><path d="M8 9.5L10.8 5.8"/><circle cx="8" cy="9.5" r=".6" fill="currentColor"/></svg>`,
+};
 
 // Small line icons for the Radar and Satellite buttons.
 const SVG_ATTR = 'viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"';
@@ -2856,7 +2886,12 @@ class App {
     for (const name of Object.keys(this.manifest.layers)) {
       if (this.manifest.layers[name].hidden) continue;   // data-only layers, e.g. windspeed
       const b = document.createElement("button");
-      b.textContent = this.manifest.layers[name].label;
+      const full = this.manifest.layers[name].label || name;
+      const label = full.charAt(0).toUpperCase() + full.slice(1);
+      if (LAYER_ICON[name]) { b.innerHTML = LAYER_ICON[name]; b.classList.add("ico"); }
+      else b.textContent = label;
+      b.setAttribute("aria-label", label);
+      b.dataset.tip = label;
       b.dataset.layer = name;
       b.onclick = () => {
         this.layer = name;
@@ -3171,6 +3206,39 @@ class App {
       btn.addEventListener("focus", showTip);
       for (const ev of ["mouseleave", "blur"]) btn.addEventListener(ev, () => { tip.hidden = true; });
     }
+
+    const layersBox = document.getElementById("layers");
+    const tipFor = (b) => {
+      const r = b.getBoundingClientRect();
+      tip.textContent = b.dataset.tip; tip.hidden = false;
+      const half = tip.offsetWidth / 2 + 6;
+      tip.style.left = `${Math.max(half, Math.min(innerWidth - half, r.left + r.width / 2))}px`;
+      tip.style.top = `${r.top - 6}px`; tip.style.transform = "";
+    };
+    layersBox.addEventListener("mouseover", (e) => { const b = e.target.closest("button[data-tip]"); if (b) tipFor(b); });
+    layersBox.addEventListener("focusin", (e) => { const b = e.target.closest("button[data-tip]"); if (b) tipFor(b); });
+    for (const ev of ["mouseleave", "focusout"]) layersBox.addEventListener(ev, () => { tip.hidden = true; });
+    layersBox.addEventListener("click", () => { tip.hidden = true; });
+
+    // Exact date and hour for the point under the pointer on the time bar.
+    const track = document.getElementById("track");
+    const ttip = document.getElementById("ttip");
+    const showTime = (clientX) => {
+      const r = track.getBoundingClientRect();
+      const n = this.axis.length;
+      const x = Math.max(0, Math.min(1, (clientX - r.left - 8) / Math.max(1, r.width - 16)));
+      const e = this.axis[Math.round(x * (n - 1))];
+      const a = tzParts(e.t, this.useUTC), o = tzParts(e.t, !this.useUTC);
+      ttip.innerHTML = `<b>${a.day} ${a.hm} ${a.label}</b><small>${o.hm} ${o.label}</small>` +
+        `<small class="${e.kind === "sat" ? "obs" : ""}">${e.kind === "sat" ? "Satellite observation" : "Forecast"}</small>`;
+      ttip.hidden = false;
+      const half = ttip.offsetWidth / 2 + 6;
+      ttip.style.left = `${Math.max(half, Math.min(innerWidth - half, clientX))}px`;
+      ttip.style.top = `${r.top - 4}px`;
+    };
+    track.addEventListener("pointermove", (e) => showTime(e.clientX));
+    track.addEventListener("pointerleave", () => { ttip.hidden = true; });
+    track.addEventListener("pointerdown", (e) => showTime(e.clientX));
 
     const slider = document.getElementById("slider");
     this.axis = this.buildAxis();
@@ -3742,10 +3810,10 @@ class App {
     const main = tzParts(d, this.useUTC), other = tzParts(d, !this.useUTC);
     const hasSat = this.axis.some((e) => e.kind === "sat");
     const tag = hasSat
-      ? `<small class="${entry.kind === "sat" ? "obs" : ""}">${entry.kind === "sat" ? "Satellite observation" : "Forecast"}</small>` : "";
-    document.getElementById("stamp").innerHTML =
-      `${main.day} ${main.hm} ${main.label}` +
-      `<small>${other.day} ${other.hm} ${other.label}</small>${tag}`;
+      ? `<small class="${entry.kind === "sat" ? "obs" : ""}">${entry.kind === "sat" ? "Satellite" : "Forecast"}</small>` : "";
+    const stampEl = document.getElementById("stamp");
+    stampEl.innerHTML = `${main.day} ${main.hm} ${main.label}${tag}`;
+    stampEl.title = `${other.day} ${other.hm} ${other.label}`;
     this.applySatelliteTime(entry);
     this.updateNight();
     this.textureFor(this.fieldSource(this.layer), Math.floor(this.stepIndex) + 1);  // prefetch
@@ -3869,7 +3937,7 @@ class App {
       container: "map",
       style,
       center: [lng, lat], zoom, minZoom: 1, maxZoom: 9,
-      attributionControl: { compact: true, customAttribution: "Boundaries: Natural Earth" },
+      attributionControl: { compact: false, customAttribution: "Boundaries: Natural Earth" },
     });
     // No view in the link and no visitor location: open on Indonesia fitted to the
     // screen (it fills a desktop window; on a phone it never goes below the old
