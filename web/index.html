@@ -70,15 +70,21 @@
   #vars-toggle[aria-expanded="false"] svg { transform: rotate(180deg); }
   #vars[data-collapsed="true"] #layers { display: none; }
   /* Always one row: if the screen is too narrow it scrolls sideways instead of wrapping. */
+  #presets { display: flex; gap: 6px; flex-wrap: nowrap; justify-content: safe start; max-width: 100%;
+    padding: 6px 8px; overflow-x: auto; scrollbar-width: thin; }
+  #presets button.preset { display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px 4px 4px;
+    font-size: 12.5px; color: #cfd8ee; border-radius: 9px; cursor: pointer; white-space: nowrap; }
+  #presets .pthumb { width: 46px; height: 30px; border-radius: 6px; object-fit: cover; flex: none;
+    border: 1px solid rgba(255,255,255,.25); background: #1b2542; }
   #layers { display: flex; gap: 4px; flex-wrap: nowrap; justify-content: safe start; max-width: 100%;
     padding: 7px 8px; overflow-x: auto; scrollbar-width: thin; }
-  #layers button { flex: none; display: inline-flex; align-items: center; gap: 5px; }
-  #layers button svg { width: 14px; height: 14px; flex: none; }
-  #layers button { all: unset; cursor: pointer; padding: 6px 8px; border-radius: 7px;
+  #presets button, #layers button { flex: none; display: inline-flex; align-items: center; gap: 5px; }
+  #presets button svg, #layers button svg { width: 14px; height: 14px; flex: none; }
+  #presets button, #layers button { all: unset; cursor: pointer; padding: 6px 8px; border-radius: 7px;
     font-size: 12.5px; color: #cfd8ee; border: 1px solid transparent; white-space: nowrap; }
-  #layers button[aria-pressed="true"] { background: #2d6cf6; color: #fff; }
-  #layers button:focus-visible { border-color: #8ab4ff; }
-  #layers button[hidden] { display: none; }   /* `all: unset` above would otherwise show it */
+  #presets button[aria-pressed="true"], #layers button[aria-pressed="true"] { background: #2d6cf6; color: #fff; }
+  #presets button:focus-visible, #layers button:focus-visible { border-color: #8ab4ff; }
+  #presets button[hidden], #layers button[hidden] { display: none; }   /* `all: unset` above would otherwise show it */
   #layers button.ico { padding: 6px; }
   #layers button.ico svg { width: 17px; height: 17px; display: block; }
   /* Compact time bar: left half of the page, one row. The exact date and hour show in a
@@ -103,7 +109,9 @@
   #stamp small.obs { color: #5ad1ff; }
   #stamp small { display: block; font-size: 11px; color: #8e9ab8; text-align: right; }
   #stamp { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 12px; }
-  #stamp small { display: inline; margin-left: 6px; font-size: 10px; }
+  #stamp { line-height: 1.25; text-align: right; }
+  #stamp span { display: block; }
+  #stamp span.obs { color: #5ad1ff; }
   #ttip { position: fixed; z-index: 6; pointer-events: none; padding: 4px 8px; border-radius: 6px;
     font-size: 11px; line-height: 1.35; color: #e9edf7; background: rgba(12,18,34,.94); white-space: nowrap;
     transform: translate(-50%, -100%); font-variant-numeric: tabular-nums; }
@@ -117,14 +125,14 @@
   #layers input.op[hidden] { display: none; }
   #layers .sep { width: 1px; background: rgba(255,255,255,.18); margin: 2px 4px; }
   /* Heat stress with its own switches: one group, outlined while Heat stress is selected. */
-  #layers .grp { display: inline-flex; gap: 2px; align-items: center; flex: none; border-radius: 9px; padding: 0;
+  #presets .grp, #layers .grp { display: inline-flex; gap: 2px; align-items: center; flex: none; border-radius: 9px; padding: 0;
     border: 1px solid transparent; }
-  #layers .grp.open { padding: 1px; border-color: rgba(20,144,126,.7); background: rgba(20,144,126,.14); }
-  #layers .grp.open button.preset { border-color: transparent; }
-  #layers .grp button.toggle { padding: 5px 8px; }
-  #layers button.preset[aria-pressed="true"] { background: #14907e; color: #fff; }
-  #layers button.preset { border-color: rgba(20,144,126,.55); }
-  #layers button.toggle[aria-pressed="true"] { background: #243156; color: #fff;
+  #presets .grp.open, #layers .grp.open { padding: 1px; border-color: rgba(20,144,126,.7); background: rgba(20,144,126,.14); }
+  #presets .grp.open button.preset, #layers .grp.open button.preset { border-color: transparent; }
+  #presets .grp button.toggle, #layers .grp button.toggle { padding: 5px 8px; }
+  #presets button.preset[aria-pressed="true"], #layers button.preset[aria-pressed="true"] { background: #14907e; color: #fff; }
+  #presets button.preset, #layers button.preset { border-color: rgba(20,144,126,.55); }
+  #presets button.toggle[aria-pressed="true"], #layers button.toggle[aria-pressed="true"] { background: #243156; color: #fff;
     border-color: rgba(255,255,255,.25); }
   /* Coordinate grid: a canvas over the map, redrawn on every move so the
      spacing follows the zoom. It must never swallow a click or a hover. */
@@ -349,6 +357,7 @@
 </script>
 
 <div id="vars" data-collapsed="false">
+  <div id="presets" class="panel glass" role="group" aria-label="Presets"></div>
   <button id="vars-toggle" type="button" aria-expanded="true" aria-controls="layers">
     <span>Layers</span>
     <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 3.5 5 7l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -2831,7 +2840,7 @@ class App {
   paintLayerButtons() {
     document.querySelectorAll("#layers button[data-layer]").forEach((c) =>
       c.setAttribute("aria-pressed", String(!this.preset && c.dataset.layer === this.layer)));
-    document.querySelectorAll("#layers button[data-preset]").forEach((c) =>
+    document.querySelectorAll("#presets button[data-preset]").forEach((c) =>
       c.setAttribute("aria-pressed", String(c.dataset.preset === this.preset)));
   }
 
@@ -2859,11 +2868,13 @@ class App {
 
   buildChrome() {
     const box = document.getElementById("layers");
+    const presetBox = document.getElementById("presets");
     const available = Object.keys(PRESETS).filter((id) => this.presetAvailable(id) && !(PRESETS[id].legacy && this.presetAvailable("heat"))).sort((a, b) => PRESETS[a].order - PRESETS[b].order);
     for (const id of available) {
       const b = document.createElement("button");
       b.className = "preset";
-      b.textContent = PRESETS[id].label;
+      b.innerHTML = `<img class="pthumb" src="brand/preset-${id === "heatlegacy" ? "heat" : id}.jpg" alt="" onerror="this.remove()"><span></span>`;
+      b.lastChild.textContent = PRESETS[id].label;
       b.title = PRESETS[id].goal;
       b.dataset.preset = id;
       b.onclick = () => this.setPreset(this.preset === id ? null : id);
@@ -2874,15 +2885,11 @@ class App {
         grp.className = "grp";
         grp.dataset.preset = id;
         grp.appendChild(b);
-        box.appendChild(grp);
+        presetBox.appendChild(grp);
         (this.presetGroups = this.presetGroups || {})[id] = grp;
-      } else box.appendChild(b);
+      } else presetBox.appendChild(b);
     }
-    if (available.length) {
-      const sep = document.createElement("span");
-      sep.className = "sep";
-      box.appendChild(sep);
-    }
+    presetBox.hidden = !available.length;
     for (const name of Object.keys(this.manifest.layers)) {
       if (this.manifest.layers[name].hidden) continue;   // data-only layers, e.g. windspeed
       const b = document.createElement("button");
@@ -3809,11 +3816,9 @@ class App {
     // sits underneath, with its date only when it differs.
     const main = tzParts(d, this.useUTC), other = tzParts(d, !this.useUTC);
     const hasSat = this.axis.some((e) => e.kind === "sat");
-    const tag = hasSat
-      ? `<small class="${entry.kind === "sat" ? "obs" : ""}">${entry.kind === "sat" ? "Satellite" : "Forecast"}</small>` : "";
     const stampEl = document.getElementById("stamp");
-    stampEl.innerHTML = `${main.day} ${main.hm} ${main.label}${tag}`;
-    stampEl.title = `${other.day} ${other.hm} ${other.label}`;
+    stampEl.innerHTML = `<span>${main.day}</span><span class="${entry.kind === "sat" ? "obs" : ""}">${main.hm} ${main.label}</span>`;
+    stampEl.title = `${other.day} ${other.hm} ${other.label}` + (hasSat ? ` · ${entry.kind === "sat" ? "Satellite observation" : "Forecast"}` : "");
     this.applySatelliteTime(entry);
     this.updateNight();
     this.textureFor(this.fieldSource(this.layer), Math.floor(this.stepIndex) + 1);  // prefetch
