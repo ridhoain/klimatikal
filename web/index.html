@@ -507,10 +507,9 @@ Object.assign(RAMPS, {
     stops: [[0, [255, 255, 255, 0]], [25, [235, 240, 250, 0]], [60, [240, 245, 255, 70]],
             [100, [255, 255, 255, 150]]] },
   // Stargazing: cloud is the colour. Same two colours as before, inverted: overcast is the strong sky blue (not
-  // green, which is the aurora's colour), partly cloudy fades out around 45 %, and clear sky is only a faint
-  // cool veil. Note real total cloud cover averages about 63 %, so blue covers much of the Earth.
+  // green, which is the aurora's colour), partly cloudy fades out around 45 %, and clear sky goes to black at 0 %. Note real total cloud cover averages about 63 %, so blue covers much of the Earth.
   astrocloud: { source: "cloud", label: "Cloud cover", display: [0, 100], unitLabel: "%", opacity: 1, ticks: [0, 25, 50, 75, 100],
-    stops: [[0, [190, 200, 222, 70]], [25, [190, 200, 222, 34]], [45, [70, 150, 255, 0]],
+    stops: [[0, [0, 0, 0, 150]], [25, [0, 0, 0, 80]], [45, [70, 150, 255, 0]],
             [65, [70, 150, 255, 80]], [85, [70, 150, 255, 165]], [100, [70, 150, 255, 190]]] },
 });
 
