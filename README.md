@@ -63,9 +63,7 @@ is in the URL as `#preset=<id>`.
 
 | id | question | stack |
 |---|---|---|
-| `heat` | How hot does it feel outdoors? | UTCI (sun / shade toggle), cloud haze (less sun), wind |
-| `wetbulb` | Can sweat still cool the body? | wet-bulb temperature (Stull; not WBGT; colours tuned for 22 to 33 °C), wind |
-| `uv` | How strong is the sun's UV? | estimated UV index, WHO classes (cloud-adjusted from the forecast radiation; haze and smoke not modelled) |
+| `heat` | How hot does it feel outdoors? | UTCI (sun / shade toggle); hatched where wet-bulb is 31 °C or more (Stull; not WBGT); dotted where the estimated UV index is 11 or more (extreme; cloud-adjusted from the forecast radiation, haze and smoke not modelled); cloud haze (less sun); wind |
 | `synoptic` | What is the big-picture pattern? | precipitation rate (mm/h, from the 3-hour totals) on a white map (same colours as the Precipitation layer, continuous colour bar), sea-level pressure isobars (blue low, red high) with values on the lines and H / L at the centres, 850 hPa wind |
 
 The heat preset reads `utci_sun` / `utci_shade`, computed in `pipeline/thermal.py` (ERA5-HEAT-style mean radiant temperature from the accumulated `ssrd`, `ssr`, `strd`, `str`, then pythermalcomfort's UTCI). Checked against ERA5-HEAT for one day (see `docs/utci-validation.md`): daytime UTCI in sun is about +0.8 °C warm, RMSE 1.4 °C; shade mode has no reference. Step 0 has no radiation window and carries no sun term. `wetbulb` and `uvi` come from the same module. UV is clear-sky UVI (12.5 mu0^2.42 (O3/300)^-1.23, ozone fixed at 255 DU) times the ratio of forecast to Haurwitz clear-sky radiation; `UVI_SCALE` and `CLOUD_K` in `thermal.py` are the tuning knobs, and it has not yet been compared with BMKG or satellite UV. A run without the UTCI layers falls back to the older `heatlegacy` preset (NWS heat index).

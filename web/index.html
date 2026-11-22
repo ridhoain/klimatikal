@@ -159,6 +159,8 @@
   #legend2 .title { text-align: left; font-size: 10.5px; color: #cfd8ee; }
   #legend2 .rows { display: flex; flex-direction: column; gap: 3px; margin-top: 3px; }
   #legend2 .row { font-size: 10px; color: #cfd8ee; display: flex; align-items: center; gap: 5px; }
+  #legend2 .sw.hatch { background: repeating-linear-gradient(135deg, #12163c 0 1px, transparent 1px 3px), #f6a234; }
+  #legend2 .sw.dots { background: radial-gradient(circle, #fff 0 0.8px, transparent 1.1px) 0 0/4px 4px, #96189a; }
   #legend2 .sw { width: 11px; height: 11px; border-radius: 2px; border: 1px solid rgba(255,255,255,.35); }
   #legend .title { text-align: right; font-size: 10.5px; color: #cfd8ee; margin-bottom: 4px;
     max-width: 76px; line-height: 1.25; }
@@ -439,43 +441,24 @@ const PRESETS = {
     hazard: { layer: "utci_sun", level: "Very strong", blockPx: 44 },
     stack: [
       { kind: "fill", ramp: "utci_sun" },
+      // Hatch: wet-bulb at or above 31 degC. Dots: estimated UV index in the extreme class (11+).
+      { kind: "fill", ramp: "wetbulb", opacity: 0.8, pattern: { type: "hatch", threshold: 31, color: [18, 22, 60] } },
+      { kind: "fill", ramp: "uvi", opacity: 0.95, pattern: { type: "dots", threshold: 11, color: [255, 255, 255] } },
       { kind: "fill", ramp: "cloudveil", opacity: 0.55 },
       { kind: "particles", layer: "wind", opacity: 0.45 },
     ],
+    keys: [{ title: "Overlays", rows: [
+      { pattern: "hatch", text: "Wet-bulb 31 °C or more" },
+      { pattern: "dots", text: "UV index 11 or more (extreme)" },
+    ] }],
     explain: [
       "UTCI: the temperature it feels like for a person standing outdoors, from air temperature, humidity, wind and radiation. The Sun / Shade button switches between direct sun and shade.",
+      "Hatched: wet-bulb temperature at or above 31 °C, where sweat can barely cool the body. It does not depend on sun or wind.",
+      "Dotted: estimated UV index in the extreme class (11 or more), from the sun's height, a fixed ozone column and the forecast cloud. Smoke and aerosols are not modelled.",
       "Pale haze: cloud cover (less sun).",
       "Streaks: 10 m wind.",
       "Warning triangle: an area at or above Very strong heat stress, with its peak. Nearby areas merge into one as you zoom out.",
       "Grid of 0.25°; street-level conditions in dense cities can differ, especially wind.",
-    ],
-  },
-  wetbulb: {
-    order: 1.1,
-    label: "Wet-bulb",
-    goal: "Can sweat still cool the body?",
-    main: "wetbulb",
-    stack: [
-      { kind: "fill", ramp: "wetbulb" },
-      { kind: "particles", layer: "wind", opacity: 0.45 },
-    ],
-    explain: [
-      "Wet-bulb temperature: how well sweat can still cool the body. It does not depend on sun or wind. It is not WBGT, which also counts radiation.",
-      "The colour scale is tuned for the tropics, where wet-bulb mostly sits at 24 to 28 °C; values near 31 °C and above are the commonly cited serious-risk range.",
-      "Streaks: 10 m wind.",
-    ],
-  },
-  uv: {
-    order: 1.2,
-    label: "UV index",
-    goal: "How strong is the sun's UV?",
-    main: "uvi",
-    stack: [
-      { kind: "fill", ramp: "uvi" },
-    ],
-    explain: [
-      "Estimated UV index (WHO classes), from the sun's height, a fixed ozone column and the forecast cloud.",
-      "Haze, smoke and aerosols are not modelled, so during smoke episodes the real UV is lower but the sun is not safe: more of it arrives as diffuse light. Clear-sky values may read a little high.",
     ],
   },
   // The earlier heat index version, offered only by a run published before UTCI existed.
@@ -727,12 +710,35 @@ const FIELD_FS = `
   ${GLSL_SMOOTH}
   uniform sampler2D u_now, u_next, u_ramp;
   uniform float u_blend, u_dlo, u_dhi, u_opacity;
+  // Pattern overlay: 0 = plain colour fill, 1 = diagonal hatch, 2 = dots, drawn
+  // only where the value is at or above u_thr. Sized in CSS pixels (u_dpr).
+  uniform float u_pat, u_thr, u_dpr;
+  uniform vec3 u_patColor;
   varying vec2 v_merc;
   void main() {
     vec2 uv = dataUV(v_merc.x, v_merc.y);
     float a = decodeValue(sampleSmooth(u_now,  uv));
     float b = decodeValue(sampleSmooth(u_next, uv));
     float value = mix(a, b, u_blend);
+    if (u_pat > 0.5) {
+      float inside = smoothstep(u_thr - 0.03, u_thr + 0.03, value);
+      if (inside < 0.01) discard;
+      vec2 p = gl_FragCoord.xy / u_dpr;
+      float m;
+      if (u_pat < 1.5) {
+        // 45 degree lines, 4 px apart, about 1.5 px wide, with a soft edge
+        float d = abs(mod(p.x + p.y, 4.0) - 2.0);
+        m = 1.0 - smoothstep(0.35, 0.95, 2.0 - d);
+      } else {
+        // small dots on a 5 px grid
+        float r = length(mod(p, 5.0) - 2.5);
+        m = 1.0 - smoothstep(0.8, 1.4, r);
+      }
+      float al = m * inside;
+      if (al < 0.01) discard;
+      gl_FragColor = vec4(u_patColor, al * u_opacity);
+      return;
+    }
     float t = clamp((value - u_dlo) / (u_dhi - u_dlo), 0.0, 1.0);
     vec4 c = texture2D(u_ramp, vec2(t, 0.5));
     gl_FragColor = vec4(c.rgb, c.a * u_opacity);
@@ -1100,6 +1106,13 @@ class WeatherLayer {
         gl.uniform1f(f.loc.u_dlo, ramp.display[0]);
         gl.uniform1f(f.loc.u_dhi, ramp.display[1]);
         gl.uniform1f(f.loc.u_opacity, item.opacity != null ? item.opacity : ramp.opacity);
+        const pat = item.pattern;
+        gl.uniform1f(f.loc.u_pat, pat ? (pat.type === "dots" ? 2 : 1) : 0);
+        if (pat) {
+          gl.uniform1f(f.loc.u_thr, pat.threshold);
+          gl.uniform1f(f.loc.u_dpr, window.devicePixelRatio || 1);
+          gl.uniform3f(f.loc.u_patColor, pat.color[0] / 255, pat.color[1] / 255, pat.color[2] / 255);
+        }
       }
       for (const shift of shifts) {
         gl.uniform1f(f.loc.u_worldShift, shift);
@@ -1300,7 +1313,7 @@ class App {
     this.pending = new Map();
     this.layer = "wind";
     this.legendInfo = false;  // is the explanation under the legend open
-    try { this.legendInfo = localStorage.getItem("klimatikal.legendinfo") === "1"; } catch (e) { /* private mode */ }
+    // Always starts closed: the explanation is long, so it only opens when asked for.
     this.preset = null;       // id in PRESETS, or null for the plain layer buttons
     this.stepIndex = 0;       // forecast-step units (may be fractional); what the weather layers read
     // The slider runs along `axis`: normally the forecast steps; with the
@@ -2036,7 +2049,6 @@ class App {
     document.getElementById("legend").addEventListener("click", (e) => {
       if (!e.target.closest(".info")) return;
       this.legendInfo = !this.legendInfo;
-      try { localStorage.setItem("klimatikal.legendinfo", this.legendInfo ? "1" : "0"); } catch (err) { /* ignore */ }
       this.paintLegend();
     });
 
@@ -2327,10 +2339,10 @@ class App {
     document.getElementById("legend").innerHTML = html;
     // Colour keys for layers that have no bar: their own box.
     const keys = document.getElementById("legend2");
-    keys.hidden = !(preset && preset.keys);
+    keys.hidden = !(preset && preset.keys && this.legendInfo);   // behind the (i) button, like the explanation
     keys.innerHTML = preset && preset.keys ? preset.keys.map((k) =>
       `<div class="col"><div class="title">${escapeHTML(k.title)}</div>` +
-      `<div class="rows">` + k.rows.map((r2) => `<div class="row"><i class="sw" style="background:rgb(${r2.swatch.join(",")})"></i>${escapeHTML(r2.text)}</div>`).join("") +
+      `<div class="rows">` + k.rows.map((r2) => `<div class="row"><i class="sw${r2.pattern ? " " + r2.pattern : ""}"${r2.swatch ? ` style="background:rgb(${r2.swatch.join(",")})"` : ""}></i>${escapeHTML(r2.text)}</div>`).join("") +
       `</div></div>`).join("") : "";
   }
 
