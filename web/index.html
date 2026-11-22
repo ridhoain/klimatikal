@@ -827,7 +827,7 @@ function program(gl, vs, fs) {
   }});
   return { p, loc };
 }
-function texture(gl, source, wrapS) {
+function texture(gl, source, wrapS, channels) {
   const t = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, t);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapS || gl.CLAMP_TO_EDGE);
@@ -847,6 +847,11 @@ function texture(gl, source, wrapS) {
     // square data texture for particle state
     const side = Math.sqrt(source.length / 4);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, side, side, 0, gl.RGBA, gl.UNSIGNED_BYTE, source);
+  } else if (channels && typeof WebGL2RenderingContext !== "undefined" && gl instanceof WebGL2RenderingContext) {
+    // Data frames: the shaders read only .r (and .g), so keep just those channels on the GPU,
+    // a quarter (one channel) or half (two) of the memory of RGBA.
+    if (channels === 1) gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, gl.RED, gl.UNSIGNED_BYTE, source);
+    else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG8, gl.RG, gl.UNSIGNED_BYTE, source);
   } else {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
   }
@@ -1869,7 +1874,8 @@ class App {
         img.onerror = () => reject(new Error(`failed to load ${key}`));
       }).then((loaded) => {
         if (this.gl) {
-          this.textures.set(key, texture(this.gl, loaded, this.gl.REPEAT));
+          const enc = this.manifest.layers[layer] && this.manifest.layers[layer].encoding;
+          this.textures.set(key, texture(this.gl, loaded, this.gl.REPEAT, enc === "scalar8" ? 1 : enc ? 2 : 0));
           this.trimTextures();
           this.map && this.map.triggerRepaint();
         }
