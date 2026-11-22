@@ -1990,6 +1990,7 @@ class App {
       const prefix = this.runPrefix;
       const data = await fetch(`${prefix}/lows.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
       this.lows = { prefix, data };
+      if (data) this.lows.names = await this.matchStormNames(data);
     }
     if (this.lowKey !== stamp || !this.lows.data) return;
     const features = [];
@@ -2007,10 +2008,42 @@ class App {
       const fut = [[now.lon, now.lat], ...pts.filter((p) => p.step > now.step).map((p) => [p.lon, p.lat])];
       if (past.length > 1) features.push({ type: "Feature", properties: { k: "past" }, geometry: { type: "LineString", coordinates: past } });
       if (fut.length > 1) features.push({ type: "Feature", properties: { k: "fut" }, geometry: { type: "LineString", coordinates: fut } });
-      features.push({ type: "Feature", properties: { k: "pt", id: t.id, hpa: Math.round(now.hpa), min: t.min_hpa, minStep: t.min_step },
+      const nm = (this.lows.names || {})[t.id];
+      features.push({ type: "Feature", properties: { k: "pt", id: t.id, hpa: Math.round(now.hpa), min: t.min_hpa, minStep: t.min_step,
+        ...(nm ? { n: nm.name, by: nm.by } : {}) },
         geometry: { type: "Point", coordinates: [now.lon, now.lat] } });
     }
     src.setData({ type: "FeatureCollection", features });
+  }
+
+  // Names come from named-storms.json, kept by hand: each entry says where a named
+  // storm's centre was at some time. A track takes the name of the entry it passes
+  // closest to, in units of how far a low could have travelled since then.
+  async matchStormNames(data) {
+    const file = await fetch("named-storms.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    const names = {};
+    if (!file || !Array.isArray(file.storms) || !(this.runStart instanceof Date)) return names;
+    const km = (lo1, la1, lo2, la2) => {
+      const r = Math.PI / 180, a = Math.sin((la2 - la1) * r / 2) ** 2 + Math.cos(la1 * r) * Math.cos(la2 * r) * Math.sin((lo2 - lo1) * r / 2) ** 2;
+      return 12742 * Math.asin(Math.min(1, Math.sqrt(a)));
+    };
+    const taken = new Set();
+    for (const e of file.storms) {
+      const t = Date.parse(e.time);
+      if (!e.name || isNaN(t) || typeof e.lon !== "number" || typeof e.lat !== "number") continue;
+      let best = null;
+      for (const tr of data.tracks) {
+        if (taken.has(tr.id)) continue;
+        for (const [step, lon, lat] of tr.pts) {
+          const dh = Math.abs(this.runStart.getTime() + step * 3600e3 - t) / 3600e3;
+          if (dh > 72) continue;
+          const ratio = km(e.lon, e.lat, lon, lat) / (110 * dh + 300);
+          if (ratio <= 1 && (!best || ratio < best.ratio)) best = { ratio, id: tr.id };
+        }
+      }
+      if (best) { taken.add(best.id); names[best.id] = { name: e.name, by: e.by || "" }; }
+    }
+    return names;
   }
 
   addLowLayers() {
@@ -2027,7 +2060,8 @@ class App {
       paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 1, 4, 6, 7], "circle-color": depth,
         "circle-stroke-color": "#fff", "circle-stroke-width": 1.4 } });
     map.addLayer({ id: "lows-lbl", type: "symbol", source: "lows", filter: ["==", ["get", "k"], "pt"],
-      layout: { "text-field": ["to-string", ["get", "hpa"]], "text-font": ["Open Sans Semibold"], "text-size": 11,
+      layout: { "text-field": ["case", ["has", "n"], ["concat", "Storm ", ["get", "n"], "\n", ["to-string", ["get", "hpa"]]], ["to-string", ["get", "hpa"]]],
+        "text-font": ["Open Sans Semibold"], "text-size": 11,
         "text-anchor": "top", "text-offset": [0, 0.9], "text-allow-overlap": true },
       paint: { "text-color": "#1d1d24", "text-halo-color": "#fff", "text-halo-width": 1.6 } });
     const tip = () => this.lowTip || (this.lowTip = new maplibregl.Popup({ closeButton: false, closeOnClick: true, offset: 12,
@@ -2037,8 +2071,8 @@ class App {
       const run = this.runStart;
       const when = run instanceof Date && !isNaN(run) ? new Date(run.getTime() + p.minStep * 3600e3).toUTCString().replace(/:\d\d GMT/, " UTC").replace(/^\w+, /, "") : `+${p.minStep} h`;
       tip().setLngLat(e.lngLat).setHTML(`<div style="font:11px/1.4 ui-sans-serif,system-ui,sans-serif;color:#e9edf7;width:200px;white-space:normal">` +
-        `<b>Low · ${p.hpa} hPa now</b><br>Deepest ${p.min} hPa, ${when}.<br>` +
-        `<span style="color:#a9b5d0">The model's own low, followed through the forecast. Not a named storm.</span></div>`).addTo(map);
+        `<b>${p.n ? `Storm ${escapeHTML(p.n)}` : "Low"} · ${p.hpa} hPa now</b><br>Deepest ${p.min} hPa, ${when}.<br>` +
+        `<span style="color:#a9b5d0">${p.n ? `Named by ${escapeHTML(p.by || "the weather services")}; the track is the model's own low.` : "The model's own low, followed through the forecast. Not a named storm."}</span></div>`).addTo(map);
     });
     map.on("mouseenter", "lows-pt", () => { map.getCanvas().style.cursor = "pointer"; });
     map.on("mouseleave", "lows-pt", () => { map.getCanvas().style.cursor = ""; });

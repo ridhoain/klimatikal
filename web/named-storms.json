@@ -1,0 +1,38 @@
+{
+  "_about": "Hand-kept. The model's lows (lows.json) have no names, so a name is attached by position: add one entry per storm when the Met Office, Met Eireann or KNMI names it, with the centre's position at a stated time taken from their announcement or warning. The map gives the name to the track that passes closest to that point (within 110 km/h of travel since that time, plus 300 km). Add the entry as soon as the storm is named; no rebuild is needed. Names are facts from the services' public announcements, copied by hand, never scraped.",
+  "season": "2026-27",
+  "list": {
+    "Met Office": [
+      "Chloe",
+      "Finn",
+      "Ivy",
+      "Nicola",
+      "Ruban",
+      "Shaun",
+      "Theo"
+    ],
+    "Met Eireann": [
+      "Austen",
+      "Evelyn",
+      "Heather",
+      "Kilian",
+      "Laoise",
+      "Miriam",
+      "Phelim"
+    ],
+    "KNMI": [
+      "Boelo",
+      "Dano",
+      "Gwendolyn",
+      "Jade",
+      "Olaf",
+      "Vesna",
+      "Wende"
+    ]
+  },
+  "list_sources": [
+    "https://www.metoffice.gov.uk/about-us/news-and-media/media-centre/weather-and-climate-news/2026/from-family-tributes-to-shaun-the-sheep-official-storm-names-for-202627-revealed",
+    "https://www.knmi.nl/over-het-knmi/nieuws/nieuwe-stormnamen-voor-seizoen-2026-2027"
+  ],
+  "storms": []
+}
