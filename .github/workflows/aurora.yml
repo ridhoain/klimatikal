@@ -1,0 +1,41 @@
+# NOAA SWPC OVATION aurora probability -> aurora/ovation.png + aurora/aurora.json on R2.
+# OVATION is refreshed about every 5 minutes; the Stargazing preset only needs it to be
+# reasonably fresh, so every 15 minutes. Minutes 4, 19, 34 and 49 dodge the top of the hour,
+# when GitHub delays scheduled runs most.
+name: build aurora
+
+on:
+  schedule:
+    - cron: "4,19,34,49 * * * *"
+  push:
+    branches: [main]
+    paths:
+      - pipeline/aurora.py
+      - .github/workflows/aurora.yml
+  workflow_dispatch:
+
+concurrency:
+  group: aurora
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install boto3 numpy pillow pytest
+      - name: Tests
+        working-directory: pipeline
+        run: python -m pytest -q test_aurora.py
+      - name: Fetch and publish
+        working-directory: pipeline
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: python aurora.py

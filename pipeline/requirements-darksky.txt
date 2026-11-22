@@ -1,0 +1,7 @@
+# darksky.py is run by hand when a new VIIRS annual composite is out, not by CI.
+numpy
+pillow
+scipy
+tifffile
+zarr<3
+imagecodecs
