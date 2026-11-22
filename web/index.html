@@ -3424,6 +3424,61 @@ class App {
   // Latitude/longitude grid on a canvas laid over the map. Spacing is chosen
   // from the zoom so lines stay about 90px apart, and it is redrawn on every
   // move, so it stays "dynamic" as you pan and zoom.
+  // Latitude and longitude lines for the globe, as map layers. Spacing follows
+  // the zoom like the flat grid; the data is rebuilt only when that spacing or
+  // the base colour changes, so calling this on every move is cheap.
+  syncGlobeGrid() {
+    const m = this.map;
+    // Wait for the weather layer: layers added before it would sit underneath it.
+    if (!m || !m.getStyle() || !m.getLayer("weather")) return;
+    const show = this.globeOn && this.gridOn;
+    const has = !!m.getLayer("globe-grid");
+    if (!show) {
+      if (has) for (const id of ["globe-grid", "globe-grid-labels"]) m.setLayoutProperty(id, "visibility", "none");
+      return;
+    }
+    const lb = this.lightBase();
+    const arcPx = 112 * Math.pow(2, m.getZoom()) * Math.PI / 360;   // pixels per degree at the centre of the globe
+    const STEPS = [1, 2, 5, 10, 15, 30, 45, 90];
+    const step = STEPS.find((v) => v * arcPx >= 70) || 90;
+    const key = `${step}|${lb}`;
+    if (has && this.globeGridKey === key) {
+      if (m.getLayoutProperty("globe-grid", "visibility") !== "visible") for (const id of ["globe-grid", "globe-grid-labels"]) m.setLayoutProperty(id, "visibility", "visible");
+      return;
+    }
+    const num = (v) => String(+v.toFixed(2));
+    const feats = [];
+    for (let lng = -180; lng < 180; lng += step) {
+      const a = Math.abs(lng);
+      feats.push({ type: "Feature", properties: { t: `${num(a)}°${a === 0 || a === 180 ? "" : lng < 0 ? "W" : "E"}` },
+        geometry: { type: "LineString", coordinates: Array.from({ length: 17 }, (_, i) => [lng, -80 + i * 10]) } });
+    }
+    for (let lat = Math.ceil(-80 / step) * step; lat <= 80; lat += step) {
+      feats.push({ type: "Feature", properties: { t: `${num(Math.abs(lat))}°${lat === 0 ? "" : lat < 0 ? "S" : "N"}` },
+        geometry: { type: "LineString", coordinates: Array.from({ length: 37 }, (_, i) => [-180 + i * 10, lat]) } });
+    }
+    const data = { type: "FeatureCollection", features: feats };
+    const line = lb ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.24)";
+    const text = lb ? "rgba(25,32,50,0.8)" : "rgba(225,232,248,0.78)";
+    const halo = lb ? "rgba(255,255,255,0.85)" : "rgba(8,12,24,0.7)";
+    if (!has) {
+      m.addSource("globe-grid", { type: "geojson", data });
+      m.addLayer({ id: "globe-grid", type: "line", source: "globe-grid", paint: { "line-color": line, "line-width": 1 } });
+      m.addLayer({ id: "globe-grid-labels", type: "symbol", source: "globe-grid",
+        layout: { "symbol-placement": "line", "symbol-spacing": 320, "text-field": ["get", "t"],
+          "text-font": ["Open Sans Semibold"], "text-size": 11, "text-max-angle": 40, "text-padding": 6,
+          "text-keep-upright": true },
+        paint: { "text-color": text, "text-halo-color": halo, "text-halo-width": 1.4 } });
+    } else {
+      m.getSource("globe-grid").setData(data);
+      m.setPaintProperty("globe-grid", "line-color", line);
+      m.setPaintProperty("globe-grid-labels", "text-color", text);
+      m.setPaintProperty("globe-grid-labels", "text-halo-color", halo);
+      for (const id of ["globe-grid", "globe-grid-labels"]) m.setLayoutProperty(id, "visibility", "visible");
+    }
+    this.globeGridKey = key;
+  }
+
   drawGrid() {
     const cv = document.getElementById("grid");
     const map = this.map;
@@ -3436,7 +3491,10 @@ class App {
     const ctx = cv.getContext("2d");
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
-    if (!this.gridOn || this.globeOn) return;   // the flat graticule does not follow the sphere
+    // The canvas graticule is flat, so on the globe the grid is drawn by MapLibre
+    // itself (line and label layers), which follows the sphere.
+    this.syncGlobeGrid();
+    if (!this.gridOn || this.globeOn) return;
 
     const pxPerDeg = 512 * Math.pow(2, map.getZoom()) / 360;
     const STEPS = [0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 45, 90];
