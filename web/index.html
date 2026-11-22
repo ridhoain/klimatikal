@@ -1855,7 +1855,12 @@ class App {
   textureFor(layer, index) {
     const step = this.steps[Math.max(0, Math.min(this.steps.length - 1, index))];
     const key = `${layer}/${step}`;
-    if (this.textures.has(key)) return this.textures.get(key);
+    if (this.textures.has(key)) {
+      // Re-insert so the Map stays in order of last use (oldest first): trimTextures drops from the front.
+      const t = this.textures.get(key);
+      this.textures.delete(key); this.textures.set(key, t);
+      return t;
+    }
     if (!this.pending.has(key)) {
       const img = new Image();
       img.crossOrigin = "anonymous";          // required: the data is on another origin
@@ -1865,6 +1870,7 @@ class App {
       }).then((loaded) => {
         if (this.gl) {
           this.textures.set(key, texture(this.gl, loaded, this.gl.REPEAT));
+          this.trimTextures();
           this.map && this.map.triggerRepaint();
         }
         this.pending.delete(key);
@@ -1873,6 +1879,29 @@ class App {
       this.pending.set(key, p);
     }
     return null;
+  }
+
+  // Every forecast frame is a 1440 x 721 texture, about 4 MB of GPU memory, and there are 49 steps
+  // by up to 15 layers. Keep only the most recently used ones: about ten steps for each layer that
+  // is on screen (the frame being drawn, the one it blends with, a few ahead for playing), and
+  // free the rest. A frame that is needed again is fetched from the browser's cache.
+  neededLayers() {
+    const names = new Set();
+    for (const item of this.renderStack()) {
+      const n = item.kind === "particles" ? item.layer : dataOf(item);
+      names.add(this.fieldSource(n)); names.add(n);
+      if (item.tint) names.add(item.tint.layer);
+    }
+    return names;
+  }
+
+  trimTextures() {
+    const cap = Math.max(24, 10 * this.neededLayers().size);
+    while (this.textures.size > cap) {
+      const oldest = this.textures.keys().next().value;
+      if (this.gl) this.gl.deleteTexture(this.textures.get(oldest));
+      this.textures.delete(oldest);
+    }
   }
 
   // What to draw: the chosen preset's stack, or (no preset) the selected layer
