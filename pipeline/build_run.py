@@ -33,6 +33,7 @@ import numpy as np
 from PIL import Image
 
 from fronts import detect_fronts
+from lows import detect_lows, track_lows
 from thermal import relative_humidity, utci_sun_shade, uv_index, wet_bulb
 from encoding import (FORMAT_VERSION, LAYERS, NLAT, NLON, REVISION, encode, layer_manifest, reproject,
                       smooth_over_terrain, terrain_weight)
@@ -347,8 +348,9 @@ def build(args) -> None:
     log(f"building run {run_id}, {len(steps)} steps, {len(LAYERS)} layers")
 
     # Seconds spent per phase, so a slow build says where the time went.
-    spent = {"thermal": 0.0, "download": 0.0, "read": 0.0, "fronts": 0.0, "encode": 0.0, "png": 0.0, "upload": 0.0}
+    spent = {"thermal": 0.0, "download": 0.0, "read": 0.0, "fronts": 0.0, "lows": 0.0, "encode": 0.0, "png": 0.0, "upload": 0.0}
     build_started = time.perf_counter()
+    lows_by_step: dict[int, list[dict]] = {}
     workdir = Path(tempfile.mkdtemp(prefix="klimatikal-"))
     previous_tp: np.ndarray | None = None
     previous_rad: tuple[int, dict[str, np.ndarray]] | None = None
@@ -414,6 +416,9 @@ def build(args) -> None:
             t0 = time.perf_counter()
             front_lines = detect_fronts(fields["t850"], fields["r850"], fields["u850"], fields["v850"], fields["msl"], terrain_w)
             spent["fronts"] += time.perf_counter() - t0
+            t0 = time.perf_counter()
+            lows_by_step[step] = detect_lows(fields["msl"])
+            spent["lows"] += time.perf_counter() - t0
             sink.put(f"runs/{run_id}/fronts/f{step:03d}.json",
                      json.dumps(front_lines, separators=(",", ":")).encode(), "application/json", CACHE_RUN_FILES)
             written += 1
@@ -441,6 +446,10 @@ def build(args) -> None:
             log(f"step {step:3d} done  ({total_bytes/1024/1024:.0f} MB so far, "
                 f"{time.perf_counter() - step_started:.0f} s)")
 
+        sink.put(f"runs/{run_id}/lows.json",
+                 json.dumps({"run": run_id, "tracks": track_lows(lows_by_step)}, separators=(",", ":")).encode(),
+                 "application/json", CACHE_RUN_FILES)
+
         manifest = {
             "format_version": FORMAT_VERSION,
             "revision": REVISION,
@@ -458,6 +467,7 @@ def build(args) -> None:
             "steps": steps,
             "layers": {name: layer_manifest(name) for name in LAYERS},
             "fronts": True,        # fronts/fNNN.json per step: GeoJSON, see fronts.py
+            "lows": True,          # lows.json: tracked low-pressure centres, see lows.py
             "attribution": ATTRIBUTION,
             "licence": "CC BY 4.0",
         }

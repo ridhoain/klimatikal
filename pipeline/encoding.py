@@ -41,7 +41,8 @@ FORMAT_VERSION = 1
 #   8  fronts/fNNN.json per step (see fronts.py)
 #   9  added utci_sun and utci_shade (see thermal.py; needs the radiation fields)
 #  10  added wetbulb and uvi (see thermal.py)
-REVISION = 10
+#  11  lows.json: tracked extratropical lows (see lows.py)
+REVISION = 11
 
 # Grid of the ECMWF open data 0.25 degree product.
 NLAT, NLON = 721, 1440

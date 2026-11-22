@@ -581,6 +581,7 @@ const PRESETS = {
     keyRamp: "precip",    // the colour bar is the rain scale; the isobars carry their own values
     lightBase: true,      // white map with black clouds, black coast; see paintBoundaryStyle
     fronts: true,         // detected fronts (cold, warm, occluded) from the run's fronts/ files
+    lows: true,           // tracked low-pressure centres from the run's lows.json
     stack: [
       { kind: "fill", ramp: "precip" },     // the same colours and settings as the Precipitation layer
       // Isobars of mean sea-level pressure, blue low to red high. Spacing follows
@@ -595,7 +596,7 @@ const PRESETS = {
     explain: [
       "Colour: rain rate, averaged over the previous 3 hours (bar at right), the same scale as the Precipitation layer.",
       "Lines: sea-level pressure every {interval} hPa, bold every 10. Blue is low, red is high.",
-      "H and L: centres of high and low pressure.",
+      "H and L: centres of high and low pressure. The Lows button adds each low's track: a dot with its central pressure, the path so far solid, the forecast path dashed.",
       "Fronts: blue triangles cold, red semicircles warm, purple both occluded; the symbols point the way the front moves. Black lines: the monsoon trough (long faint dashes) and pressure troughs (short dashes). All detected from the model's own fields, so approximations.",
       "Streaks: 850 hPa wind, coloured by the sea-level pressure under them (the same colours as the lines).",
     ],
@@ -1465,31 +1466,54 @@ function tzParts(d, utc) {
 const SVG_ATTR = 'viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"';
 const ICON_RADAR = `<svg ${SVG_ATTR}><circle cx="8" cy="8" r="6.2"/><circle cx="8" cy="8" r="3"/><path d="M8 8l4-4.2"/></svg>`;
 const ICON_SAT = `<svg ${SVG_ATTR}><rect x="6.2" y="6.2" width="3.6" height="3.6" rx=".6" transform="rotate(45 8 8)"/><path d="M3.2 4.8l1.6-1.6 2 2-1.6 1.6zM9.2 10.8l1.6-1.6 2 2-1.6 1.6z"/><path d="M12.2 2.8c.9.9 1.4 2 1.5 3.2"/></svg>`;
-// Cyclone symbol for the map, as pixels for map.addImage: 28 css px drawn at 2x.
-// solid: coloured disc with a white spiral (a warned cyclone); otherwise a
-// coloured spiral on a faint disc (a suspect area). `clockwise` is the southern
-// hemisphere's sense of rotation.
+// Tropical cyclone symbol, the one weather maps use: a filled centre with two tapering
+// curved arms, turned the way the storm turns (anticlockwise north of the equator, clockwise
+// south of it, so the arms are mirrored). A warned cyclone is that symbol in its intensity
+// colour; a suspect area (an invest) is a dashed ring round a centre dot, as an area of
+// interest is marked, in its development-chance colour.
+// Points of one arm: outer edge out along a spiral, back along the inner edge, converging
+// to a point. Angle runs the way the arms trail; `sense` is +1 or -1.
+function stormArm(c, phase, sense, r0, k, span, w) {
+  const outer = [], inner = [];
+  for (let i = 0; i <= 24; i++) {
+    const a = span * i / 24, th = phase + sense * a, ro = r0 + a * k;
+    const ri = ro - w * Math.pow(1 - i / 24, 0.9);
+    outer.push([c + ro * Math.cos(th), c + ro * Math.sin(th)]);
+    inner.push([c + ri * Math.cos(th), c + ri * Math.sin(th)]);
+  }
+  return outer.concat(inner.reverse());
+}
+// `clockwise` is the southern hemisphere's sense of rotation. On a y-down canvas an angle that
+// grows is clockwise on screen, so a northern (anticlockwise) storm has arms that trail with
+// a growing angle.
 function stormIcon(color, solid, clockwise) {
   const px = 56, c = px / 2, cv = document.createElement("canvas");
   cv.width = cv.height = px;
   const g = cv.getContext("2d");
-  g.lineCap = "round";
-  const disc = (r, fill, stroke, w) => { g.beginPath(); g.arc(c, c, r, 0, Math.PI * 2); if (fill) { g.fillStyle = fill; g.fill(); } if (stroke) { g.lineWidth = w; g.strokeStyle = stroke; g.stroke(); } };
-  disc(25, "rgba(8,12,24,0.55)");                                   // casing, so it reads on any basemap
-  if (solid) disc(22, color, "#ffffff", 2.5); else disc(22, "rgba(255,255,255,0.22)", color, 3);
-  const arm = (phase) => {
-    g.beginPath();
-    for (let a = 0; a <= 4.6; a += 0.12) {
-      const r = 3 + a * 3.9, th = phase + (clockwise ? -1 : 1) * a;   // arms trail the rotation: they curve out clockwise for an anticlockwise (northern) storm
-      const x = c + r * Math.cos(th), y = c + r * Math.sin(th);
-      a === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
-    }
-    g.stroke();
-  };
-  g.lineWidth = 4.5; g.strokeStyle = solid ? "#ffffff" : color;
-  arm(0); arm(Math.PI);
-  g.fillStyle = solid ? "#101a33" : "#ffffff"; g.beginPath(); g.arc(c, c, 2.6, 0, Math.PI * 2); g.fill();   // the eye
+  g.lineJoin = "round"; g.lineCap = "round";
+  const sense = clockwise ? -1 : 1;
+  if (solid) {
+    const arms = [stormArm(c, 0, sense, 6.5, 8.2, 2.6, 10), stormArm(c, Math.PI, sense, 6.5, 8.2, 2.6, 10)];
+    const trace = () => { g.beginPath(); for (const arm of arms) { arm.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); } g.arc(c, c, 7, 0, Math.PI * 2); };
+    trace(); g.lineWidth = 6; g.strokeStyle = "rgba(8,12,24,0.8)"; g.stroke();     // dark casing, so it reads on any basemap
+    trace(); g.fillStyle = color; g.fill("nonzero");
+    g.lineWidth = 1.6; g.strokeStyle = "#ffffff"; g.stroke();
+    g.beginPath(); g.arc(c, c, 2.6, 0, Math.PI * 2); g.fillStyle = "#101a33"; g.fill();   // the eye
+  } else {
+    g.setLineDash([6, 5]);
+    g.beginPath(); g.arc(c, c, 20, 0, Math.PI * 2); g.lineWidth = 7.5; g.strokeStyle = "rgba(8,12,24,0.75)"; g.stroke();
+    g.beginPath(); g.arc(c, c, 20, 0, Math.PI * 2); g.lineWidth = 4; g.strokeStyle = color; g.stroke();
+    g.setLineDash([]);
+    g.beginPath(); g.arc(c, c, 6.5, 0, Math.PI * 2); g.fillStyle = "rgba(8,12,24,0.8)"; g.fill();
+    g.beginPath(); g.arc(c, c, 4.6, 0, Math.PI * 2); g.fillStyle = color; g.fill();
+  }
   return g.getImageData(0, 0, px, px);
+}
+// The same cyclone symbol as a small SVG for the toolbar button (northern sense).
+function stormGlyphSVG() {
+  const c = 8, arms = [stormArm(c, 0, 1, 1.9, 2.3, 2.6, 2.9), stormArm(c, Math.PI, 1, 1.9, 2.3, 2.6, 2.9)];
+  const d = arms.map((arm) => "M" + arm.map(([x, y]) => `${x.toFixed(2)} ${y.toFixed(2)}`).join("L") + "Z").join("");
+  return `<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="none"><path d="${d}"/><circle cx="8" cy="8" r="2.1"/></svg>`;
 }
 const SAT_BLANK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
 const RADAR_LABEL =ICON_RADAR + "Radar";
@@ -1520,6 +1544,7 @@ class App {
     this.uvOn = true;         // heat preset: UV index lines on; ?uv=0 turns them off
     this.shadeOn = false;     // heat preset: UTCI in shade instead of direct sun; ?shade=1
     this.frontsOn = true;     // fronts on Synoptic overview; ?fronts=0 hides them
+    this.lowsOn = false;      // tracks of the model's low-pressure centres; ?lows=1 shows them
     this.tropicalOn = true;   // JTWC invests and warned cyclones; ?storms=0 hides them
     this.tropical = null;
     this.useUTC = tzStore.get() === "utc";
@@ -1693,7 +1718,7 @@ class App {
     // never fire: the numbers, H / L and fronts would stay on the first frame
     // until you pause. Run at most every 300 ms instead, and always the fronts.
     if (this.playing) {
-      this.updateFronts();
+      this.updateFronts(); this.updateLows();
       const now = performance.now();
       if (!this.clLast || now - this.clLast > 300) {
         this.clLast = now;
@@ -1702,7 +1727,7 @@ class App {
       return;
     }
     clearTimeout(this.clTimer);
-    this.clTimer = setTimeout(() => { this.updateContourLabels(); this.updateHazard(); this.updateFronts(); }, 150);
+    this.clTimer = setTimeout(() => { this.updateContourLabels(); this.updateHazard(); this.updateFronts(); this.updateLows(); }, 150);
   }
 
   // The layer's values as a Float32Array on the PNG's own grid. Cached, newest
@@ -1942,6 +1967,81 @@ class App {
     for (let a = 1; a <= 3 && i + a < this.steps.length; a++) load(this.steps[i + a]);
     const data = await load(key);
     if (this.frontKey === key) src.setData(data);
+  }
+
+  // --- low-pressure tracks -------------------------------------------------
+  // pipeline/lows.py finds the lows in the forecast sea-level pressure and joins
+  // them step to step into tracks (lows.json, one file per run). Each track is
+  // drawn only while it exists: a dot with the central pressure at the current
+  // step, the path so far solid, the forecast path dashed. These are the model's
+  // lows, not named storms.
+  async updateLows(force) {
+    const map = this.map, src = map && map.getSource("lows");
+    if (!src) return;
+    const want = this.lowsOn && this.preset && PRESETS[this.preset].lows && this.manifest.lows;
+    const i = Math.max(0, Math.min(this.steps.length - 1, Math.round(this.stepIndex)));
+    const key = want ? this.steps[i] : null;
+    const stamp = `${key}|${this.runPrefix}`;
+    if (!force && stamp === this.lowKey) return;
+    this.lowKey = stamp;
+    const empty = { type: "FeatureCollection", features: [] };
+    if (key === null) { src.setData(empty); return; }
+    if (!this.lows || this.lows.prefix !== this.runPrefix) {
+      const prefix = this.runPrefix;
+      const data = await fetch(`${prefix}/lows.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+      this.lows = { prefix, data };
+    }
+    if (this.lowKey !== stamp || !this.lows.data) return;
+    const features = [];
+    for (const t of this.lows.data.tracks) {
+      // Longitudes made continuous, so a track crossing the dateline is one line.
+      let prev = null;
+      const pts = t.pts.map(([step, lon, lat, hpa]) => {
+        if (prev !== null) { while (lon - prev > 180) lon -= 360; while (lon - prev < -180) lon += 360; }
+        prev = lon;
+        return { step, lon, lat, hpa };
+      });
+      const now = pts.filter((p) => p.step <= key).pop();
+      if (!now || key - now.step > 3 || pts[pts.length - 1].step < key) continue;
+      const past = pts.filter((p) => p.step <= now.step).map((p) => [p.lon, p.lat]);
+      const fut = [[now.lon, now.lat], ...pts.filter((p) => p.step > now.step).map((p) => [p.lon, p.lat])];
+      if (past.length > 1) features.push({ type: "Feature", properties: { k: "past" }, geometry: { type: "LineString", coordinates: past } });
+      if (fut.length > 1) features.push({ type: "Feature", properties: { k: "fut" }, geometry: { type: "LineString", coordinates: fut } });
+      features.push({ type: "Feature", properties: { k: "pt", id: t.id, hpa: Math.round(now.hpa), min: t.min_hpa, minStep: t.min_step },
+        geometry: { type: "Point", coordinates: [now.lon, now.lat] } });
+    }
+    src.setData({ type: "FeatureCollection", features });
+  }
+
+  addLowLayers() {
+    const map = this.map;
+    map.addSource("lows", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+    const line = (id, k, paint) => map.addLayer({ id, type: "line", source: "lows", filter: ["==", ["get", "k"], k],
+      layout: { "line-cap": "round", "line-join": "round" }, paint });
+    line("lows-past-casing", "past", { "line-color": "#fff", "line-width": 3.4, "line-opacity": 0.8 });
+    line("lows-fut-casing", "fut", { "line-color": "#fff", "line-width": 3.4, "line-opacity": 0.8 });
+    line("lows-past", "past", { "line-color": "#1d1d24", "line-width": 1.6 });
+    line("lows-fut", "fut", { "line-color": "#1d1d24", "line-width": 1.6, "line-dasharray": [2, 1.6] });
+    const depth = ["interpolate", ["linear"], ["get", "hpa"], 950, "#6d0a2a", 975, "#c0392b", 1000, "#e8892b"];
+    map.addLayer({ id: "lows-pt", type: "circle", source: "lows", filter: ["==", ["get", "k"], "pt"],
+      paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 1, 4, 6, 7], "circle-color": depth,
+        "circle-stroke-color": "#fff", "circle-stroke-width": 1.4 } });
+    map.addLayer({ id: "lows-lbl", type: "symbol", source: "lows", filter: ["==", ["get", "k"], "pt"],
+      layout: { "text-field": ["to-string", ["get", "hpa"]], "text-font": ["Open Sans Semibold"], "text-size": 11,
+        "text-anchor": "top", "text-offset": [0, 0.9], "text-allow-overlap": true },
+      paint: { "text-color": "#1d1d24", "text-halo-color": "#fff", "text-halo-width": 1.6 } });
+    const tip = () => this.lowTip || (this.lowTip = new maplibregl.Popup({ closeButton: false, closeOnClick: true, offset: 12,
+      maxWidth: "none", className: "front-tip" }));
+    map.on("click", "lows-pt", (e) => {
+      const p = e.features[0].properties;
+      const run = this.runStart;
+      const when = run instanceof Date && !isNaN(run) ? new Date(run.getTime() + p.minStep * 3600e3).toUTCString().replace(/:\d\d GMT/, " UTC").replace(/^\w+, /, "") : `+${p.minStep} h`;
+      tip().setLngLat(e.lngLat).setHTML(`<div style="font:11px/1.4 ui-sans-serif,system-ui,sans-serif;color:#e9edf7;width:200px;white-space:normal">` +
+        `<b>Low · ${p.hpa} hPa now</b><br>Deepest ${p.min} hPa, ${when}.<br>` +
+        `<span style="color:#a9b5d0">The model's own low, followed through the forecast. Not a named storm.</span></div>`).addTo(map);
+    });
+    map.on("mouseenter", "lows-pt", () => { map.getCanvas().style.cursor = "pointer"; });
+    map.on("mouseleave", "lows-pt", () => { map.getCanvas().style.cursor = ""; });
   }
 
   addFrontLayers() {
@@ -2416,7 +2516,7 @@ class App {
     // Tropical systems (JTWC invests and cyclones), icon only like the wind toggle.
     const storm = document.createElement("button");
     storm.className = "toggle";
-    storm.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8.8 8.0 L9.1 8.3 L9.2 8.8 L9.1 9.4 L8.8 9.9 L8.2 10.4 L7.4 10.6 L6.5 10.6 L5.5 10.3 L4.7 9.6 L4.0 8.6 L3.7 7.3 L3.9 6.0 L4.4 4.6 L5.4 3.4 L6.8 2.5 M7.2 8.0 L6.9 7.7 L6.8 7.2 L6.9 6.6 L7.2 6.1 L7.8 5.6 L8.6 5.4 L9.5 5.4 L10.5 5.7 L11.3 6.4 L12.0 7.4 L12.3 8.7 L12.1 10.0 L11.6 11.4 L10.6 12.6 L9.2 13.5"/><circle cx="8" cy="8" r="1" fill="currentColor" stroke="none"/></svg>';
+    storm.innerHTML = stormGlyphSVG();
     storm.setAttribute("aria-label", "Tropical systems");
     storm.title = "Tropical cyclones and disturbances (Joint Typhoon Warning Center)";
     storm.setAttribute("aria-pressed", String(this.tropicalOn));
@@ -2441,8 +2541,24 @@ class App {
     // In the Synoptic overview group, shown only while that preset (the one with fronts) is selected.
     const synGrp = this.presetGroups && this.presetGroups.synoptic;
     if (synGrp) synGrp.appendChild(front); else box.appendChild(front);
+    // Lows: tracks of the model's low-pressure centres (lows.py), off until asked for.
+    const low = document.createElement("button");
+    low.className = "toggle";
+    low.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="11.5" cy="5" r="2.4" fill="currentColor" stroke="none"/><path d="M1.5 13.5 C4 12.5 5 9.5 8 8 L9.6 6.6" stroke-dasharray="2.2 1.8"/></svg><span>Lows</span>';
+    low.hidden = true;
+    low.setAttribute("aria-label", "Low-pressure tracks");
+    low.title = "Tracks of the model's low-pressure centres: central pressure, path so far (solid) and forecast path (dashed)";
+    low.setAttribute("aria-pressed", String(this.lowsOn));
+    low.onclick = () => {
+      this.lowsOn = !this.lowsOn;
+      low.setAttribute("aria-pressed", String(this.lowsOn));
+      this.updateLows(true); this.writeURL();
+    };
+    if (synGrp) synGrp.appendChild(low); else box.appendChild(low);
     this.paintFrontButton = () => {
       front.hidden = !(this.preset && PRESETS[this.preset].fronts && this.manifest.fronts);
+      low.hidden = !(this.preset && PRESETS[this.preset].lows && this.manifest.lows);
+      if (this.updateLows) this.updateLows(true);
     };
     this.paintFrontButton();
 
@@ -2971,6 +3087,7 @@ class App {
     if (h.get("wind") === "0") this.windOn = false;
     if (h.get("storms") === "0") this.tropicalOn = false;
     if (h.get("fronts") === "0") this.frontsOn = false;
+    if (h.get("lows") === "1") this.lowsOn = true;
     if (h.get("shade") === "1") this.shadeOn = true;
     if (h.get("uv") === "0") this.uvOn = false;
     if (h.get("terrain") === "1") this.terrainOn = true;
@@ -3023,6 +3140,7 @@ class App {
       ...(this.windOn ? {} : { wind: "0" }),
       ...(this.tropicalOn ? {} : { storms: "0" }),
       ...(this.frontsOn ? {} : { fronts: "0" }),
+      ...(this.lowsOn ? { lows: "1" } : {}),
       ...(this.shadeOn ? { shade: "1" } : {}),
       ...(this.uvOn ? {} : { uv: "0" }),
       ...(this.terrainOn ? { terrain: "1" } : {}),
@@ -3332,10 +3450,10 @@ class App {
       L({ id: "trop-fclabel", type: "symbol", source: "trop-fcpts", minzoom: 3.5,
           filter: ["all", ["get", "big"], none], layout: { ...text, "text-field": ["get", "h"], "text-size": 10 }, paint: halo });
       // Invests: hollow ring. Warned cyclones: filled disc.
-      // The cyclone symbol: a two-armed spiral round an eye. Drawn once per
-      // intensity colour and hemisphere (it turns clockwise south of the
-      // equator, anticlockwise north of it). Warned cyclones are a solid disc
-      // with a white spiral; invests are a hollow, coloured spiral.
+      // The cyclone symbol: a filled centre with two tapering arms (see stormIcon). Drawn once
+      // per intensity colour and hemisphere (it turns clockwise south of the equator,
+      // anticlockwise north of it). Warned cyclones are that symbol in the intensity colour;
+      // invests are a dashed ring with a centre dot.
       const KT_COLORS = ["#6ec6ff", "#3fcf8e", "#f2e23b", "#f5a623", "#f0533a", "#d6249f"];
       const POT_COLORS = { low: "#f2d03b", med: "#f39c33", high: "#e5484d" };
       for (const hemi of ["n", "s"]) {
@@ -3591,6 +3709,7 @@ class App {
     this.addContourLabels();
     this.addHazardLayer();
     this.addFrontLayers();
+    this.addLowLayers();
     this.addNightLayers();
     this.scheduleContourLabels();
     const vis = this.labelsOn ? "visible" : "none";
