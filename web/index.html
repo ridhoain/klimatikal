@@ -1028,7 +1028,11 @@ const CONTOUR_FS = `
     vec2 cell = 1.0 / u_texSize;
     float gx = valueAtUV(uv + vec2(cell.x, 0.0)) - v;
     float gy = valueAtUV(uv + vec2(0.0, cell.y)) - v;
-    vec2 pc = (dataUV(v_merc.x + u_px, v_merc.y + u_px) - uv) * u_texSize;
+    // Data cells per pixel. x is linear in mercator (the texture spans 0..1), so do
+    // not difference dataUV() there: its fract() jumps by a whole world on the one
+    // pixel column whose neighbour crosses 180 degrees, which drew a straight
+    // line down that meridian.
+    vec2 pc = vec2(u_px * u_texSize.x, (dataUV(v_merc.x, v_merc.y + u_px).y - uv.y) * u_texSize.y);
     float perPx = abs(gx) * abs(pc.x) + abs(gy) * abs(pc.y);
     float minor = u_useLevels > 0.5 ? lineLevels(v, u_width, perPx) : lineAt(v, u_interval, u_width, perPx);
     float major = u_useLevels > 0.5 ? 0.0 : lineAt(v, u_interval * u_major, u_majorWidth, perPx);
@@ -3433,16 +3437,17 @@ class App {
     const show = this.globeOn && this.gridOn;
     const has = !!m.getLayer("globe-grid");
     if (!show) {
-      if (has) for (const id of ["globe-grid", "globe-grid-labels"]) m.setLayoutProperty(id, "visibility", "none");
+      if (has) m.setLayoutProperty("globe-grid", "visibility", "none");
       return;
     }
     const lb = this.lightBase();
     const arcPx = 112 * Math.pow(2, m.getZoom()) * Math.PI / 360;   // pixels per degree at the centre of the globe
     const STEPS = [1, 2, 5, 10, 15, 30, 45, 90];
     const step = STEPS.find((v) => v * arcPx >= 70) || 90;
+    this.globeGridStep = step;   // the canvas labels (drawGlobeLabels) use the same spacing
     const key = `${step}|${lb}`;
     if (has && this.globeGridKey === key) {
-      if (m.getLayoutProperty("globe-grid", "visibility") !== "visible") for (const id of ["globe-grid", "globe-grid-labels"]) m.setLayoutProperty(id, "visibility", "visible");
+      if (m.getLayoutProperty("globe-grid", "visibility") !== "visible") m.setLayoutProperty("globe-grid", "visibility", "visible");
       return;
     }
     const num = (v) => String(+v.toFixed(2));
@@ -3457,25 +3462,77 @@ class App {
         geometry: { type: "LineString", coordinates: Array.from({ length: 37 }, (_, i) => [-180 + i * 10, lat]) } });
     }
     const data = { type: "FeatureCollection", features: feats };
-    const line = lb ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.24)";
-    const text = lb ? "rgba(25,32,50,0.8)" : "rgba(225,232,248,0.78)";
-    const halo = lb ? "rgba(255,255,255,0.85)" : "rgba(8,12,24,0.7)";
+    const line = lb ? "rgba(0,0,0,0.32)" : "rgba(255,255,255,0.38)";
     if (!has) {
       m.addSource("globe-grid", { type: "geojson", data });
-      m.addLayer({ id: "globe-grid", type: "line", source: "globe-grid", paint: { "line-color": line, "line-width": 1 } });
-      m.addLayer({ id: "globe-grid-labels", type: "symbol", source: "globe-grid",
-        layout: { "symbol-placement": "line", "symbol-spacing": 320, "text-field": ["get", "t"],
-          "text-font": ["Open Sans Semibold"], "text-size": 11, "text-max-angle": 40, "text-padding": 6,
-          "text-keep-upright": true },
-        paint: { "text-color": text, "text-halo-color": halo, "text-halo-width": 1.4 } });
+      m.addLayer({ id: "globe-grid", type: "line", source: "globe-grid", paint: { "line-color": line, "line-width": 1.2 } });
     } else {
       m.getSource("globe-grid").setData(data);
       m.setPaintProperty("globe-grid", "line-color", line);
-      m.setPaintProperty("globe-grid-labels", "text-color", text);
-      m.setPaintProperty("globe-grid-labels", "text-halo-color", halo);
-      for (const id of ["globe-grid", "globe-grid-labels"]) m.setLayoutProperty(id, "visibility", "visible");
+      m.setLayoutProperty("globe-grid", "visibility", "visible");
     }
     this.globeGridKey = key;
+  }
+
+  // Degree labels for the globe grid, kept to the borders like the flat map's:
+  // longitudes along the top, latitudes down the left. Where a line meets the
+  // screen edge the label sits there; where the whole globe is in view (so the
+  // line ends at the globe's own edge) it sits just inside that edge. Never in
+  // the middle of the field. Labels that would overlap are dropped.
+  drawGlobeLabels(w, h, labelTop, halo, num) {
+    const map = this.map, step = this.globeGridStep || 30;
+    const c = map.getCenter(), p0 = c.lat * Math.PI / 180, l0 = c.lng * Math.PI / 180;
+    // On the near side of the planet (a little inside the horizon).
+    const vis = (lng, lat) => {
+      const p = lat * Math.PI / 180, l = lng * Math.PI / 180;
+      return Math.sin(p0) * Math.sin(p) + Math.cos(p0) * Math.cos(p) * Math.cos(l - l0) > 0.05;
+    };
+    const sample = (at) => at.map(([lng, lat]) => { const q = map.project([lng, lat]); return { x: q.x, y: q.y, v: vis(lng, lat) }; });
+    const taken = [];
+    const free = (x, y, text, align) => {
+      const tw = text.length * 6.6 + 6;
+      const x0 = align === "center" ? x - tw / 2 : x, box = [x0, y - 8, x0 + tw, y + 8];
+      if (taken.some((t) => box[0] < t[2] && box[2] > t[0] && box[1] < t[3] && box[3] > t[1])) return false;
+      taken.push(box); return true;
+    };
+    const yMax = h - 70;
+    for (let lng = -180; lng < 180; lng += step) {
+      const a = Math.abs(lng);
+      const text = `${num(a)}°${a === 0 || a === 180 ? "" : lng < 0 ? "W" : "E"}`;
+      const pts = sample(Array.from({ length: 79 }, (_, i) => [lng, -78 + i * 2]));
+      let pos = null;
+      for (let i = 1; i < pts.length && !pos; i++) {   // where it crosses the top strip
+        const p = pts[i - 1], q = pts[i];
+        if (p.v && q.v && (p.y - labelTop) * (q.y - labelTop) <= 0 && p.y !== q.y) {
+          const x = p.x + (q.x - p.x) * (labelTop - p.y) / (q.y - p.y);
+          if (x > 24 && x < w - 24) pos = [x, labelTop];
+        }
+      }
+      if (!pos) {                                       // else just inside the globe's own top edge
+        let top = null;
+        for (const p of pts) if (p.v && p.x > 24 && p.x < w - 24 && p.y > labelTop && p.y < yMax && (!top || p.y < top.y)) top = p;
+        if (top) pos = [top.x, top.y + 10];
+      }
+      if (pos && free(pos[0], pos[1], text, "center")) halo(text, pos[0], pos[1], "center");
+    }
+    for (let lat = Math.ceil(-80 / step) * step; lat <= 80; lat += step) {
+      const text = `${num(Math.abs(lat))}°${lat === 0 ? "" : lat < 0 ? "S" : "N"}`;
+      const pts = sample(Array.from({ length: 121 }, (_, i) => [-180 + i * 3, lat]));
+      let pos = null;
+      for (let i = 1; i < pts.length && !pos; i++) {   // where it crosses the left edge
+        const p = pts[i - 1], q = pts[i];
+        if (p.v && q.v && (p.x - 8) * (q.x - 8) <= 0 && p.x !== q.x) {
+          const y = p.y + (q.y - p.y) * (8 - p.x) / (q.x - p.x);
+          if (y > labelTop + 20 && y < yMax) pos = [8, y - 8];
+        }
+      }
+      if (!pos) {                                       // else just inside the globe's own left edge
+        let left = null;
+        for (const p of pts) if (p.v && p.x > 8 && p.y > labelTop + 20 && p.y < yMax && (!left || p.x < left.x)) left = p;
+        if (left) pos = [left.x + 8, left.y - 8];
+      }
+      if (pos && free(pos[0], pos[1], text, "left")) halo(text, pos[0], pos[1], "left");
+    }
   }
 
   drawGrid() {
@@ -3493,7 +3550,7 @@ class App {
     // The canvas graticule is flat, so on the globe the grid is drawn by MapLibre
     // itself (line and label layers), which follows the sphere.
     this.syncGlobeGrid();
-    if (!this.gridOn || this.globeOn) return;
+    if (!this.gridOn) return;
 
     const pxPerDeg = 512 * Math.pow(2, map.getZoom()) / 360;
     const STEPS = [0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 45, 90];
@@ -3519,6 +3576,8 @@ class App {
       ctx.fillStyle = lb ? "rgba(25,32,50,0.8)" : "rgba(225,232,248,0.72)"; ctx.fillText(text, x, y);
       ctx.lineWidth = 1; ctx.strokeStyle = GRID_LINE;
     };
+
+    if (this.globeOn) { this.drawGlobeLabels(w, h, labelTop, halo, num); return; }
 
     const k0 = Math.ceil(b.getWest() / step), k1 = Math.floor(b.getEast() / step);
     for (let k = k0; k <= k1 && k - k0 < 400; k++) {
