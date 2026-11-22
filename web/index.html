@@ -516,7 +516,7 @@ Object.assign(RAMPS, {
 // Stargazing overlays that are not forecast layers. Both are small static or near-real-time images
 // (pipeline/aurora.py, pipeline/darksky.py) that the page colours itself and lays under the cloud.
 // aurora: OVATION probability of visible aurora, 0 to 100 %, [value, r, g, b, alpha] stops.
-// lights: light-pollution proxy, VIIRS radiance in nW/cm2/sr, spread to the glow around towns; the stops
+// lights: light-pollution proxy (coloured like city light seen in the sky: warm amber at the edges, yellow, then warm white), VIIRS radiance in nW/cm2/sr, spread to the glow around towns; the stops
 // are on radiance, and `classes` names the bands for the hover text and the key. Dark is left clear
 // on purpose: the places to go are the ones with no glow on them.
 const ASTRO = {
@@ -524,14 +524,14 @@ const ASTRO = {
                     [50, 190, 255, 90, 252], [75, 255, 120, 230, 255], [100, 255, 70, 170, 255]],
             // bands for the key and the hover text: [lower edge %, name]
             classes: [[75, "Very likely"], [50, "Likely"], [25, "Possible"], [12, "Faint"], [6, "Slight"]] },
-  lights: { stops: [[0.25, 255, 214, 90, 0], [0.5, 255, 214, 90, 55], [1, 255, 190, 60, 110],
-                    [3, 255, 140, 40, 160], [10, 255, 90, 50, 200], [30, 255, 120, 150, 225], [100, 255, 245, 245, 245]],
+  lights: { stops: [[0.25, 255, 170, 40, 0], [0.5, 255, 165, 40, 70], [1, 255, 175, 50, 125],
+                    [3, 255, 195, 70, 180], [10, 255, 218, 110, 220], [30, 255, 235, 160, 242], [100, 255, 248, 215, 252]],
             classes: [[0, "Dark"], [0.25, "Faint glow"], [1, "Moderate glow"], [3, "Bright glow"], [10, "Very bright"], [30, "City centre"]] },
   // The harmonized DMSP + VIIRS index (units "dn", 0 to 63, linear, city cores saturate at 63): same colours,
   // thresholds from its spread values (about 17 % of the globe is above 0.2, a village is around 1 to 2,
   // Jakarta 40).
-  lightsDN: { stops: [[0.2, 255, 214, 90, 0], [0.5, 255, 214, 90, 55], [1.5, 255, 190, 60, 110],
-                      [4, 255, 140, 40, 160], [12, 255, 90, 50, 200], [30, 255, 120, 150, 225], [63, 255, 245, 245, 245]],
+  lightsDN: { stops: [[0.2, 255, 170, 40, 0], [0.5, 255, 165, 40, 70], [1.5, 255, 175, 50, 125],
+                      [4, 255, 195, 70, 180], [12, 255, 218, 110, 220], [30, 255, 235, 160, 242], [63, 255, 248, 215, 252]],
               classes: [[0, "Dark"], [0.25, "Faint glow"], [1, "Moderate glow"], [4, "Bright glow"], [12, "Very bright"], [30, "City centre"]] },
   auroraWindowH: 3,        // the OVATION nowcast is only meaningful this many hours either side of its time
 };
@@ -656,7 +656,7 @@ PRESETS.astro = {
   keyRamp: "astrocloud",
   astro: true,           // night lines with the 18 degree line and the Moon, whatever the Day/Night button says
   darkBase: true,        // keep the dark map and white coast even though the main layer is a pale field
-  overlays: true,        // Aurora and Dark sky buttons
+  overlays: true,        // Aurora and Light pollution buttons
   stack: [
     { kind: "fill", ramp: "astrocloud" },
   ],
@@ -667,11 +667,11 @@ PRESETS.astro = {
     { swatch: [255, 90, 50], text: "Light glow, very bright (a large city)", toggle: "lights" },
   ] }],
   explain: [
-    "Cloud cover is the colour, turned around so that clear sky stands out: strong blue where the sky is open, fading out as cloud builds, and only a faint grey veil where it is overcast. Cloud covers more than half the globe at any time, so most of the map is not blue; look for blue over the place you want to be.",
-    "Light glow (Dark sky button): yellow to white where artificial light spreads into the sky, from a yearly satellite night-lights composite (harmonized DMSP and VIIRS, a relative index, not radiance) spread out by about 25 km. Places with no colour are dark. It is a proxy, not a Bortle class or sky brightness in mag/arcsec²: the glow of a big city far away is understated, and it does not extend north of 75° or south of 65°.",
+    "Cloud cover is the colour, blue where it is overcast, fading out through partly cloudy, and darkening to black where the sky is clear. Cloud covers more than half the globe at any time, so much of the map is blue; look for the dark places.",
+    "Light glow (Light pollution button): amber to warm white where artificial light spreads into the sky, from a yearly satellite night-lights composite (harmonized DMSP and VIIRS, a relative index, not radiance) spread out by about 25 km. Places with no colour are dark. It is a proxy, not a Bortle class or sky brightness in mag/arcsec²: the glow of a big city far away is understated, and it does not extend north of 75° or south of 65°.",
     "Aurora (Aurora button): NOAA's OVATION nowcast, the chance of visible aurora for the next hour; hover the glow for the details. It is a nowcast, so it is shown only within {auroraH} hours of its time. It needs a dark sky and a clear view of the poleward horizon. {kp}",
     "Lines: the solid line is sunset or sunrise, the dashed ones civil (6°) and nautical (12°) twilight, and the outermost, in violet, is 18°: past it, on the dark side, it is astronomical night. The Moon line is where it rises and sets, with ticks on the side where the Moon is down. Dark sky for deep-sky work is beyond the violet line and on the ticked side of the Moon line, or when the Moon is a thin crescent.",
-    "Dimmed: the part of the map still in daylight (darker) or twilight (lighter), where nothing can be seen yet. Switch it off with the Day mask button.",
+    "White: the part of the map still in daylight (bright) or twilight (lighter), where nothing can be seen yet. The dark part is where the sky is usable.",
     "The Moon icon is where the Moon is overhead, drawn with its phase. Hover for the sun and Moon height at a point.",
     "Cloud is a forecast at 0.25°: a clear 3-hour average can hide a gap or a passing band, and low fog and valleys are not resolved.",
   ],
@@ -1622,7 +1622,7 @@ class App {
     this.uvOn = true;         // heat preset: UV index lines on; ?uv=0 turns them off
     this.auroraOn = true;     // stargazing preset: aurora overlay; #aurora=0 turns it off
     this.lightsOn = true;     // stargazing preset: light-glow overlay; #lights=0 turns it off
-    this.dayMaskOn = true;    // stargazing preset: dim the part of the map still in daylight or twilight; #mask=0 turns it off
+    this.dayMaskOn = true;    // stargazing preset: always whites out the part of the map still in daylight or twilight (no toggle)
     this.shadeOn = false;     // heat preset: UTCI in shade instead of direct sun; ?shade=1
     this.frontsOn = true;     // fronts on Synoptic overview; ?fronts=0 hides them
     this.lowsOn = false;      // tracks of the model's low-pressure centres; ?lows=1 shows them
@@ -3118,29 +3118,27 @@ class App {
     };
     this.paintUvButton();
 
-    // Stargazing: Aurora and Dark sky overlays, right after the Stargazing button. Each button appears
+    // Stargazing: Aurora and Light pollution overlays, right after the Stargazing button. Each button appears
     // only when its data file has loaded, and Aurora says when it is out of its time window.
     const astroBtns = {};
-    for (const [key, label, flag] of [["aurora", "Aurora", "auroraOn"], ["lights", "Dark sky", "lightsOn"], ["mask", "Day mask", "dayMaskOn"]]) {
+    for (const [key, label, flag] of [["aurora", "Aurora", "auroraOn"], ["lights", "Light pollution", "lightsOn"]]) {
       const b = document.createElement("button");
       b.className = "toggle"; b.textContent = label; b.hidden = true;
       b.onclick = () => { this[flag] = !this[flag]; this.nightKey = null; this.updateNight(); this.writeURL(); this.paintLegend(); this.paintCredit(); this.map && this.map.triggerRepaint(); };
       astroBtns[key] = b;
     }
     const astroGrp = this.presetGroups && this.presetGroups.astro;
-    if (astroGrp) astroGrp.append(astroBtns.lights, astroBtns.aurora, astroBtns.mask); else box.append(astroBtns.lights, astroBtns.aurora, astroBtns.mask);
+    if (astroGrp) astroGrp.append(astroBtns.lights, astroBtns.aurora); else box.append(astroBtns.lights, astroBtns.aurora);
     this.paintAstroButtons = () => {
-      const have = (k) => k === "mask" || !!(this.astro && this.astro[k]);
+      const have = (k) => !!(this.astro && this.astro[k]);
       const show = this.astroActive();
-      for (const [k, flag] of [["aurora", "auroraOn"], ["lights", "lightsOn"], ["mask", "dayMaskOn"]]) {
+      for (const [k, flag] of [["aurora", "auroraOn"], ["lights", "lightsOn"]]) {
         const b = astroBtns[k];
         b.hidden = !(show && have(k));
         b.setAttribute("aria-pressed", String(this[flag]));
         const stale = k === "aurora" && have(k) && !this.auroraValid();
         b.style.opacity = stale ? "0.55" : "";
-        b.title = k === "mask"
-          ? (this[flag] ? "Daylight is dimmed. Press to show the whole map." : "Daylight is not dimmed. Press to dim the part still in daylight or twilight.")
-          : k === "lights"
+        b.title = k === "lights"
           ? (this[flag] ? "Light glow is shown. Press to hide it." : "Light glow is hidden. Press to show it.")
           : stale ? `Aurora is a nowcast: set the time near now (within ${ASTRO.auroraWindowH} h) to see it.`
           : (this[flag] ? "Aurora chance is shown. Press to hide it." : "Aurora chance is hidden. Press to show it.");
@@ -3790,7 +3788,6 @@ class App {
     if (h.get("uv") === "0") this.uvOn = false;
     if (h.get("aurora") === "0") this.auroraOn = false;
     if (h.get("lights") === "0") this.lightsOn = false;
-    if (h.get("mask") === "0") this.dayMaskOn = false;
     if (h.get("terrain") === "1") this.terrainOn = true;
   }
 
@@ -3846,7 +3843,6 @@ class App {
       ...(this.uvOn ? {} : { uv: "0" }),
       ...(this.auroraOn ? {} : { aurora: "0" }),
       ...(this.lightsOn ? {} : { lights: "0" }),
-      ...(this.dayMaskOn ? {} : { mask: "0" }),
       ...(this.terrainOn ? { terrain: "1" } : {}),
     });
     history.replaceState(null, "", `#${h}`);
